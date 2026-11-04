@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Try the live demo
+    url: https://fareselsayed.github.io/harborline-lab/
+    about: Look around in your browser with sample data, no install needed.

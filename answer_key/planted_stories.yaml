@@ -1,0 +1,89 @@
+# SPOILERS. The simulator reads this file to plant business stories into the data.
+# Honor system: don't open until you've built the project the story belongs to.
+# Months are relative to the end of the generated history (0 = last month).
+
+client_behaviour:
+  # payment: on_time (pays around due date), early, slow (+10-25 days), very_slow (+30-75 days), disputer (short-pays / disputes ~8% of invoices)
+  default_payment: on_time
+  payment:
+    NBOUT: on_time
+    ORBITSH: slow
+    APEXAUT: early
+    HEARTH: on_time
+    OAKLINE: very_slow        # P3 AR story: DSO creeps from 48 to 95 days over the last 9 months
+    COBALT: disputer
+    BRUNE: slow
+    PKPROT: on_time
+    BEACNHW: early
+    URBLOOM: very_slow        # pays late before churning
+    MOMNTM: slow
+  churn_signals:              # P5 Client 360: rising case volume + falling orders + slow pay before churn
+    URBLOOM: { from_month: -11, case_multiplier: 3.5, volume_decline_pct: 45 }
+    BLOOMBT: { from_month: -7,  case_multiplier: 2.8, volume_decline_pct: 35 }
+    SOLSWIM: { from_month: -5,  case_multiplier: 3.0, volume_decline_pct: 20, still_active: true }   # the live churn risk
+
+stories:
+  - id: billing_leakage_unkeyed_increase
+    project: 3
+    summary: "Contract anniversary rate increase for GLOWTH (4.5%) activated in Salesforce but never keyed into WMS billing_rate"
+    client: GLOWTH
+    month: -10
+    effect: WMS billing_rate keeps old rates; AX invoices under-bill vs Salesforce Rate_Card_Line__c from month -10 on
+  - id: billing_leakage_typo
+    project: 3
+    summary: "RET-PROC rate for LUMEN keyed as 0.33 instead of 3.30 in WMS"
+    client: LUMEN
+    charge_code: RET-PROC
+    month: -14
+    wrong_rate: 0.33
+  - id: missing_minimum_fee
+    project: 3
+    summary: "Monthly minimum adjustment (MIN-ADJ) never invoiced for PUREFRM although volume stayed under the minimum"
+    client: PUREFRM
+  - id: fx_rate_drift
+    project: 3
+    summary: "AX month-end EUR/USD and GBP/USD rates are keyed by hand on the 1st business day and lag ECB by 0.5-2.5%"
+  - id: carrier_overbilling
+    project: 4
+    summary: "Velocity Regional Parcel (VRPX) overbills ~3% of shipments: billed weight > actual dim weight, duplicate lines, residential surcharge on commercial addresses"
+    scac: VRPX
+    share: 0.03
+  - id: fuel_surcharge_misapplied
+    project: 4
+    summary: "Marlowe applies the fuel surcharge table one week late after diesel price changes"
+    scac: MRLF
+  - id: picker_outlier
+    project: 2
+    summary: "One ATL1 picker on shift B posts 2.3x the median picks/hour - the scans are batch-confirmed at end of tote (data artifact, not real productivity)"
+    warehouse: ATL1
+  - id: dock_to_stock_regression
+    project: 2
+    summary: "NJ1 dock-to-stock time doubles from month -6 after a staffing cut on receiving (shift A)"
+    warehouse: NJ1
+    month: -6
+  - id: weather_delays
+    project: 2
+    summary: "Snow days at CHI1 and NJ1 (from the real Open-Meteo archive when available, synthetic otherwise) slow throughput and push late shipments"
+  - id: cold_excursion_summer
+    project: 7
+    summary: "CHI1 cooler zone excursions on hot afternoons when dock door 14 is left open > 20 minutes; lots in that zone go on HOLD"
+    warehouse: CHI1
+    zone: COOLER
+  - id: stuck_sensor
+    project: 7
+    summary: "CHI1-CLR-03-T reports exactly 4.0 C for 9 days while the real temperature drifted (no excursion detected - a hidden risk)"
+    sensor: CHI1-CLR-03-T
+    days: 9
+  - id: recall_lot
+    project: 7
+    summary: "Copper Kettle Foods recalls one lot; the trace must find every order and ship-to that received it"
+    client: CPRKTL
+  - id: edi_dropped_orders
+    project: 5
+    summary: "~0.4% of APEXAUT and BEACNHW 940s never become WMS orders (translator rejects them silently); the 997 still says accepted"
+  - id: crm_crosswalk_gaps
+    project: 1
+    summary: "Salesforce Account.WMS_Owner_Code__c is blank for 4 clients and mistyped for 3 (lower case, trailing space, O vs 0)"
+  - id: lax1_ramp
+    project: 2
+    summary: "LAX1 opens at month -17; first 8 weeks have poor accuracy and long cycle times (new-site ramp)"

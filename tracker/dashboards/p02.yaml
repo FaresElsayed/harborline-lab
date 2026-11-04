@@ -1,0 +1,120 @@
+# Dashboard specs - Project 2 (Warehouse Performance Scorecard). Wireframes: brand/wireframes/<id>.svg
+- id: P2-D1
+  name: Warehouse Ops Scorecard
+  audience: Luis Moreno (VP Operations, Monday 07:30 ops call), the eight site GMs, Daniel Reyes (CEO)
+  owner: luis.moreno
+  questions:
+    - Which sites are hitting their targets this week, and which are slipping?
+    - How have OTIF, cycle time, dock-to-stock, pick productivity, inventory accuracy and space utilization moved over 13 weeks, a year, and the full history?
+    - Is a bad week explained by volume, weather, holidays, or something inside the building?
+    - How does each site compare with the network on exactly the same definitions?
+    - Which site is most likely to break first in peak season?
+  kpis:
+    - name: OTIF
+      definition: Shipped orders that were both on time (the on-time variant the metric catalog assigns to the Ops scorecard) and in full (per the catalog's in-full rule) ÷ shipped orders. Cancelled orders excluded.
+      owner_definition_conflict: Operations and Client Success disagree on what counts as in full (units or lines; client-approved short ships). Agree it with luis.moreno and omar.haddad and record it in the metric catalog (P2.S5).
+    - name: On-time ship
+      definition: Orders shipped by their ship-by date (site cutoffs, business-day calendar and requested ship date, P2.S2.T5) ÷ orders due to ship in the period.
+      owner_definition_conflict: Operations, Client Success and Finance each start and stop the on-time clock differently and exclude different things. Record all three with luis.moreno, omar.haddad and alan.brooks; this tile shows only the variant the catalog names for Ops.
+    - name: Order cycle time (median, business hours)
+      definition: Median business hours from order received in the WMS to shipped, using the site calendar; p90 on hover.
+      owner_definition_conflict: Some GMs start the clock at release to the floor, not at receipt. Agree with luis.moreno and shanice.carter.
+    - name: Dock-to-stock (median, business hours)
+      definition: Median business hours per receipt from the agreed start event to the agreed stop event (P2.S3.T4).
+      owner_definition_conflict: The floor debates whether the clock starts at trailer arrival or at the start of receiving, and stops at receipt complete or putaway complete. Confirm with shanice.carter.
+    - name: Pick productivity
+      definition: Units (or lines, as the catalog says) picked per productive labor hour, split by order type, with the denominator agreed in P2.S4.T3.
+      owner_definition_conflict: Scan-to-scan time, task time and paid shift hours give different answers. Agreed with shanice.carter; Luis approves the scorecard version.
+    - name: Inventory accuracy
+      definition: Per the catalog - approved cycle counts with no variance ÷ approved cycle counts (location accuracy), with unit accuracy (1 − |variance units| ÷ system units) alongside. Recounts aren't counted twice.
+      owner_definition_conflict: Sites report location hit rate; Finance cares about value-weighted accuracy. Confirm which one leads with luis.moreno.
+    - name: Space utilization
+      definition: Occupied pallet positions and pick faces at end of day ÷ capacity in effect on that date (warehouse master history).
+    - name: Orders and units shipped
+      definition: Count of shipped orders and sum of shipped units in the period; context for every rate above.
+  filters:
+    - Date range (week / month / custom; default last full week)
+    - Site
+    - Client
+    - Order type (B2C / B2B)
+    - Channel (EDI / API / PORTAL / CSV)
+    - Compare to (prior period / same period last year)
+  visuals:
+    - { title: KPI row, type: kpi_tiles, notes: "Six scorecard KPIs (OTIF, on-time ship, cycle time, dock-to-stock, pick productivity, inventory accuracy) plus utilization; value, target, delta vs prior week, 13-week sparkline, status colour vs target" }
+    - { title: Site comparison, type: heat_table, notes: "Eight sites (rows) × scorecard KPIs (columns), each cell coloured vs target; network row at the bottom; click a site to filter or drill to P2-D2" }
+    - { title: Weekly trends by site, type: small_multiples, notes: "One line chart per KPI, sites as series; range toggle 13 weeks / 52 weeks / full history; peak season shaded; holiday markers; weather annotations (snowfall, heavy precipitation) from the reference data" }
+    - { title: Volume vs performance, type: combo, notes: "Orders shipped per day (bars) vs on-time ship % (line) for the selected site, so volume problems can be told apart from process problems" }
+    - { title: Peak readiness, type: bullet, notes: "Per site, current 4-week run-rate vs the site's last peak for orders, utilization and productivity; at-risk rule in the tooltip" }
+    - { title: Dock-to-stock by site, type: small_multiples, notes: "Weekly median dock-to-stock per site, full history available; target line" }
+    - { title: Inventory accuracy by site, type: bar, notes: "Weekly location and unit accuracy per site with target line" }
+  refresh_sla: Daily; the previous local day complete for every site by 06:00 America/New_York, before the 07:30 Monday ops call. Data-through date per site in the footer.
+  access: Operations leadership (luis.moreno), all site GMs (including shanice.carter) and the CEO (daniel.reyes) see all sites with client-level detail. Internal only. No consumer PII and no worker names on this dashboard.
+  layout: |
+    1920×1080, Harborline light dashboard background with the Operations department accent.
+    Header band: Harborline lockup left, title "Warehouse Ops Scorecard", selected week and data-through time right.
+    Left filter rail (240 px): date range, site, client, order type, channel, compare-to.
+    Row 1: seven KPI tiles across the full width (six scorecard KPIs plus utilization).
+    Row 2: "Site comparison" heat table (left, 60%) and "Peak readiness" bullets (right, 40%).
+    Row 3: "Weekly trends by site" small multiples (left, 65%) and "Volume vs performance" (right, 35%).
+    Page 2 "Trends": "Dock-to-stock by site" small multiples (full width), then "Inventory accuracy by site" (left, 50%) and a utilization trend (right, 50%).
+    Footer: data freshness per site, link to the metric catalog, dashboard version.
+
+- id: P2-D2
+  name: Site Operations Detail
+  audience: Site GMs (Shanice Carter at ATL1 and her peers) and their shift leads; Luis Moreno for drill-downs
+  owner: shanice.carter
+  questions:
+    - Which shift, zone or client is behind today and this week?
+    - Which open orders are at risk of missing their ship-by time?
+    - How productive is each picker and each shift, and which numbers look too good or too bad to be true?
+    - How long does received stock take to become available, by the shift it arrived on?
+    - Where are cycle counts finding variances, and what is on hold and why?
+    - Were we staffed for the work that arrived?
+  kpis:
+    - name: At-risk open orders
+      definition: Open orders not yet packed whose ship-by time is within the next 4 business hours or already past.
+    - name: On-time ship (site)
+      definition: Same catalog definition as P2-D1, shown by shift and zone.
+    - name: Picks per productive hour
+      definition: Per the catalog definition agreed with shanice.carter (P2.S4.T3), by worker, shift and zone, split by order type.
+    - name: Flagged worker-days
+      definition: Worker-days flagged by the outlier rules agreed with shanice.carter (P2.S4.T5). Flags carry their evidence and never remove data from totals.
+    - name: Productivity vs standard
+      definition: Actual picks per productive hour ÷ the engineered standard for the order type, by shift.
+    - name: Dock-to-stock by arrival shift
+      definition: Median and p90 business hours per receipt, grouped by the shift the trailer arrived on.
+    - name: Cycle count accuracy by zone
+      definition: Approved counts with no variance ÷ approved counts, plus net and absolute variance units, by zone and week.
+    - name: Inventory not available
+      definition: Units and pallets in HOLD, QC or DAMAGED status at end of day, by reason and age band.
+    - name: Headcount vs workload
+      definition: Active pickers and packers per shift (worker dimension) next to tasks and units that arrived for that shift.
+  filters:
+    - Site (defaults to the viewer's own site)
+    - Date (default yesterday)
+    - Shift
+    - Zone
+    - Client
+    - Worker role
+    - Order type (B2C / B2B)
+  visuals:
+    - { title: KPI row, type: kpi_tiles, notes: "At-risk orders, on-time ship, picks per hour, flagged worker-days, dock-to-stock, inventory not available" }
+    - { title: Hourly throughput by shift, type: area, notes: "Units picked and orders shipped per hour for the selected day; shift bands shaded; parcel and LTL cutoffs marked" }
+    - { title: Open order aging, type: table, notes: "Open orders by status and hours to ship-by, at-risk rows highlighted; order number and client only, no ship-to data" }
+    - { title: Picker productivity distribution, type: box_plot, notes: "Per shift, the distribution of picks per productive hour across worker-days; flagged worker-days drawn as distinct markers; clicking one opens its task timing detail (time between consecutive task completions across the shift)" }
+    - { title: Worker detail, type: table, notes: "Worker, role, shift, productive hours, picks, picks per hour, % of standard, flag; visible only under the access rule below" }
+    - { title: Dock-to-stock by arrival shift, type: bar, notes: "Median and p90 by arrival shift, weekly for 26 weeks" }
+    - { title: Cycle count accuracy by zone, type: heatmap, notes: "Zone × week, colour = unit accuracy (sequential palette)" }
+    - { title: Holds and damaged, type: stacked_bar, notes: "Units not available by reason, stacked by age band" }
+    - { title: Staffing vs workload, type: combo, notes: "Headcount per shift (bars) vs tasks arrived (line), daily for 8 weeks" }
+  refresh_sla: Daily by 06:00 America/New_York with the previous local day complete. Same-day refresh every 4 hours during operating hours is a stretch goal; Project 6 makes this view live.
+  access: Every GM sees operational metrics for all sites, but worker-level productivity (Worker detail, worker drill-downs) only for their own site; luis.moreno sees worker-level detail for all sites. Worker names are employee data, so the worker table can't be exported. No consumer PII.
+  layout: |
+    1920×1080, Harborline light dashboard background with the Operations department accent.
+    Header band: Harborline lockup left, title "Site Operations Detail - <site>", date and data-through time right.
+    Left filter rail (240 px): site, date, shift, zone, client, worker role, order type.
+    Row 1: six KPI tiles across the full width.
+    Row 2: "Hourly throughput by shift" (left, 60%) and "Open order aging" table (right, 40%).
+    Row 3: "Picker productivity distribution" (left, 50%) and "Worker detail" table (right, 50%).
+    Page 2 "Inventory & labor": "Dock-to-stock by arrival shift" (left, 33%), "Cycle count accuracy by zone" (middle, 33%), "Holds and damaged" (right, 33%); "Staffing vs workload" full width below.
+    Footer: data freshness, metric catalog link, access notice ("worker-level data restricted").

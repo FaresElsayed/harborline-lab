@@ -1,0 +1,85 @@
+# Harborline 3PL Simulator: Postgres (the source databases) + the app (API, mock SaaS APIs, tracker, UI).
+# Start with start.bat (Windows) or ./start.sh (macOS/Linux). Settings come from .env (copy of .env.example).
+name: harborline-lab
+
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-harborline-admin}
+      HL_APP_PASSWORD: ${HL_APP_PASSWORD:-harborline-app}
+      HL_ETL_PASSWORD: ${HL_ETL_PASSWORD:-etl-reader-2026}
+      HL_REVIEWER_PASSWORD: ${HL_REVIEWER_PASSWORD:-uat-review-2026}
+    command:
+      - postgres
+      - -c
+      - wal_level=logical
+      - -c
+      - max_replication_slots=10
+      - -c
+      - max_wal_senders=10
+      - -c
+      - max_slot_wal_keep_size=8GB
+      - -c
+      - shared_buffers=1GB
+      - -c
+      - maintenance_work_mem=512MB
+      - -c
+      - max_wal_size=4GB
+    ports:
+      - "${HL_BIND_ADDR:-127.0.0.1}:${HL_PG_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    shm_size: 1gb
+    stop_grace_period: 60s
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  app:
+    build:
+      context: .
+      dockerfile: simulator/Dockerfile
+    image: harborline-lab:local
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      HL_UID: ${HL_UID:-10001}
+      HL_GID: ${HL_GID:-10001}
+      HL_PG_HOST: postgres
+      HL_PG_PORT: "5432"
+      HL_PG_PUBLIC_PORT: ${HL_PG_PORT:-5432}
+      HL_APP_PUBLIC_PORT: ${HL_APP_PORT:-8080}
+      HL_LANDING_DIR: /data/landing
+      HL_ANSWER_KEY_DIR: /data/answer_key
+      HL_CONFIG_DIR: /data/config
+      HL_TRACKER_DIR: /data/tracker
+      HL_HANDBOOK_DIR: /data/pkg/handbook
+      HL_BRAND_DIR: /data/pkg/brand
+      HL_START_HERE: /data/pkg/START_HERE.html
+      HL_LANDING_HOST_HINT: "landing folder next to docker-compose.yml (for example C:\\dev\\harborline-lab\\landing)"
+    # Starts as root only to repair the owner of ./landing, then runs as HL_UID (see simulator/entrypoint.sh).
+    # On Linux, start.sh sets HL_UID/HL_GID to your user so files written to ./landing stay yours.
+    user: "0:0"
+    ports:
+      - "${HL_BIND_ADDR:-127.0.0.1}:${HL_APP_PORT:-8080}:8080"
+    volumes:
+      - ./landing:/data/landing
+      - ./answer_key:/data/answer_key
+      - ./config:/data/config:ro
+      - ./tracker:/data/tracker:ro
+      - ./:/data/pkg:ro
+    stop_grace_period: 30s
+
+volumes:
+  pgdata:

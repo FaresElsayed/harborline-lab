@@ -1,0 +1,153 @@
+# Dashboard specs - Project 3 (Billing Assurance & AR). Wireframes: brand/wireframes/<id>.svg
+- id: P3-D1
+  name: Revenue Assurance
+  audience: Alan Brooks (Controller) and the billing analysts, weekly and before each month-end close; Rebecca Lindqvist (CFO); Daniel Reyes for the headline
+  owner: alan.brooks
+  questions:
+    - For each client, charge code and month, what should we have billed, what did the WMS accrue, and what did AX invoice?
+    - Where is revenue leaking or over-billed, how much, and since when?
+    - Are monthly minimums invoiced whenever activity falls short?
+    - Which variances are rate problems, missing charges, timing, or currency?
+    - How far are our booked FX rates from the market, and what is the difference worth?
+  kpis:
+    - name: Expected revenue
+      definition: Billable activity × the contract rate in effect on the activity date (Salesforce rate-card version), plus contracted minimum adjustments; billing currency and USD per the currency policy.
+    - name: Accrued revenue
+      definition: Sum of WMS billing_record amounts for the period, excluding VOID.
+    - name: Invoiced revenue
+      definition: Sum of AX invoice-line amounts for billing charge codes in the period, with credit notes (invoices with negative amounts) netted exactly once.
+    - name: Net leakage
+      definition: Expected − invoiced, in USD; positive means under-billed. Over-billing is shown as its own figure and never silently netted away.
+    - name: Billing accuracy
+      definition: Share of client × charge code × month cells where |expected − invoiced| is within the materiality threshold agreed with alan.brooks.
+    - name: Unbilled minimums
+      definition: Sum over client-months of (contracted monthly minimum − billable activity) where activity was below the minimum and no matching MIN-ADJ was invoiced.
+    - name: FX rate gap
+      definition: Average % difference between the AX accounting rate and the ECB reference rate for the invoice month, by currency, and its USD revenue effect.
+      owner_definition_conflict: Alan treats the AX rate as correct by policy; Rebecca wants the gap to the market visible. Record both views (P3.S3.T3) and label the tile accordingly.
+  filters:
+    - Month (and month range; default last closed month)
+    - Legal entity (us01 / ca01 / mx01)
+    - Client
+    - Charge code
+    - Warehouse
+    - Variance category
+    - Currency view (billing currency / USD)
+  visuals:
+    - { title: KPI row, type: kpi_tiles, notes: "Expected, accrued, invoiced, net leakage, billing accuracy, unbilled minimums; delta vs prior month" }
+    - { title: Expected to invoiced bridge, type: waterfall, notes: "Expected → rate variances → missing charges → unbilled minimums → timing → FX/rounding → invoiced, for the selected period" }
+    - { title: Variance by client and month, type: heatmap, notes: "Clients (rows) × months (columns, 24), colour = variance % on a diverging palette (under vs over); click a cell to drill to evidence" }
+    - { title: Variance by client and charge code, type: heatmap, notes: "Clients × charge codes for the selected month range, diverging palette" }
+    - { title: Leakage trend, type: line, notes: "Monthly under-billing and over-billing in USD as separate series, 24 months" }
+    - { title: Monthly minimum check, type: table, notes: "Client, month, contracted minimum, billable activity, MIN-ADJ expected vs invoiced, variance" }
+    - { title: FX - AX vs ECB, type: line, notes: "Monthly AX accounting rate vs ECB monthly average for EUR, GBP, CAD and MXN against USD, with the gap % as bars on a second panel" }
+    - { title: Evidence, type: table, notes: "Drill-through: billing records and AX invoice lines behind a cell, with the rate-card version and WMS rate in effect" }
+  refresh_sla: Daily by 07:00 America/New_York. Once Alan marks a month closed, that month is frozen and labelled "closed".
+  access: Finance (rebecca.lindqvist, alan.brooks, priya.raman) and the CEO (daniel.reyes) only. Not Operations or Sales; Hannah Price receives an export of rate-card mismatches on request.
+  layout: |
+    1920×1080, Harborline light dashboard background with the Finance department accent.
+    Header band: Harborline lockup left, title "Revenue Assurance", selected period, closed/open badge and last-refresh time right.
+    Left filter rail (240 px): month, legal entity, client, charge code, warehouse, variance category, currency view.
+    Row 1: six KPI tiles across the full width.
+    Row 2: "Expected to invoiced bridge" waterfall (left, 45%) and "Variance by client and month" heatmap (right, 55%).
+    Row 3: "Leakage trend" (left, 40%), "Monthly minimum check" table (middle, 35%), "FX - AX vs ECB" (right, 25%).
+    Drill-through page "Client detail": "Variance by client and charge code" heatmap (top, full width) and "Evidence" table (bottom, full width).
+    Footer: data freshness, link to the currency policy and metric definitions, dashboard version.
+
+- id: P3-D2
+  name: AR & Cash
+  audience: Rebecca Lindqvist (CFO) for the monthly board pack; Alan Brooks and collections weekly; Daniel Reyes
+  owner: rebecca.lindqvist
+  questions:
+    - How much do clients owe us, by legal entity and client, and how late is it?
+    - Is DSO improving or getting worse, for the company and for each client?
+    - Which clients are paying slower than they used to?
+    - How much cash came in this month compared with what we invoiced?
+    - Which invoices are short-paid and still open?
+  kpis:
+    - name: Open AR
+      definition: Sum of open amounts as of the selected date, reconstructed from customer transactions and settlements; USD per the currency policy, with entity-currency detail.
+    - name: Overdue AR %
+      definition: Open AR past its due date ÷ open AR, as of the selected date.
+    - name: DSO
+      definition: Days sales outstanding calculated with the method rebecca.lindqvist specifies (the board method), monthly, by entity and client.
+      owner_definition_conflict: Rebecca and Alan compute DSO differently (look-back period and method). The board method leads here; the alternative appears only if they still differ after P3.S5.T3, clearly labelled.
+    - name: Average days to pay
+      definition: Invoice-amount-weighted average of (settlement date − invoice date) for invoices fully settled in the period, by client.
+    - name: Cash collected
+      definition: Sum of payments applied in the period, by legal entity, in USD.
+    - name: Short-paid open invoices
+      definition: Invoices with at least one settlement whose remaining open amount is past due, count and amount.
+  filters:
+    - As-of date (any past month-end or today)
+    - Legal entity
+    - Client
+    - Currency view (transaction / entity / USD)
+    - Aging bucket
+  visuals:
+    - { title: KPI row, type: kpi_tiles, notes: "Open AR, overdue %, DSO, cash collected (month), short-paid invoices; delta vs prior month-end" }
+    - { title: Aging by legal entity, type: stacked_bar, notes: "Buckets agreed with Alan, one bar per entity, USD" }
+    - { title: DSO trend, type: line, notes: "18 months, one line per entity plus company total, board method; target line" }
+    - { title: Days-to-pay movers, type: table, notes: "Clients ranked by change in average days to pay (last 3 months vs previous 6), with a 12-month sparkline per client" }
+    - { title: Top overdue clients, type: horizontal_bar, notes: "Top 10 clients by overdue amount, split by aging bucket" }
+    - { title: Invoiced vs collected, type: combo, notes: "Monthly invoiced (bars) vs cash collected (line), 18 months" }
+    - { title: Open invoices, type: table, notes: "Drill-through for a client: invoice, invoice date, due date, amount, settled, open, days past due, short-paid flag" }
+  refresh_sla: Daily by 07:00 America/New_York; month-end snapshots frozen at close.
+  access: Finance (rebecca.lindqvist, alan.brooks, priya.raman) and daniel.reyes only. Client Success gets client payment signals through Project 5, not through this dashboard.
+  layout: |
+    1920×1080, Harborline light dashboard background with the Finance department accent.
+    Header band: Harborline lockup left, title "AR & Cash", as-of date and last-refresh time right.
+    Left filter rail (240 px): as-of date, legal entity, client, currency view, aging bucket.
+    Row 1: five KPI tiles across the full width.
+    Row 2: "Aging by legal entity" (left, 35%) and "DSO trend" (right, 65%).
+    Row 3: "Days-to-pay movers" table (left, 40%), "Top overdue clients" (middle, 30%), "Invoiced vs collected" (right, 30%).
+    Drill-through page "Client": "Open invoices" table, full width.
+    Footer: data freshness, DSO method statement, dashboard version.
+
+- id: P3-D3
+  name: Warehouse P&L vs Budget
+  audience: Rebecca Lindqvist and Alan Brooks (monthly pack); Daniel Reyes; Luis Moreno and the site GMs for their own sites
+  owner: rebecca.lindqvist
+  questions:
+    - How did each warehouse do against budget this month and year to date?
+    - Which P&L lines drive the variance - revenue, labor, freight or facility costs?
+    - How much of the variance comes from currency translation for the Canadian and Mexican sites?
+    - Which budget version are we comparing against, and what changed between versions?
+  kpis:
+    - name: Revenue
+      definition: GL accounts 4000-4030 by site (from the financial dimension), USD per the currency policy; customer credits and SLA penalties (4900) shown as their own line.
+    - name: Direct costs
+      definition: Direct labor (5000), outbound freight (5100) and packaging (5200) by site.
+    - name: Facility and overhead
+      definition: Accounts 6000-6400 (rent, utilities, equipment leases, IT, insurance) by site, using the allocation rules Alan approves for shared costs.
+    - name: Contribution margin
+      definition: Revenue − direct costs − facility and overhead; also as % of revenue.
+    - name: Variance vs budget
+      definition: Actual − budget for the selected budget version, in USD and %, marked favourable or unfavourable by line type.
+    - name: FX translation effect
+      definition: Difference between actuals translated at actual rates and at the rates the currency policy prescribes for budget comparison.
+      owner_definition_conflict: Whether budget comparisons use budget rates or actual rates is Alan's policy call (P3.S3.T3); Rebecca presents it to the board. Record the decision and label the tile.
+  filters:
+    - Period (month / quarter / YTD)
+    - Site
+    - Legal entity
+    - P&L line group
+    - Budget version (default latest)
+    - Currency (USD reporting / entity currency)
+  visuals:
+    - { title: KPI row, type: kpi_tiles, notes: "Revenue, direct costs, contribution margin, margin %, variance vs budget, FX effect" }
+    - { title: Site P&L, type: table, notes: "P&L lines (rows) × sites (columns): actual, budget, variance, variance %; favourable/unfavourable colouring" }
+    - { title: Margin bridge, type: waterfall, notes: "Budget margin → revenue → labor → freight → packaging → facility → FX → actual margin, for the selected site and period" }
+    - { title: Margin by site, type: bar, notes: "Contribution margin % by site, actual vs budget, YTD" }
+    - { title: Monthly trend, type: line, notes: "Actual vs budget revenue and margin for 24 months; earlier budget versions as dashed lines" }
+    - { title: Commentary, type: text, notes: "Finance's variance notes per site and month, shown next to the selected site" }
+  refresh_sla: Daily by 07:00 America/New_York during the month; frozen at month-end close; a new budget version is available within one day of the workbook landing.
+  access: Finance and the CEO see all sites. luis.moreno sees all sites' P&L; each GM sees only their own site (row-level security). Operations see no client-level revenue here.
+  layout: |
+    1920×1080, Harborline light dashboard background with the Finance department accent.
+    Header band: Harborline lockup left, title "Warehouse P&L vs Budget", period, budget version and last-refresh time right.
+    Left filter rail (240 px): period, site, legal entity, P&L line group, budget version, currency.
+    Row 1: six KPI tiles across the full width.
+    Row 2: "Site P&L" table (left, 60%) and "Margin bridge" waterfall (right, 40%).
+    Row 3: "Margin by site" (left, 35%), "Monthly trend" (middle, 45%), "Commentary" panel (right, 20%).
+    Footer: data freshness, closed-month badge, account-mapping link, dashboard version.

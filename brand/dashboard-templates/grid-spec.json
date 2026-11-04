@@ -1,0 +1,322 @@
+{
+  "name": "Harborline dashboard layout grid",
+  "version": "1.0.0",
+  "canvas": {
+    "width": 1280,
+    "height": 720,
+    "note": "Power BI default 16:9 page (1280 x 720). A 1920 x 1080 page is the same layout x 1.5."
+  },
+  "grid": {
+    "columns": 12,
+    "column_width": 88.0,
+    "gutter": 16,
+    "margin_left": 24,
+    "margin_right": 24,
+    "column_x": [
+      24.0,
+      128.0,
+      232.0,
+      336.0,
+      440.0,
+      544.0,
+      648.0,
+      752.0,
+      856.0,
+      960.0,
+      1064.0,
+      1168.0
+    ],
+    "baseline": 8,
+    "rows": {
+      "header": [
+        0,
+        56
+      ],
+      "department_stripe": [
+        56,
+        60
+      ],
+      "kpi_row": [
+        76,
+        172
+      ],
+      "main_row_1": [
+        188,
+        422.0
+      ],
+      "main_row_2": [
+        438.0,
+        672
+      ],
+      "footer": [
+        688,
+        720
+      ]
+    }
+  },
+  "safe_area": {
+    "x": 24,
+    "y": 76,
+    "w": 1232,
+    "h": 596,
+    "note": "Keep every visual inside the safe area. Nothing interactive in the header band except the title, page navigator and the 'data as of' card in the footer. Power BI adds ~8 px of visual padding inside each container: set visual padding to 12 px in the theme so content clears the card edge."
+  },
+  "radius": 8,
+  "visual_padding": 12,
+  "zones_1280x720": {
+    "header_band": {
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 56
+    },
+    "department_stripe": {
+      "x": 0,
+      "y": 56,
+      "w": 1280,
+      "h": 4
+    },
+    "logo": {
+      "x": 24,
+      "y": 12,
+      "w": 32,
+      "h": 32
+    },
+    "title": {
+      "x": 72,
+      "y": 6,
+      "w": 768.0,
+      "h": 44,
+      "note": "Report title: text box, Archivo Narrow SemiBold 16 pt, white. Subtitle 9 pt, header-muted colour"
+    },
+    "department_label": {
+      "x": 960,
+      "y": 20,
+      "w": 296,
+      "h": 16,
+      "note": "baked into each department variant, right-aligned"
+    },
+    "header_actions": {
+      "x": 856.0,
+      "y": 12,
+      "w": 192.0,
+      "h": 32,
+      "note": "optional: page navigator / bookmark buttons, left of the department label"
+    },
+    "filter_rail": {
+      "x": 24.0,
+      "w": 192.0,
+      "y": 76,
+      "h": 596,
+      "note": "slicers stacked, 8 px apart, 16 px inset"
+    },
+    "kpi_tiles": [
+      {
+        "x": 232.0,
+        "w": 192.0,
+        "y": 76,
+        "h": 96
+      },
+      {
+        "x": 440.0,
+        "w": 192.0,
+        "y": 76,
+        "h": 96
+      },
+      {
+        "x": 648.0,
+        "w": 192.0,
+        "y": 76,
+        "h": 96
+      },
+      {
+        "x": 856.0,
+        "w": 192.0,
+        "y": 76,
+        "h": 96
+      },
+      {
+        "x": 1064.0,
+        "w": 192.0,
+        "y": 76,
+        "h": 96
+      }
+    ],
+    "main_cards": [
+      {
+        "x": 232.0,
+        "w": 608.0,
+        "y": 188,
+        "h": 234.0,
+        "note": "primary chart: the answer to the page question"
+      },
+      {
+        "x": 856.0,
+        "w": 400.0,
+        "y": 188,
+        "h": 234.0
+      },
+      {
+        "x": 232.0,
+        "w": 400.0,
+        "y": 438.0,
+        "h": 234.0
+      },
+      {
+        "x": 648.0,
+        "w": 608.0,
+        "y": 438.0,
+        "h": 234.0,
+        "note": "detail table or breakdown"
+      }
+    ],
+    "footer": {
+      "x": 0,
+      "y": 688,
+      "w": 1280,
+      "h": 32
+    },
+    "data_as_of_value": {
+      "x": 104,
+      "y": 694,
+      "w": 256,
+      "h": 20,
+      "note": "card or text box: max(load timestamp) in the reader's time zone"
+    },
+    "footer_source_note": {
+      "x": 440.0,
+      "y": 694,
+      "w": 504.0,
+      "h": 20,
+      "note": "optional: source systems / refresh SLA"
+    }
+  },
+  "zones_1920x1080": {
+    "header_band": {
+      "x": 0.0,
+      "y": 0.0,
+      "w": 1920.0,
+      "h": 84.0
+    },
+    "department_stripe": {
+      "x": 0.0,
+      "y": 84.0,
+      "w": 1920.0,
+      "h": 6.0
+    },
+    "logo": {
+      "x": 36.0,
+      "y": 18.0,
+      "w": 48.0,
+      "h": 48.0
+    },
+    "title": {
+      "x": 108.0,
+      "y": 9.0,
+      "w": 1152.0,
+      "h": 66.0,
+      "note": "Report title: text box, Archivo Narrow SemiBold 16 pt, white. Subtitle 9 pt, header-muted colour"
+    },
+    "department_label": {
+      "x": 1440.0,
+      "y": 30.0,
+      "w": 444.0,
+      "h": 24.0,
+      "note": "baked into each department variant, right-aligned"
+    },
+    "header_actions": {
+      "x": 1284.0,
+      "y": 18.0,
+      "w": 288.0,
+      "h": 48.0,
+      "note": "optional: page navigator / bookmark buttons, left of the department label"
+    },
+    "filter_rail": {
+      "x": 36.0,
+      "w": 288.0,
+      "y": 114.0,
+      "h": 894.0,
+      "note": "slicers stacked, 8 px apart, 16 px inset"
+    },
+    "kpi_tiles": [
+      {
+        "x": 348.0,
+        "w": 288.0,
+        "y": 114.0,
+        "h": 144.0
+      },
+      {
+        "x": 660.0,
+        "w": 288.0,
+        "y": 114.0,
+        "h": 144.0
+      },
+      {
+        "x": 972.0,
+        "w": 288.0,
+        "y": 114.0,
+        "h": 144.0
+      },
+      {
+        "x": 1284.0,
+        "w": 288.0,
+        "y": 114.0,
+        "h": 144.0
+      },
+      {
+        "x": 1596.0,
+        "w": 288.0,
+        "y": 114.0,
+        "h": 144.0
+      }
+    ],
+    "main_cards": [
+      {
+        "x": 348.0,
+        "w": 912.0,
+        "y": 282.0,
+        "h": 351.0,
+        "note": "primary chart: the answer to the page question"
+      },
+      {
+        "x": 1284.0,
+        "w": 600.0,
+        "y": 282.0,
+        "h": 351.0
+      },
+      {
+        "x": 348.0,
+        "w": 600.0,
+        "y": 657.0,
+        "h": 351.0
+      },
+      {
+        "x": 972.0,
+        "w": 912.0,
+        "y": 657.0,
+        "h": 351.0,
+        "note": "detail table or breakdown"
+      }
+    ],
+    "footer": {
+      "x": 0.0,
+      "y": 1032.0,
+      "w": 1920.0,
+      "h": 48.0
+    },
+    "data_as_of_value": {
+      "x": 156.0,
+      "y": 1041.0,
+      "w": 384.0,
+      "h": 30.0,
+      "note": "card or text box: max(load timestamp) in the reader's time zone"
+    },
+    "footer_source_note": {
+      "x": 660.0,
+      "y": 1041.0,
+      "w": 756.0,
+      "h": 30.0,
+      "note": "optional: source systems / refresh SLA"
+    }
+  }
+}

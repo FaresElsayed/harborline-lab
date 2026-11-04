@@ -1,0 +1,26 @@
+# Harborline Logistics: Streamlit in Snowflake theme (light only).
+# Snowflake supports the [theme] and [theme.sidebar] sections; the warehouse runtime honours a smaller subset of
+# options than the container runtime. Snowflake's content security policy can block web fonts, so this file
+# uses the built-in sans serif instead of Hanken Grotesk. Copy this .streamlit folder next to streamlit_app.py in your stage or Git repo.
+
+[theme]
+base = "light"
+font = "sans serif"
+primaryColor = "#0E7C7B"
+backgroundColor = "#F3F5F7"
+secondaryBackgroundColor = "#E9EEF2"
+textColor = "#0F2338"
+linkColor = "#09605F"
+borderColor = "#D2DAE2"
+dataframeHeaderBackgroundColor = "#E9EEF2"
+dataframeBorderColor = "#D2DAE2"
+redColor = "#C22826"
+orangeColor = "#9B5F02"
+greenColor = "#1A763F"
+blueColor = "#1D5C9B"
+chartCategoricalColors = ["#2973D0", "#F2672D", "#069B8D", "#E6A313", "#DB6397", "#288420", "#6B4EC7", "#8C4A11"]
+chartSequentialColors = ["#DFECFE", "#C5DBFB", "#A9CAF8", "#8AB7F4", "#6AA2EB", "#4C8CDF", "#3077D0", "#2161B0", "#174D8F", "#103A6D"]
+chartDivergingColors = ["#1253A1", "#3276CC", "#689DE4", "#A0C2F1", "#D0DDEF", "#EED7CD", "#F0AE91", "#DC7F54", "#BE500D", "#8C3701"]
+
+[theme.sidebar]
+backgroundColor = "#E9EEF2"

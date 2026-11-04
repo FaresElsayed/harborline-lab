@@ -1,0 +1,24 @@
+# Runtime output
+landing/*
+!landing/.gitkeep
+answer_key/anomalies.csv
+
+# Local settings (passwords)
+.env
+
+# Python / Node build artifacts
+.venv/
+**/.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+node_modules/
+dist/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

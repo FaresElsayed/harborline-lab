@@ -1,0 +1,58 @@
+# Harborline Logistics: Streamlit theme. Copy this .streamlit folder next to your app's entry script.
+# Light and dark both follow the brand tokens (brand/tokens.json). The viewer's OS setting picks the mode;
+# the app menu (Settings > Theme) lets them switch. Needs a Streamlit release that has [theme.light] / [theme.dark]
+# (check with:  streamlit config show | findstr "theme.light"  ). On older releases delete the two mode sections
+# and keep [theme] (light).
+# Sequential and diverging lists must be exactly 10 colours or Streamlit ignores them: these are 10-step resamples
+# of the brand ramps (same hue, same ends).
+
+[theme]
+font = "Hanken Grotesk:https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap, Segoe UI, sans-serif"
+headingFont = "Archivo Narrow:https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&display=swap, Arial Narrow, sans-serif"
+codeFont = "JetBrains Mono:https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap, Consolas, monospace"
+baseRadius = "8px"
+buttonRadius = "8px"
+showWidgetBorder = true
+baseFontSize = 15
+metricValueFontSize = "2rem"
+metricValueFontWeight = 600
+
+[theme.light]
+primaryColor = "#0E7C7B"
+backgroundColor = "#F3F5F7"
+secondaryBackgroundColor = "#E9EEF2"
+textColor = "#0F2338"
+linkColor = "#09605F"
+borderColor = "#D2DAE2"
+dataframeHeaderBackgroundColor = "#E9EEF2"
+dataframeBorderColor = "#D2DAE2"
+redColor = "#C22826"
+orangeColor = "#9B5F02"
+greenColor = "#1A763F"
+blueColor = "#1D5C9B"
+chartCategoricalColors = ["#2973D0", "#F2672D", "#069B8D", "#E6A313", "#DB6397", "#288420", "#6B4EC7", "#8C4A11"]
+chartSequentialColors = ["#DFECFE", "#C5DBFB", "#A9CAF8", "#8AB7F4", "#6AA2EB", "#4C8CDF", "#3077D0", "#2161B0", "#174D8F", "#103A6D"]
+chartDivergingColors = ["#1253A1", "#3276CC", "#689DE4", "#A0C2F1", "#D0DDEF", "#EED7CD", "#F0AE91", "#DC7F54", "#BE500D", "#8C3701"]
+
+[theme.dark]
+primaryColor = "#33B5AE"
+backgroundColor = "#08131F"
+secondaryBackgroundColor = "#16293D"
+textColor = "#E6EDF3"
+linkColor = "#74D3CC"
+borderColor = "#26394E"
+dataframeHeaderBackgroundColor = "#16293D"
+dataframeBorderColor = "#26394E"
+redColor = "#F66D67"
+orangeColor = "#F3B94C"
+greenColor = "#5BCC80"
+blueColor = "#7FB6EE"
+chartCategoricalColors = ["#3983E1", "#E05E27", "#08A799", "#BF8608", "#D0598E", "#33862C", "#8C79E0", "#9B5824"]
+chartSequentialColors = ["#142E50", "#173B69", "#1C4A84", "#215AA2", "#2D6DBE", "#4282D5", "#5D97E4", "#7BACEF", "#9AC2F7", "#BBD7FC"]
+chartDivergingColors = ["#A2C7F8", "#6DA4EF", "#4182D7", "#2864B1", "#334B6B", "#634032", "#A3440A", "#CC5C20", "#EB8251", "#F6B294"]
+
+[theme.light.sidebar]
+backgroundColor = "#E9EEF2"
+
+[theme.dark.sidebar]
+backgroundColor = "#0F1E2E"

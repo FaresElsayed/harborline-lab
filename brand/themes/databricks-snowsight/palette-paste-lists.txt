@@ -1,0 +1,39 @@
+Harborline Logistics: colour lists to paste into Databricks AI/BI and Snowsight, in slot order.
+Paste one hex per field, top to bottom. Never reorder: the order is what keeps neighbouring series colour-blind safe.
+
+categorical_light:
+  #2973D0, #F2672D, #069B8D, #E6A313, #DB6397, #288420, #6B4EC7, #8C4A11
+  #2973D0 #F2672D #069B8D #E6A313 #DB6397 #288420 #6B4EC7 #8C4A11
+
+categorical_dark:
+  #3983E1, #E05E27, #08A799, #BF8608, #D0598E, #33862C, #8C79E0, #9B5824
+  #3983E1 #E05E27 #08A799 #BF8608 #D0598E #33862C #8C79E0 #9B5824
+
+sequential_light:
+  #DFECFE, #B8D3F9, #8AB7F4, #5A97E7, #3077D0, #1A57A1, #103A6D
+  #DFECFE #B8D3F9 #8AB7F4 #5A97E7 #3077D0 #1A57A1 #103A6D
+
+sequential_dark:
+  #142E50, #194276, #215AA2, #3377CD, #5D97E4, #8AB7F4, #BBD7FC
+  #142E50 #194276 #215AA2 #3377CD #5D97E4 #8AB7F4 #BBD7FC
+
+diverging_light:
+  #1253A1, #367AD1, #76A7E9, #B5D0F5, #E6E8EA, #F6C0A8, #E28B63, #C4530F, #8C3701
+  #1253A1 #367AD1 #76A7E9 #B5D0F5 #E6E8EA #F6C0A8 #E28B63 #C4530F #8C3701
+
+diverging_dark:
+  #A2C7F8, #66A0EE, #367AD1, #215AA2, #3A3D41, #933D08, #C4530F, #E97C48, #F6B294
+  #A2C7F8 #66A0EE #367AD1 #215AA2 #3A3D41 #933D08 #C4530F #E97C48 #F6B294
+
+status_light:
+  #1A763F, #9B5F02, #C22826, #1D5C9B
+  #1A763F #9B5F02 #C22826 #1D5C9B
+
+status_dark:
+  #5BCC80, #F3B94C, #F66D67, #7FB6EE
+  #5BCC80 #F3B94C #F66D67 #7FB6EE
+
+Databricks AI/BI theme (Settings > Theme, or workspace theme under Settings > Appearance > AI/BI > Theme):
+  light: canvas background #F3F5F7 | widget background #FFFFFF | widget border #D2DAE2 | corner radius 8 | padding 12 | shadow off | text #0F2338 | description/field title #4F6175 | axis #AEB9C4 | grid #E3E8ED | selection #0E7C7B
+  dark: canvas background #08131F | widget background #0F1E2E | widget border #26394E | corner radius 8 | padding 12 | shadow off | text #E6EDF3 | description/field title #9BAEC1 | axis #3A5068 | grid #1C3046 | selection #33B5AE
+  fonts: Default/Field value = Hanken Grotesk (Use local font), Title = Archivo Narrow, sizes Auto.

@@ -1,0 +1,59 @@
+# Dashboard specs - Project 1 (Data Platform Foundation). Wireframes: brand/wireframes/<id>.svg
+- id: P1-D1
+  name: Data Platform Health
+  audience: Sam Okafor (Director of IT, daily 07:00 check), Kevin O'Hara (infrastructure on-call), Mei Tanaka (monthly security review) and the data engineer
+  owner: sam.okafor
+  questions:
+    - Can yesterday's data be trusted, source by source?
+    - Which tables are late, by how much, and since when?
+    - Did last night's runs succeed, how long did they take, and are durations creeping up?
+    - Are the inserts, updates and deletes captured in the last run normal for this day of the week?
+    - What did data quality catch, how severe is it, and is it getting better or worse?
+    - What is sitting in quarantine, and who owns it?
+    - How well do client keys line up across WMS, AX and Salesforce?
+    - How much of the free-tier quota or budget have we used, and when do we run out at this rate?
+  kpis:
+    - name: Sources fresh
+      definition: Share of monitored source tables whose newest data is within the freshness SLA set for that table in the ingestion config, at the time of the dashboard refresh.
+      owner_definition_conflict: Sam thinks of freshness as the age of the newest source change that has reached silver; Kevin O'Hara thinks of it as time since the last successful run. Agree with both which clock the tile uses, and label it on screen.
+    - name: Run success rate (7 days)
+      definition: Scheduled runs that finished successfully ÷ scheduled runs, last 7 days. A run that needed manual intervention to finish counts as failed.
+    - name: Run duration p95 (7 days)
+      definition: 95th percentile of end-to-end scheduled run duration over the last 7 days, with the delta vs the previous 7 days.
+    - name: Volume anomalies
+      definition: Number of source tables whose inserts, updates or deletes in the last run fall outside the expected band (same-weekday baseline over the previous 4 weeks, adjusted for peak season).
+    - name: DQ pass rate
+      definition: Rows passing ÷ rows checked across all error-level rules in the last run. Warn-level results are shown separately and don't affect this tile.
+    - name: Rows in quarantine
+      definition: Rows currently held in quarantine and not yet re-processed, all tables.
+    - name: Client key match rate
+      definition: Share of active WMS owners matched to exactly one AX customer in each legal entity they're invoiced from and exactly one Salesforce Account.
+    - name: Quota used (month to date)
+      definition: Platform usage month to date ÷ the free-tier quota or the budget Sam set, with a straight-line projection to month end. The unit (DBUs, credits or a documented proxy) is shown on the tile.
+  filters:
+    - Environment (dev / prod; default prod)
+    - Source system (WMS, AX 2012, Salesforce, carrier API, EDI, files, IoT)
+    - Table
+    - Date range (default last 14 days)
+    - DQ severity (error / warn)
+  visuals:
+    - { title: KPI row, type: kpi_tiles, notes: "Eight tiles; value, delta vs previous period, status dot using the brand good/warn/bad colours" }
+    - { title: Freshness by table, type: heatmap, notes: "Rows are source tables grouped by system; columns are the last 48 hourly checks; cell = on time / late / missing. Clicking a row filters the page" }
+    - { title: Last 14 runs, type: gantt, notes: "One bar per run split into steps (extract, bronze, silver, DQ, gold); failed and retried steps marked; hover shows rows in and out" }
+    - { title: Change volume vs expected, type: bar, notes: "Per table, inserts / updates / deletes captured in the last run, with the expected band drawn behind each bar; out-of-band tables highlighted" }
+    - { title: DQ failures by rule, type: stacked_bar, notes: "Daily failed rows by severity for 30 days, with a top-10 rules table underneath (rule, table, owner, first seen, 14-day sparkline)" }
+    - { title: Quota burn-down, type: line, notes: "Cumulative usage this month vs the quota or budget line, with projection; backfill days annotated" }
+    - { title: Run duration trend, type: line, notes: "Daily p50 and p95 end-to-end duration for 90 days, with the target finish time as a reference line" }
+    - { title: Quarantine, type: table, notes: "Table, rule, rows held, age of the oldest row, owner; sorted by rows held" }
+    - { title: Client key crosswalk, type: table, notes: "Unmatched or ambiguous clients per system pair with a reason category (blank key, formatting difference, no candidate, several candidates). Codes and account numbers only, never consumer PII" }
+  refresh_sla: After every pipeline run (scheduled or manual) and at least hourly; never more than 60 minutes behind the latest run. Last-refresh time in the footer.
+  access: IT only - sam.okafor, kevin.ohara, mei.tanaka and the data engineer. No consumer PII anywhere; DQ sample keys show surrogate or business keys, never ship_to_* values.
+  layout: |
+    1920×1080, Harborline light dashboard background with the IT department accent.
+    Header band: Harborline lockup left, title "Data Platform Health", environment toggle and last-refresh time right.
+    Left filter rail (240 px): environment, source system, table, date range, DQ severity.
+    Row 1: eight KPI tiles across the full width.
+    Row 2: "Freshness by table" heatmap (left, 65%) and "Last 14 runs" Gantt (right, 35%).
+    Row 3: "DQ failures by rule" with its top-10 table (left, 40%), "Change volume vs expected" (middle, 35%), "Quota burn-down" (right, 25%).
+    Drill-through page "Details": "Quarantine" table (left, 50%) and "Client key crosswalk" table (right, 50%); "Run duration trend" full width below.
+    Footer: data freshness, dashboard version, link to the runbook and KPI definitions.

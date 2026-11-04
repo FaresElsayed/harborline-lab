@@ -1,0 +1,53 @@
+# Dashboard specs - Project 6 (Real-Time Operations). Wireframes: brand/wireframes/<id>.svg
+- id: P6-D1
+  name: Live Operations Board
+  audience: Luis Moreno (VP Operations), site General Managers (e.g. Shanice Carter, ATL1), shift leads; TV wall in each site's shipping office and on mobile
+  owner: luis.moreno
+  questions:
+    - Which open orders will miss today's carrier cutoff if nothing changes?
+    - Where is backlog building right now, and in which status?
+    - Are we shipping at the pace we need this hour compared with the same hour last week?
+    - Which inbound trailers have been waiting too long to be received?
+    - How much inventory is on HOLD right now, and where?
+    - Is the board itself fresh, and can I trust it?
+  kpis:
+    - name: Orders at risk
+      definition: Open orders due to ship today (requested_ship_date ≤ today, site-local) that are not yet PACKED, with less than the agreed buffer (Luis) before the site's carrier cutoff for their mode.
+      owner_definition_conflict: Luis uses the site's carrier cutoff. Omar Haddad says the client's contract SLA hours are what matter. Agree which one drives the headline and show the other as a filter.
+    - name: Backlog (orders)
+      definition: Orders currently in an open status, per the definition in the metric catalog.
+      owner_definition_conflict: Ops counts released and not shipped (the floor's workload). Client Success counts received and not shipped (what the client sees). Record the decision.
+    - name: Units shipped (last 60 min)
+      definition: Sum of shipped quantity on shipments confirmed in the last 60 minutes, site-local.
+    - name: Pick rate (last 60 min)
+      definition: PICK tasks completed in the last 60 minutes ÷ distinct users who completed at least one PICK task in that window.
+    - name: Trailers waiting
+      definition: Receipts ARRIVED or RECEIVING for longer than the agreed dwell threshold.
+    - name: Inventory on HOLD
+      definition: Units and distinct lots with inventory status HOLD, current state.
+    - name: Board freshness
+      definition: P95 of (time now − source commit time of the newest applied change) across the board's tables over the last 15 minutes; green ≤ 5 min, amber ≤ 10 min, red above.
+  filters:
+    - Warehouse (defaults to the viewer's site; "All sites" for Luis)
+    - Client
+    - Order type (B2C / B2B)
+    - Carrier mode (parcel / LTL)
+  visuals:
+    - { title: KPI strip, type: kpi_tiles, notes: "Orders at risk, backlog, units shipped last 60 min, pick rate, trailers waiting, units on hold; large numerals readable at 3 m" }
+    - { title: Cutoff countdown, type: table, notes: "Next carrier cutoffs today (site-local) with orders not yet packed per cutoff, colored by time remaining" }
+    - { title: Throughput by hour, type: line, notes: "Units shipped per hour today vs the same weekday last week, site-local hours" }
+    - { title: Backlog by status, type: stacked_bar, notes: "Open orders by status per site (all-sites view) or per client (site view)" }
+    - { title: Site tiles, type: tile_grid, notes: "All-sites view only: one tile per warehouse with at-risk count, backlog, freshness light" }
+    - { title: Dock status, type: table, notes: "Trailers arrived / receiving with door and dwell minutes" }
+    - { title: Freshness light, type: status_indicator, notes: "Green / amber / red from the SLO monitor, with the last-updated time" }
+  refresh_sla: Data ≤ 5 minutes behind the WMS (P95, measured end to end) during site operating hours; page auto-refresh every 60 s; freshness light always visible.
+  access: Luis and operations leadership see all sites. GMs and shift leads see their own site. No consumer PII (ship_to name, address, phone, email); workers are shown by username only. The board runs on shared TVs.
+  layout: |
+    1920×1080 TV mode on the Harborline dark dashboard background with the Operations department accent.
+    Header band: Harborline lockup left, title "Live Operations Board", site selector, local site clock, freshness light (top right, prominent).
+    Row 1: KPI strip, six tiles with numerals at least 72 px.
+    Row 2: "Cutoff countdown" table (left, 40%) and "Throughput by hour" line (right, 60%).
+    Row 3: "Backlog by status" stacked bar (left, 60%) and "Dock status" table (right, 40%).
+    All-sites variant: Row 2 is replaced by "Site tiles" (8 tiles, 4×2 grid).
+    Footer: "Data as of <time> site-local · source WMS via CDC", SLO target text.
+    Mobile (phone) variant: the KPI strip stacks 2×3, then cutoff countdown, then backlog.

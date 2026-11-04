@@ -1,0 +1,280 @@
+# Salesforce object model served by the mock API (describe, SOQL typing) and used by the CRM generator.
+# Field types follow the Salesforce SOAP/REST type names. Standard system fields are added to every object
+# automatically (see system_fields). Custom fields end in __c. Key prefixes are the real ones for standard objects.
+api_version: "67.0"
+org_id: 00D5f000004HbLqEAK
+instance_name: harborline.my.salesforce.com
+
+system_fields:
+  - { name: Id,               type: id,       label: Record ID }
+  - { name: IsDeleted,        type: boolean,  label: Deleted }
+  - { name: CreatedDate,      type: datetime, label: Created Date }
+  - { name: CreatedById,      type: reference, label: Created By ID, referenceTo: [User] }
+  - { name: LastModifiedDate, type: datetime, label: Last Modified Date }
+  - { name: LastModifiedById, type: reference, label: Last Modified By ID, referenceTo: [User] }
+  - { name: SystemModstamp,   type: datetime, label: System Modstamp }
+
+objects:
+  User:
+    key_prefix: "005"
+    fields:
+      - { name: Username, type: string, length: 80 }
+      - { name: FirstName, type: string, length: 40 }
+      - { name: LastName, type: string, length: 80 }
+      - { name: Name, type: string, length: 121 }
+      - { name: Alias, type: string, length: 8 }
+      - { name: Email, type: email }
+      - { name: Title, type: string, length: 80 }
+      - { name: Department, type: string, length: 80 }
+      - { name: CompanyName, type: string, length: 80 }
+      - { name: EmployeeNumber, type: string, length: 20 }
+      - { name: IsActive, type: boolean }
+      - { name: ManagerId, type: reference, referenceTo: [User] }
+      - { name: UserType, type: picklist, values: [Standard, AutomatedProcess] }
+      - { name: TimeZoneSidKey, type: picklist, values: [America/New_York, America/Chicago, America/Los_Angeles, America/Toronto, America/Mexico_City] }
+      - { name: LocaleSidKey, type: picklist, values: [en_US, en_CA, es_MX] }
+      - { name: DefaultCurrencyIsoCode, type: picklist, values: [USD, CAD, MXN, EUR, GBP] }
+      - { name: LastLoginDate, type: datetime }
+
+  Account:
+    key_prefix: "001"
+    has_owner: true
+    fields:
+      - { name: Name, type: string, length: 255, nillable: false }
+      - { name: AccountNumber, type: string, length: 40 }
+      - { name: Type, type: picklist, values: [Prospect, Customer - Direct, Customer - Channel, Former Customer, Other] }
+      - { name: Industry, type: picklist, values: [Apparel, Consumer Electronics, Food & Beverage, Health & Beauty, Home Goods, Automotive, Pet Products, Nutrition, Wholesale, Retail] }
+      - { name: Rating, type: picklist, values: [Hot, Warm, Cold] }
+      - { name: AccountSource, type: picklist, values: [Web, Referral, Trade Show, Partner, Outbound, Other] }
+      - { name: AnnualRevenue, type: currency }
+      - { name: NumberOfEmployees, type: int }
+      - { name: ParentId, type: reference, referenceTo: [Account] }
+      - { name: MasterRecordId, type: reference, referenceTo: [Account] }
+      - { name: Phone, type: phone }
+      - { name: Website, type: url }
+      - { name: BillingStreet, type: textarea }
+      - { name: BillingCity, type: string, length: 40 }
+      - { name: BillingState, type: string, length: 80 }
+      - { name: BillingPostalCode, type: string, length: 20 }
+      - { name: BillingCountry, type: string, length: 80 }
+      - { name: BillingLatitude, type: double }
+      - { name: BillingLongitude, type: double }
+      - { name: ShippingStreet, type: textarea }
+      - { name: ShippingCity, type: string, length: 40 }
+      - { name: ShippingState, type: string, length: 80 }
+      - { name: ShippingPostalCode, type: string, length: 20 }
+      - { name: ShippingCountry, type: string, length: 80 }
+      - { name: Description, type: textarea }
+      - { name: LastActivityDate, type: date }
+      - { name: CurrencyIsoCode, type: picklist, values: [USD, CAD, MXN, EUR, GBP] }
+      - { name: WMS_Owner_Code__c, type: string, length: 10, custom: true, label: WMS Owner Code }
+      - { name: ERP_Account_Number__c, type: string, length: 20, custom: true, label: ERP Account Number }
+      - { name: Vertical__c, type: picklist, custom: true, values: [apparel, electronics, food_bev, health_beauty, home_goods, auto_parts, pet, supplements, b2b_general] }
+      - { name: Region__c, type: picklist, custom: true, values: [US East, US Central, US West, Canada, Mexico] }
+      - { name: Client_Since__c, type: date, custom: true }
+      - { name: Health_Score__c, type: double, precision: 3, scale: 0, custom: true, updateable: true, label: Health Score }
+      - { name: Churn_Risk__c, type: picklist, custom: true, updateable: true, values: [Low, Medium, High] }
+
+  Contact:
+    key_prefix: "003"
+    has_owner: true
+    fields:
+      - { name: AccountId, type: reference, referenceTo: [Account] }
+      - { name: Salutation, type: picklist, values: [Mr., Ms., Mrs., Dr.] }
+      - { name: FirstName, type: string, length: 40 }
+      - { name: LastName, type: string, length: 80, nillable: false }
+      - { name: Name, type: string, length: 121 }
+      - { name: Title, type: string, length: 128 }
+      - { name: Department, type: string, length: 80 }
+      - { name: Email, type: email }
+      - { name: Phone, type: phone }
+      - { name: MobilePhone, type: phone }
+      - { name: MailingStreet, type: textarea }
+      - { name: MailingCity, type: string, length: 40 }
+      - { name: MailingState, type: string, length: 80 }
+      - { name: MailingPostalCode, type: string, length: 20 }
+      - { name: MailingCountry, type: string, length: 80 }
+      - { name: LeadSource, type: picklist, values: [Web, Referral, Trade Show, Partner, Outbound, Other] }
+      - { name: HasOptedOutOfEmail, type: boolean }
+      - { name: MasterRecordId, type: reference, referenceTo: [Contact] }
+      - { name: CurrencyIsoCode, type: picklist, values: [USD, CAD, MXN, EUR, GBP] }
+
+  Product2:
+    key_prefix: "01t"
+    fields:
+      - { name: Name, type: string, length: 255 }
+      - { name: ProductCode, type: string, length: 255 }
+      - { name: Family, type: picklist, values: [Storage, Handling, Value-Added Services, Freight, Fees] }
+      - { name: QuantityUnitOfMeasure, type: picklist, values: [PALLET_MONTH, BIN_MONTH, PALLET, CARTON, ORDER, UNIT, KIT, MONTH, SHIPMENT] }
+      - { name: Description, type: textarea }
+      - { name: IsActive, type: boolean }
+      - { name: CurrencyIsoCode, type: picklist, values: [USD, CAD, MXN, EUR, GBP] }
+
+  Pricebook2:
+    key_prefix: "01s"
+    fields:
+      - { name: Name, type: string, length: 255 }
+      - { name: Description, type: string, length: 255 }
+      - { name: IsActive, type: boolean }
+      - { name: IsStandard, type: boolean }
+
+  PricebookEntry:
+    key_prefix: "01u"
+    fields:
+      - { name: Pricebook2Id, type: reference, referenceTo: [Pricebook2] }
+      - { name: Product2Id, type: reference, referenceTo: [Product2] }
+      - { name: Name, type: string, length: 255 }
+      - { name: ProductCode, type: string, length: 255 }
+      - { name: UnitPrice, type: currency }
+      - { name: IsActive, type: boolean }
+      - { name: UseStandardPrice, type: boolean }
+      - { name: CurrencyIsoCode, type: picklist, values: [USD, CAD, MXN, EUR, GBP] }
+
+  Opportunity:
+    key_prefix: "006"
+    has_owner: true
+    fields:
+      - { name: AccountId, type: reference, referenceTo: [Account] }
+      - { name: Name, type: string, length: 120, nillable: false }
+      - { name: Type, type: picklist, values: [New Business, Existing Business - Expansion, Existing Business - Renewal] }
+      - { name: StageName, type: picklist, nillable: false, values: [Prospecting, Qualification, Needs Analysis, Value Proposition, Id. Decision Makers, Perception Analysis, Proposal/Price Quote, Negotiation/Review, Closed Won, Closed Lost] }
+      - { name: Amount, type: currency }
+      - { name: Probability, type: percent }
+      - { name: ExpectedRevenue, type: currency }
+      - { name: CloseDate, type: date, nillable: false }
+      - { name: ForecastCategoryName, type: picklist, values: [Pipeline, Best Case, Commit, Omitted, Closed] }
+      - { name: LeadSource, type: picklist, values: [Web, Referral, Trade Show, Partner, Outbound, Other] }
+      - { name: NextStep, type: string, length: 255 }
+      - { name: Description, type: textarea }
+      - { name: IsClosed, type: boolean }
+      - { name: IsWon, type: boolean }
+      - { name: Pricebook2Id, type: reference, referenceTo: [Pricebook2] }
+      - { name: ContractId, type: reference, referenceTo: [Contract] }
+      - { name: HasOpportunityLineItem, type: boolean }
+      - { name: FiscalYear, type: int }
+      - { name: FiscalQuarter, type: int }
+      - { name: Loss_Reason__c, type: picklist, custom: true, values: [Price, Location, Capabilities, Timing, Went with competitor, No decision] }
+      - { name: Est_Monthly_Orders__c, type: double, custom: true }
+      - { name: Warehouses_Requested__c, type: multipicklist, custom: true, values: [ATL1, DFW1, RNO1, CHI1, NJ1, LAX1, TOR1, MTY1] }
+      - { name: CurrencyIsoCode, type: picklist, values: [USD, CAD, MXN, EUR, GBP] }
+
+  OpportunityHistory:
+    key_prefix: "008"
+    queryable_only: true
+    fields:
+      - { name: OpportunityId, type: reference, referenceTo: [Opportunity] }
+      - { name: StageName, type: picklist }
+      - { name: Amount, type: currency }
+      - { name: Probability, type: percent }
+      - { name: CloseDate, type: date }
+      - { name: ForecastCategory, type: picklist }
+
+  OpportunityLineItem:
+    key_prefix: "00k"
+    fields:
+      - { name: OpportunityId, type: reference, referenceTo: [Opportunity] }
+      - { name: PricebookEntryId, type: reference, referenceTo: [PricebookEntry] }
+      - { name: Product2Id, type: reference, referenceTo: [Product2] }
+      - { name: Name, type: string, length: 376 }
+      - { name: ProductCode, type: string, length: 255 }
+      - { name: Quantity, type: double }
+      - { name: UnitPrice, type: currency }
+      - { name: ListPrice, type: currency }
+      - { name: TotalPrice, type: currency }
+      - { name: Discount, type: percent }
+      - { name: ServiceDate, type: date }
+      - { name: CurrencyIsoCode, type: picklist, values: [USD, CAD, MXN, EUR, GBP] }
+
+  Contract:
+    key_prefix: "800"
+    has_owner: true
+    fields:
+      - { name: AccountId, type: reference, referenceTo: [Account] }
+      - { name: ContractNumber, type: string, length: 30 }
+      - { name: Status, type: picklist, values: [Draft, In Approval Process, Activated, Expired] }
+      - { name: StatusCode, type: picklist, values: [Draft, InApproval, Activated, Expired] }
+      - { name: StartDate, type: date }
+      - { name: EndDate, type: date }
+      - { name: ContractTerm, type: int }
+      - { name: CustomerSignedDate, type: date }
+      - { name: CompanySignedDate, type: date }
+      - { name: ActivatedDate, type: datetime }
+      - { name: SpecialTerms, type: textarea }
+      - { name: Description, type: textarea }
+      - { name: Auto_Renew__c, type: boolean, custom: true }
+      - { name: Annual_Increase_Pct__c, type: percent, custom: true }
+      - { name: SLA_Ship_Hours__c, type: double, custom: true, label: SLA Ship Hours }
+      - { name: SLA_Target_Pct__c, type: percent, custom: true, label: SLA Target % }
+      - { name: CurrencyIsoCode, type: picklist, values: [USD, CAD, MXN, EUR, GBP] }
+
+  Rate_Card__c:
+    key_prefix: a01
+    custom: true
+    has_owner: true
+    name_field: { type: autonumber, format: "RC-{0000}" }
+    fields:
+      - { name: Name, type: string, length: 80 }
+      - { name: Account__c, type: reference, referenceTo: [Account], custom: true }
+      - { name: Contract__c, type: reference, referenceTo: [Contract], custom: true }
+      - { name: Effective_Date__c, type: date, custom: true }
+      - { name: End_Date__c, type: date, custom: true }
+      - { name: Status__c, type: picklist, custom: true, values: [Draft, Active, Superseded, Expired] }
+      - { name: CurrencyIsoCode, type: picklist, values: [USD, CAD, MXN, EUR, GBP] }
+
+  Rate_Card_Line__c:
+    key_prefix: a02
+    custom: true
+    name_field: { type: autonumber, format: "RCL-{000000}" }
+    fields:
+      - { name: Name, type: string, length: 80 }
+      - { name: Rate_Card__c, type: reference, referenceTo: [Rate_Card__c], custom: true, relationship: master-detail }
+      - { name: Charge_Code__c, type: picklist, custom: true, values: [STOR-PLT, STOR-BIN, COLD-SUR, RCV-PLT, RCV-CTN, ORD-B2C, ORD-B2B, PICK-ADD, PICK-CTN, PACK-MAT, RET-PROC, LBL-ACC, KIT-ASM, ACCT-MGT, MIN-ADJ, FRT-RCV] }
+      - { name: Description__c, type: string, length: 255, custom: true }
+      - { name: Rate__c, type: currency, custom: true }
+      - { name: Unit_of_Measure__c, type: string, length: 20, custom: true }
+      - { name: Monthly_Minimum__c, type: currency, custom: true }
+      - { name: CurrencyIsoCode, type: picklist, values: [USD, CAD, MXN, EUR, GBP] }
+
+  Case:
+    key_prefix: "500"
+    has_owner: true
+    fields:
+      - { name: CaseNumber, type: string, length: 30 }
+      - { name: AccountId, type: reference, referenceTo: [Account] }
+      - { name: ContactId, type: reference, referenceTo: [Contact] }
+      - { name: ParentId, type: reference, referenceTo: [Case] }
+      - { name: Subject, type: string, length: 255 }
+      - { name: Description, type: textarea }
+      - { name: Status, type: picklist, values: [New, Working, Escalated, Waiting on Client, Closed] }
+      - { name: Priority, type: picklist, values: [High, Medium, Low] }
+      - { name: Origin, type: picklist, values: [Email, Phone, Web, Client Portal] }
+      - { name: Reason, type: picklist, values: [Late Shipment, Damaged Goods, Mis-ship, Short Ship, Inventory Discrepancy, Billing Question, Receiving Delay, Returns, Other] }
+      - { name: Type, type: picklist, values: [Problem, Question, Request] }
+      - { name: IsClosed, type: boolean }
+      - { name: IsEscalated, type: boolean }
+      - { name: ClosedDate, type: datetime }
+      - { name: SuppliedEmail, type: email }
+      - { name: SuppliedName, type: string, length: 80 }
+      - { name: WMS_Order_Number__c, type: string, length: 20, custom: true, label: WMS Order Number }
+      - { name: Tracking_Number__c, type: string, length: 40, custom: true }
+      - { name: Warehouse__c, type: picklist, custom: true, values: [ATL1, DFW1, RNO1, CHI1, NJ1, LAX1, TOR1, MTY1] }
+      - { name: Root_Cause__c, type: picklist, custom: true, values: [Carrier, Warehouse Error, Client Data, Inventory, System, Unknown] }
+      - { name: Credit_Amount__c, type: currency, custom: true }
+      - { name: CurrencyIsoCode, type: picklist, values: [USD, CAD, MXN, EUR, GBP] }
+
+  Task:
+    key_prefix: 00T
+    has_owner: true
+    fields:
+      - { name: WhoId, type: reference, referenceTo: [Contact] }
+      - { name: WhatId, type: reference, referenceTo: [Account, Opportunity, Case] }
+      - { name: AccountId, type: reference, referenceTo: [Account] }
+      - { name: Subject, type: combobox, length: 255 }
+      - { name: Status, type: picklist, values: [Not Started, In Progress, Completed, Waiting on someone else, Deferred] }
+      - { name: Priority, type: picklist, values: [High, Normal, Low] }
+      - { name: TaskSubtype, type: picklist, values: [Task, Email, Call] }
+      - { name: ActivityDate, type: date }
+      - { name: CompletedDateTime, type: datetime }
+      - { name: IsClosed, type: boolean }
+      - { name: CallDurationInSeconds, type: int }
+      - { name: Description, type: textarea }

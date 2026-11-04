@@ -1,0 +1,340 @@
+{
+  "name": "Harborline Logistics palette",
+  "version": "1.0.0",
+  "how_to_read": "Each colour has a light-mode hex, a dark-mode hex (when it changes), the CSS token, and what it is for. Data-viz slots are validated with the dataviz skill validator (see brand/validation/palette-report.txt).",
+  "brand": [
+    {
+      "name": "Harbor Navy",
+      "hex": "#0E2A47",
+      "token": "--hl-navy",
+      "usage": "Primary brand colour. Logo tile, report header band, primary ink family. Never a chart series."
+    },
+    {
+      "name": "Harbor Teal",
+      "hex": "#0E7C7B",
+      "token": "--hl-teal",
+      "usage": "Accent: primary buttons, links, selected tab, Operations department. 5.0:1 with white text."
+    },
+    {
+      "name": "Signal Orange",
+      "hex": "#F2662B",
+      "token": "--hl-signal",
+      "usage": "Signal colour from the logo wave. Use under 5% of any screen: one highlight, a callout, the brand mark wave. Text on white must use #C9501C (focus) instead."
+    },
+    {
+      "name": "Sand",
+      "hex": "#F4EFE6",
+      "token": "--hl-sand",
+      "usage": "Print and slide backgrounds behind the logo. Not a dashboard background (charts are validated on Fog and white)."
+    }
+  ],
+  "neutrals": [
+    {
+      "name": "Fog (page)",
+      "token": "--hl-bg",
+      "light": "#F3F5F7",
+      "dark": "#08131F",
+      "usage": "Page / report canvas background"
+    },
+    {
+      "name": "White (surface)",
+      "token": "--hl-surface",
+      "light": "#FFFFFF",
+      "dark": "#0F1E2E",
+      "usage": "Cards, visual containers, chart surface"
+    },
+    {
+      "name": "Mist (surface 2)",
+      "token": "--hl-surface-2",
+      "light": "#E9EEF2",
+      "dark": "#16293D",
+      "usage": "Filter rail, table header, hover row, input fill"
+    },
+    {
+      "name": "Rope (border)",
+      "token": "--hl-border",
+      "light": "#D2DAE2",
+      "dark": "#26394E",
+      "usage": "Hairline borders, dividers"
+    },
+    {
+      "name": "Ink (text)",
+      "token": "--hl-text",
+      "light": "#0F2338",
+      "dark": "#E6EDF3",
+      "usage": "Titles, values, body text"
+    },
+    {
+      "name": "Slate (muted text)",
+      "token": "--hl-text-muted",
+      "light": "#4F6175",
+      "dark": "#9BAEC1",
+      "usage": "Labels, captions, axis titles (>= 4.5:1 on every surface)"
+    },
+    {
+      "name": "Gridline",
+      "token": "--hl-grid",
+      "light": "#E3E8ED",
+      "dark": "#1C3046",
+      "usage": "Chart gridlines (hairline, recessive)"
+    },
+    {
+      "name": "Axis",
+      "token": "--hl-axis",
+      "light": "#AEB9C4",
+      "dark": "#3A5068",
+      "usage": "Chart baseline / axis line"
+    },
+    {
+      "name": "Other",
+      "token": "--hl-viz-other",
+      "light": "#8A97A5",
+      "dark": "#6F7F90",
+      "usage": "The folded \"Other\" series and de-emphasised marks"
+    }
+  ],
+  "accent": [
+    {
+      "name": "Accent",
+      "token": "--hl-accent",
+      "light": "#0E7C7B",
+      "dark": "#33B5AE",
+      "usage": "Primary action, link, selected state"
+    },
+    {
+      "name": "Accent strong",
+      "token": "--hl-accent-strong",
+      "light": "#09605F",
+      "dark": "#74D3CC",
+      "usage": "Hover / pressed, accent text on tinted surfaces"
+    },
+    {
+      "name": "Text on accent",
+      "token": "--hl-accent-contrast",
+      "light": "#FFFFFF",
+      "dark": "#04211F",
+      "usage": "Label on an accent-filled button"
+    },
+    {
+      "name": "Focus ring",
+      "token": "--hl-focus",
+      "light": "#C9501C",
+      "dark": "#FF8A4C",
+      "usage": "2px focus outline, 2px offset"
+    }
+  ],
+  "status": [
+    {
+      "name": "Good",
+      "token": "--hl-good",
+      "light": "#1A763F",
+      "dark": "#5BCC80",
+      "tint_light": "#E3F2E8",
+      "tint_dark": "#12321F",
+      "usage": "On target / healthy. Always with a check icon + the word."
+    },
+    {
+      "name": "Warning",
+      "token": "--hl-warn",
+      "light": "#9B5F02",
+      "dark": "#F3B94C",
+      "tint_light": "#FBF0DC",
+      "tint_dark": "#382A10",
+      "usage": "Watch / near threshold. Always with a triangle icon + the word."
+    },
+    {
+      "name": "Bad",
+      "token": "--hl-bad",
+      "light": "#C22826",
+      "dark": "#F66D67",
+      "tint_light": "#FBE5E3",
+      "tint_dark": "#3D1A1A",
+      "usage": "Off target / breach. Always with a cross or octagon icon + the word."
+    },
+    {
+      "name": "Info",
+      "token": "--hl-info",
+      "light": "#1D5C9B",
+      "dark": "#7FB6EE",
+      "tint_light": "#E2EDF8",
+      "tint_dark": "#132C47",
+      "usage": "Neutral notice, data note, freshness message."
+    }
+  ],
+  "categorical": [
+    {
+      "slot": 1,
+      "name": "Harbor Blue",
+      "token": "--hl-viz-1",
+      "light": "#2973D0",
+      "dark": "#3983E1"
+    },
+    {
+      "slot": 2,
+      "name": "Signal Orange",
+      "token": "--hl-viz-2",
+      "light": "#F2672D",
+      "dark": "#E05E27"
+    },
+    {
+      "slot": 3,
+      "name": "Tide Teal",
+      "token": "--hl-viz-3",
+      "light": "#069B8D",
+      "dark": "#08A799"
+    },
+    {
+      "slot": 4,
+      "name": "Brass",
+      "token": "--hl-viz-4",
+      "light": "#E6A313",
+      "dark": "#BF8608"
+    },
+    {
+      "slot": 5,
+      "name": "Coral",
+      "token": "--hl-viz-5",
+      "light": "#DB6397",
+      "dark": "#D0598E"
+    },
+    {
+      "slot": 6,
+      "name": "Kelp",
+      "token": "--hl-viz-6",
+      "light": "#288420",
+      "dark": "#33862C"
+    },
+    {
+      "slot": 7,
+      "name": "Dusk",
+      "token": "--hl-viz-7",
+      "light": "#6B4EC7",
+      "dark": "#8C79E0"
+    },
+    {
+      "slot": 8,
+      "name": "Clay",
+      "token": "--hl-viz-8",
+      "light": "#8C4A11",
+      "dark": "#9B5824"
+    }
+  ],
+  "categorical_rules": [
+    "Assign slots in order 1..8 and never cycle. A 9th series folds into \"Other\" (--hl-viz-other).",
+    "Colour follows the entity, not its rank: once a warehouse or client has a slot, keep it on every page.",
+    "Scatter, bubble, map and small-multiple charts: at most the first 3 slots (validated all-pairs).",
+    "Slot 4 Brass is 2.2:1 on white: when it is used, show data labels or offer the table view."
+  ],
+  "sequential": {
+    "light": [
+      "#DFECFE",
+      "#B8D3F9",
+      "#8AB7F4",
+      "#5A97E7",
+      "#3077D0",
+      "#1A57A1",
+      "#103A6D"
+    ],
+    "dark": [
+      "#142E50",
+      "#194276",
+      "#215AA2",
+      "#3377CD",
+      "#5D97E4",
+      "#8AB7F4",
+      "#BBD7FC"
+    ],
+    "usage": "Magnitude: heatmaps, filled maps, density. For discrete ordered buckets (tiers, aging buckets) use steps 3-7 only."
+  },
+  "diverging": {
+    "light": [
+      "#1253A1",
+      "#367AD1",
+      "#76A7E9",
+      "#B5D0F5",
+      "#E6E8EA",
+      "#F6C0A8",
+      "#E28B63",
+      "#C4530F",
+      "#8C3701"
+    ],
+    "dark": [
+      "#A2C7F8",
+      "#66A0EE",
+      "#367AD1",
+      "#215AA2",
+      "#3A3D41",
+      "#933D08",
+      "#C4530F",
+      "#E97C48",
+      "#F6B294"
+    ],
+    "usage": "Above / below a reference: variance to budget, forecast error, temperature vs set point. Step 5 is the neutral midpoint. For bars use the outer steps 1-3 and 7-9."
+  },
+  "departments": [
+    {
+      "key": "it",
+      "name": "IT",
+      "token": "--hl-dept-it",
+      "light": "#4759B7",
+      "dark": "#889EF6",
+      "usage": "Department identity in chrome only: header stripe, chip, active tab. Never a data series."
+    },
+    {
+      "key": "ops",
+      "name": "Operations",
+      "token": "--hl-dept-ops",
+      "light": "#0E7C7B",
+      "dark": "#39BAB4",
+      "usage": "Department identity in chrome only: header stripe, chip, active tab. Never a data series."
+    },
+    {
+      "key": "fin",
+      "name": "Finance",
+      "token": "--hl-dept-fin",
+      "light": "#7D5D1C",
+      "dark": "#DAB060",
+      "usage": "Department identity in chrome only: header stripe, chip, active tab. Never a data series."
+    },
+    {
+      "key": "transport",
+      "name": "Transportation",
+      "token": "--hl-dept-transport",
+      "light": "#C74C09",
+      "dark": "#F78955",
+      "usage": "Department identity in chrome only: header stripe, chip, active tab. Never a data series."
+    },
+    {
+      "key": "sales",
+      "name": "Sales",
+      "token": "--hl-dept-sales",
+      "light": "#BC2C4F",
+      "dark": "#F3798B",
+      "usage": "Department identity in chrome only: header stripe, chip, active tab. Never a data series."
+    },
+    {
+      "key": "cs",
+      "name": "Client Success",
+      "token": "--hl-dept-cs",
+      "light": "#853692",
+      "dark": "#CA88D5",
+      "usage": "Department identity in chrome only: header stripe, chip, active tab. Never a data series."
+    },
+    {
+      "key": "qa",
+      "name": "Quality",
+      "token": "--hl-dept-qa",
+      "light": "#3A6D12",
+      "dark": "#89C06A",
+      "usage": "Department identity in chrome only: header stripe, chip, active tab. Never a data series."
+    },
+    {
+      "key": "exec",
+      "name": "Executive",
+      "token": "--hl-dept-exec",
+      "light": "#2A4A6C",
+      "dark": "#9CBBDD",
+      "usage": "Department identity in chrome only: header stripe, chip, active tab. Never a data series."
+    }
+  ]
+}

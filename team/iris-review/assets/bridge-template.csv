@@ -1,0 +1,5 @@
+metric,cut,dashboard_value,source_system,source_value,item,item_value,reason,rule_reference
+Orders shipped,Network · 2027-W02,41190,WMS,41212,Source total,41212,What you counted in the source and on which time basis,docs/metrics/catalog.yml#orders-shipped
+Orders shipped,Network · 2027-W02,41190,WMS,41212,Quarantined by DQ rule <rule id>,-18,<what the rule catches>,docs/dq/rules.yml#<rule-id>
+Orders shipped,Network · 2027-W02,41190,WMS,41212,Excluded by catalog rule <name>,-4,<why the metric excludes these>,docs/metrics/catalog.yml#<anchor>
+Orders shipped,Network · 2027-W02,41190,WMS,41212,Dashboard total,41190,41212 - 18 - 4 = 41190,

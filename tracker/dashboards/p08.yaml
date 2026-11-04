@@ -1,0 +1,109 @@
+# Dashboard specs - Project 8 (Client Portal & Executive Scorecard). Wireframes: brand/wireframes/<id>.svg
+- id: P8-D1
+  name: Client Portal
+  audience: Client users (external, per-client), Harborline Client Success Managers on behalf of their clients, Omar Haddad
+  owner: omar.haddad
+  questions:
+    - Where are my orders, and what is still open?
+    - Did Harborline meet our contract SLA this month?
+    - What inventory do I have, what's available, and what's on hold?
+    - What did you receive for us, and how fast did it get to stock?
+    - What came back as returns, and why?
+    - What will we be billed for this month so far?
+  kpis:
+    - name: Orders received / shipped
+      definition: Orders received by the WMS and orders shipped in the period, for the viewer's client only.
+    - name: Ship on time vs contract SLA
+      definition: Share of orders shipped within the client's contract SLA_Ship_Hours__c, shown against SLA_Target_Pct__c.
+      owner_definition_conflict: Ops measures from release to the floor. The contract clock starts when the WMS receives the order. Client-facing numbers must use the contract definition. Confirm with Omar.
+    - name: Units on hand / available / on hold
+      definition: Current inventory units for the client, with available = on hand − allocated, and on hold = status HOLD.
+    - name: Dock-to-stock (hours)
+      definition: Median hours from receipt arrival to putaway completion for receipts completed in the period.
+    - name: Return rate
+      definition: Units returned ÷ units shipped in the period.
+    - name: Month-to-date billing
+      definition: Billable activity accrued this month in the client's billing currency, by charge code.
+      owner_definition_conflict: Finance (Alan Brooks) says accrued is not invoiced, and adjustments can change before month end. Label it as an estimate and agree the wording with Alan.
+    - name: Open cases
+      definition: The client's Salesforce cases that are not closed.
+  filters:
+    - Warehouse (only the client's sites)
+    - Date range (default month to date)
+    - Order type / channel
+    - SKU search
+  visuals:
+    - { title: KPI row, type: kpi_tiles, notes: "Orders shipped, ship on time vs SLA (with target marker), units available, units on hold, dock-to-stock, MTD billing" }
+    - { title: Orders received vs shipped, type: combo, notes: "Daily bars received, line shipped, last 30 days" }
+    - { title: SLA trend, type: line, notes: "Weekly ship-on-time % vs the contract target line" }
+    - { title: Open orders by status, type: bar, notes: "Count by status; drill to order list (no consignee PII unless Mei's rule allows it for this role)" }
+    - { title: Inventory, type: table, notes: "SKU, description, on hand, allocated, available, on hold, lot / expiry where lot-controlled; searchable" }
+    - { title: Receipts, type: table, notes: "Receipt, ASN, arrived, completed, units, dock-to-stock hours" }
+    - { title: Returns by reason, type: bar, notes: "Units by reason code, last 90 days" }
+    - { title: MTD billing by charge code, type: bar, notes: "In billing currency, labelled as estimate" }
+  refresh_sla: Hourly from 06:00 to 22:00 in the client's primary site time zone; daily otherwise. Data as-of shown on every page.
+  access: Row-level security by client entitlement (client master). Client users see only their own owner code(s). CSMs see the clients in their book. Consignee PII is handled per Mei Tanaka's decision for client roles and masked by default. No other client's name, logo or data ever appears. All access logged.
+  layout: |
+    1920×1080, Harborline light dashboard background; Harborline brand with "Client Portal · <Client name>" in the header and no client logo; Client Success accent.
+    Header band: lockup, client name, period selector, as-of time.
+    Left filter rail (240 px): warehouse, date range, order type, SKU search.
+    Row 1: six KPI tiles. Row 2: "Orders received vs shipped" (left, 60%) and "SLA trend" (right, 40%).
+    Row 3: "Open orders by status" (left, 35%) and "Inventory" table (right, 65%).
+    Row 4: "Receipts" table (left, 40%), "Returns by reason" (middle, 30%) and "MTD billing by charge code" (right, 30%).
+    Footer: data freshness, "Billing figures are estimates until invoiced", support contact (the client's CSM).
+
+- id: P8-D2
+  name: Executive Scorecard
+  audience: Daniel Reyes (CEO) and the executive team (Rebecca Lindqvist, Luis Moreno, Hannah Price, Omar Haddad); board pack export
+  owner: daniel.reyes
+  questions:
+    - Are we growing, and is the growth profitable?
+    - Which sites and verticals drive margin?
+    - Are we keeping our clients, and is the pipeline enough to replace the ones we lose?
+    - Are we delivering the service levels we promise?
+    - How fast are we turning invoices into cash?
+    - Are cold-chain and data-platform risks under control?
+    - Where should I look deeper?
+  kpis:
+    - name: Net revenue (USD)
+      definition: Revenue posted to GL 4000–4030 less customer credits and SLA penalties (4900), in USD at Finance's FX rules, for the period.
+    - name: Gross margin %
+      definition: (Net revenue − direct labor 5000 − outbound freight 5100 − packaging 5200) ÷ net revenue.
+      owner_definition_conflict: Rebecca includes facility rent (6000) by site in gross margin. Luis excludes it because site GMs can't control it. Daniel decides; record it.
+    - name: OTIF %
+      definition: Company-wide on-time-in-full from the metric catalog (Warehouse Performance), unchanged.
+    - name: Active clients and logo churn
+      definition: Active clients at period end (Client 360 definition) and clients lost in the trailing 12 months.
+    - name: Net revenue retention
+      definition: Trailing-12-month revenue from clients active 12 months ago ÷ their revenue in the prior 12 months.
+    - name: Pipeline coverage
+      definition: As defined on the Sales Pipeline dashboard (Client 360).
+    - name: DSO (days)
+      definition: Company DSO as defined in Billing Assurance & AR.
+    - name: Freight recovery margin
+      definition: Freight recovery revenue (4030) ÷ outbound freight expense (5100) − 1.
+    - name: Cold chain time in range
+      definition: As defined on the Cold Chain Monitor, regulated zones only.
+    - name: Data platform cost per month
+      definition: Platform compute and storage cost for the month from the cost report (actual on your tier, plus paid-tier projection).
+  filters:
+    - Period (month / quarter / YTD; closed months from frozen snapshots)
+    - Legal entity (us01 / ca01 / mx01)
+    - Warehouse
+    - Vertical
+  visuals:
+    - { title: KPI grid, type: kpi_tiles, notes: "10 tiles: value, target, variance vs target and prior year, 13-month sparkline, owner commentary on hover" }
+    - { title: Revenue and margin trend, type: combo, notes: "Monthly net revenue (bars) and gross margin % (line), 24 months, target line" }
+    - { title: Margin by site, type: bar, notes: "Gross margin % and revenue per warehouse, sorted" }
+    - { title: Client concentration, type: bar, notes: "Top 10 clients' share of revenue, cumulative line" }
+    - { title: Retention, type: line, notes: "Active clients, logo churn and net revenue retention, monthly" }
+    - { title: Drill links, type: link_list, notes: "Links to each project dashboard behind a KPI" }
+  refresh_sla: Closed months are frozen snapshots published by the 3rd business day after AX month-end close. The current month to date refreshes daily by 07:00 America/New_York and is labelled as provisional.
+  access: Executives only (Daniel, Rebecca, Luis, Hannah, Omar, Sam). Classified Confidential. No PII. PDF export allowed for the board pack and logged.
+  layout: |
+    1920×1080, Harborline light dashboard background with the Executive department accent.
+    Header band: lockup, title "Executive Scorecard", period selector, "Closed: <month>" or "Provisional MTD" badge.
+    Row 1–2: KPI grid, 5 × 2 tiles with sparklines.
+    Row 3: "Revenue and margin trend" (left, 60%) and "Margin by site" (right, 40%).
+    Row 4: "Retention" (left, 40%), "Client concentration" (middle, 35%) and "Drill links" (right, 25%).
+    Footer: snapshot id, data freshness, Confidential marking, KPI definitions link.

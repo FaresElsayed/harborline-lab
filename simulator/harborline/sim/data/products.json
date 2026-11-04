@@ -1,0 +1,3208 @@
+{
+ "_note": "Product-name building blocks. items: [name, unit weight lb, length in, width in, height in, unit cost USD]. Variants multiply each item.",
+ "categories": {
+  "apparel": {
+   "items": [
+    [
+     "Organic Cotton Crew Tee",
+     0.4,
+     11,
+     9,
+     1,
+     6.5
+    ],
+    [
+     "Heavyweight Pullover Hoodie",
+     1.4,
+     13,
+     11,
+     3,
+     18
+    ],
+    [
+     "Performance Jogger",
+     0.9,
+     12,
+     10,
+     2,
+     14
+    ],
+    [
+     "High-Rise Legging",
+     0.5,
+     10,
+     8,
+     1,
+     12
+    ],
+    [
+     "Packable Rain Jacket",
+     1.1,
+     12,
+     10,
+     3,
+     32
+    ],
+    [
+     "Merino Quarter-Zip",
+     0.8,
+     12,
+     10,
+     2,
+     28
+    ],
+    [
+     "Slim Stretch Chino",
+     1.0,
+     13,
+     10,
+     2,
+     17
+    ],
+    [
+     "Relaxed Denim Jean",
+     1.5,
+     14,
+     11,
+     2,
+     21
+    ],
+    [
+     "Canvas Utility Short",
+     0.7,
+     11,
+     9,
+     2,
+     11
+    ],
+    [
+     "Oxford Button-Down",
+     0.6,
+     12,
+     10,
+     1,
+     15
+    ],
+    [
+     "Ribbed Knit Beanie",
+     0.2,
+     8,
+     7,
+     1,
+     4
+    ],
+    [
+     "Crew Sock 3-Pack",
+     0.3,
+     9,
+     5,
+     1,
+     3.5
+    ],
+    [
+     "Fleece Vest",
+     0.9,
+     12,
+     10,
+     2,
+     19
+    ],
+    [
+     "Waffle Henley",
+     0.6,
+     11,
+     9,
+     1,
+     10
+    ],
+    [
+     "Linen Camp Shirt",
+     0.5,
+     12,
+     10,
+     1,
+     14
+    ]
+   ],
+   "variants": {
+    "color": [
+     "Black",
+     "Navy",
+     "Heather Grey",
+     "Olive",
+     "Sand",
+     "Rust",
+     "Cream",
+     "Forest",
+     "Charcoal",
+     "Slate Blue"
+    ],
+    "size": [
+     "XS",
+     "S",
+     "M",
+     "L",
+     "XL",
+     "XXL"
+    ]
+   },
+   "sku": "{p}-{n4}-{c3}-{s}",
+   "case_qty": [
+    12,
+    48
+   ],
+   "cases_per_pallet": [
+    30,
+    60
+   ],
+   "hs": "6109.10",
+   "origin": [
+    "VN",
+    "BD",
+    "CN",
+    "IN",
+    "MX",
+    "PE"
+   ],
+   "mods": "apparel"
+  },
+  "kids_apparel": {
+   "items": [
+    [
+     "Kids Graphic Tee",
+     0.25,
+     9,
+     7,
+     1,
+     4.5
+    ],
+    [
+     "Kids Zip Hoodie",
+     0.7,
+     10,
+     8,
+     2,
+     11
+    ],
+    [
+     "Toddler Romper",
+     0.3,
+     9,
+     7,
+     1,
+     6
+    ],
+    [
+     "Kids Rain Boots",
+     1.2,
+     9,
+     6,
+     5,
+     9
+    ],
+    [
+     "Kids Pajama Set",
+     0.5,
+     10,
+     8,
+     1,
+     8
+    ],
+    [
+     "Kids Puffer Jacket",
+     0.9,
+     12,
+     10,
+     3,
+     16
+    ]
+   ],
+   "variants": {
+    "color": [
+     "Red",
+     "Navy",
+     "Pink",
+     "Sky",
+     "Mustard",
+     "Mint"
+    ],
+    "size": [
+     "2T",
+     "3T",
+     "4T",
+     "5",
+     "6",
+     "7",
+     "8",
+     "10",
+     "12",
+     "14"
+    ]
+   },
+   "sku": "{p}-{n4}-{c3}-{s}",
+   "case_qty": [
+    12,
+    36
+   ],
+   "cases_per_pallet": [
+    30,
+    60
+   ],
+   "hs": "6111.20",
+   "origin": [
+    "BD",
+    "CN",
+    "IN"
+   ],
+   "mods": "apparel"
+  },
+  "swim": {
+   "items": [
+    [
+     "Triangle Bikini Top",
+     0.15,
+     8,
+     6,
+     1,
+     7
+    ],
+    [
+     "High-Waist Bikini Bottom",
+     0.12,
+     8,
+     6,
+     1,
+     6
+    ],
+    [
+     "One-Piece Swimsuit",
+     0.3,
+     9,
+     7,
+     1,
+     14
+    ],
+    [
+     "Board Short",
+     0.5,
+     11,
+     9,
+     1,
+     12
+    ],
+    [
+     "Rash Guard Long Sleeve",
+     0.4,
+     10,
+     8,
+     1,
+     11
+    ],
+    [
+     "Swim Cover-Up",
+     0.4,
+     10,
+     8,
+     1,
+     10
+    ]
+   ],
+   "variants": {
+    "color": [
+     "Coral",
+     "Black",
+     "Ocean",
+     "Palm Print",
+     "Sunset",
+     "White"
+    ],
+    "size": [
+     "XS",
+     "S",
+     "M",
+     "L",
+     "XL"
+    ]
+   },
+   "sku": "{p}-{n4}-{c3}-{s}",
+   "case_qty": [
+    24,
+    72
+   ],
+   "cases_per_pallet": [
+    40,
+    80
+   ],
+   "hs": "6112.41",
+   "origin": [
+    "CN",
+    "VN",
+    "CO"
+   ],
+   "mods": "apparel"
+  },
+  "electronics": {
+   "items": [
+    [
+     "Wireless Earbuds",
+     0.3,
+     5,
+     4,
+     2,
+     22
+    ],
+    [
+     "Over-Ear Noise Cancelling Headphones",
+     1.1,
+     9,
+     8,
+     4,
+     58
+    ],
+    [
+     "Portable Bluetooth Speaker",
+     1.4,
+     8,
+     4,
+     4,
+     24
+    ],
+    [
+     "Smart Plug 2-Pack",
+     0.5,
+     6,
+     4,
+     3,
+     9
+    ],
+    [
+     "Video Doorbell",
+     1.0,
+     7,
+     5,
+     3,
+     38
+    ],
+    [
+     "Fitness Tracker",
+     0.2,
+     5,
+     3,
+     2,
+     19
+    ],
+    [
+     "Smartwatch Sport Band",
+     0.1,
+     6,
+     3,
+     1,
+     3
+    ],
+    [
+     "Wireless Charging Pad",
+     0.4,
+     6,
+     6,
+     2,
+     8
+    ],
+    [
+     "Smart Thermostat",
+     1.2,
+     7,
+     7,
+     3,
+     52
+    ],
+    [
+     "Wi-Fi Mesh Router",
+     2.1,
+     10,
+     8,
+     5,
+     64
+    ],
+    [
+     "Indoor Security Camera",
+     0.8,
+     6,
+     4,
+     4,
+     21
+    ],
+    [
+     "Soundbar 2.1",
+     8.5,
+     38,
+     6,
+     5,
+     72
+    ]
+   ],
+   "variants": {
+    "color": [
+     "Black",
+     "White",
+     "Graphite",
+     "Blue"
+    ]
+   },
+   "sku": "{p}-{m}-{c2}",
+   "case_qty": [
+    6,
+    24
+   ],
+   "cases_per_pallet": [
+    24,
+    60
+   ],
+   "hs": "8518.30",
+   "origin": [
+    "CN",
+    "VN",
+    "MY",
+    "TW",
+    "MX"
+   ],
+   "hazmat_share": 0.15,
+   "mods": "goods"
+  },
+  "cables": {
+   "items": [
+    [
+     "USB-C to USB-C Cable 1m",
+     0.1,
+     6,
+     4,
+     1,
+     1.2
+    ],
+    [
+     "USB-C to USB-C Cable 2m",
+     0.15,
+     6,
+     4,
+     1,
+     1.6
+    ],
+    [
+     "Lightning Cable 1m",
+     0.1,
+     6,
+     4,
+     1,
+     1.5
+    ],
+    [
+     "HDMI 2.1 Cable 2m",
+     0.3,
+     8,
+     6,
+     1,
+     3.2
+    ],
+    [
+     "Cat6 Ethernet Cable 3m",
+     0.3,
+     8,
+     6,
+     1,
+     1.9
+    ],
+    [
+     "65W GaN Wall Charger",
+     0.3,
+     4,
+     3,
+     2,
+     9
+    ],
+    [
+     "6-Outlet Surge Protector",
+     1.2,
+     12,
+     4,
+     2,
+     7.5
+    ],
+    [
+     "DisplayPort Cable 2m",
+     0.3,
+     8,
+     6,
+     1,
+     3
+    ]
+   ],
+   "variants": {
+    "color": [
+     "Black",
+     "White"
+    ]
+   },
+   "sku": "{p}-{m}-{c2}",
+   "case_qty": [
+    25,
+    100
+   ],
+   "cases_per_pallet": [
+    40,
+    80
+   ],
+   "hs": "8544.42",
+   "origin": [
+    "CN",
+    "VN"
+   ],
+   "mods": "goods"
+  },
+  "gaming": {
+   "items": [
+    [
+     "Wireless Gaming Mouse",
+     0.4,
+     7,
+     5,
+     3,
+     18
+    ],
+    [
+     "Mechanical Keyboard TKL",
+     2.2,
+     16,
+     7,
+     3,
+     42
+    ],
+    [
+     "Gaming Headset",
+     1.3,
+     9,
+     8,
+     5,
+     29
+    ],
+    [
+     "Controller Charging Dock",
+     0.8,
+     8,
+     5,
+     4,
+     11
+    ],
+    [
+     "XL Desk Mat",
+     1.0,
+     14,
+     4,
+     4,
+     7
+    ],
+    [
+     "Streaming Microphone",
+     1.6,
+     9,
+     6,
+     6,
+     34
+    ]
+   ],
+   "variants": {
+    "color": [
+     "Black",
+     "White",
+     "Red"
+    ]
+   },
+   "sku": "{p}-{m}-{c2}",
+   "case_qty": [
+    6,
+    20
+   ],
+   "cases_per_pallet": [
+    30,
+    60
+   ],
+   "hs": "8471.60",
+   "origin": [
+    "CN",
+    "TW",
+    "VN"
+   ],
+   "mods": "goods"
+  },
+  "food_bev": {
+   "items": [
+    [
+     "Greek Yogurt Plain 12/5.3oz",
+     5.4,
+     12,
+     8,
+     4,
+     7.2
+    ],
+    [
+     "Fresh Pasta Tortellini 6/20oz",
+     8.2,
+     12,
+     9,
+     5,
+     14
+    ],
+    [
+     "Hummus Classic 12/10oz",
+     8.4,
+     13,
+     9,
+     4,
+     11
+    ],
+    [
+     "Cold-Pressed Juice 6/16oz",
+     6.9,
+     10,
+     7,
+     8,
+     13
+    ],
+    [
+     "Shredded Mozzarella 12/8oz",
+     6.5,
+     12,
+     9,
+     5,
+     15
+    ],
+    [
+     "Tomato Basil Soup 12/16oz",
+     13.2,
+     13,
+     10,
+     6,
+     14
+    ],
+    [
+     "Chicken Broth 12/32oz",
+     26,
+     15,
+     11,
+     9,
+     16
+    ],
+    [
+     "Pesto Genovese 6/7oz",
+     3.1,
+     9,
+     6,
+     4,
+     12
+    ],
+    [
+     "Salsa Fresca 12/16oz",
+     13,
+     13,
+     10,
+     5,
+     13
+    ],
+    [
+     "Overnight Oats 8/10oz",
+     5.4,
+     12,
+     8,
+     4,
+     10
+    ]
+   ],
+   "variants": {
+    "pack": [
+     "Case"
+    ]
+   },
+   "sku": "{p}-{n4}",
+   "case_qty": [
+    1,
+    1
+   ],
+   "cases_per_pallet": [
+    60,
+    120
+   ],
+   "hs": "2104.10",
+   "origin": [
+    "US"
+   ],
+   "shelf_life": [
+    30,
+    120
+   ],
+   "mods": "food"
+  },
+  "frozen_desserts": {
+   "items": [
+    [
+     "Vanilla Bean Ice Cream 8/1pt",
+     9.2,
+     12,
+     6,
+     8,
+     18
+    ],
+    [
+     "Salted Caramel Ice Cream 8/1pt",
+     9.2,
+     12,
+     6,
+     8,
+     19
+    ],
+    [
+     "Mango Sorbet 8/1pt",
+     8.8,
+     12,
+     6,
+     8,
+     16
+    ],
+    [
+     "Mint Chip Ice Cream 8/1pt",
+     9.2,
+     12,
+     6,
+     8,
+     18
+    ],
+    [
+     "Fudge Bar 24ct",
+     6.1,
+     14,
+     10,
+     6,
+     14
+    ],
+    [
+     "Strawberry Fruit Bar 24ct",
+     5.9,
+     14,
+     10,
+     6,
+     13
+    ]
+   ],
+   "variants": {
+    "pack": [
+     "Case"
+    ]
+   },
+   "sku": "{p}-{n4}",
+   "case_qty": [
+    1,
+    1
+   ],
+   "cases_per_pallet": [
+    80,
+    120
+   ],
+   "hs": "2105.00",
+   "origin": [
+    "US"
+   ],
+   "shelf_life": [
+    180,
+    365
+   ],
+   "mods": "food"
+  },
+  "coffee": {
+   "items": [
+    [
+     "Whole Bean Coffee Medium Roast 12oz",
+     0.8,
+     8,
+     5,
+     3,
+     5.5
+    ],
+    [
+     "Whole Bean Coffee Dark Roast 2lb",
+     2.1,
+     10,
+     6,
+     4,
+     13
+    ],
+    [
+     "Ground Coffee Breakfast Blend 12oz",
+     0.8,
+     8,
+     5,
+     3,
+     5
+    ],
+    [
+     "Cold Brew Concentrate 32oz",
+     2.3,
+     9,
+     4,
+     4,
+     7
+    ],
+    [
+     "Single-Serve Pods 24ct",
+     0.7,
+     7,
+     7,
+     5,
+     9
+    ],
+    [
+     "Decaf Whole Bean 12oz",
+     0.8,
+     8,
+     5,
+     3,
+     6
+    ]
+   ],
+   "variants": {
+    "origin": [
+     "Colombia",
+     "Guatemala",
+     "Ethiopia",
+     "Sumatra",
+     "House Blend"
+    ]
+   },
+   "sku": "{p}-{n4}-{c3}",
+   "case_qty": [
+    6,
+    12
+   ],
+   "cases_per_pallet": [
+    60,
+    100
+   ],
+   "hs": "0901.21",
+   "origin": [
+    "US"
+   ],
+   "shelf_life": [
+    270,
+    365
+   ],
+   "mods": "food"
+  },
+  "water": {
+   "items": [
+    [
+     "Spring Water 24/16.9oz",
+     27,
+     16,
+     11,
+     9,
+     4.2
+    ],
+    [
+     "Spring Water 12/1L",
+     28,
+     14,
+     10,
+     11,
+     4.6
+    ],
+    [
+     "Sparkling Water Lime 24/12oz",
+     20,
+     16,
+     11,
+     5,
+     6.4
+    ],
+    [
+     "Sparkling Water Grapefruit 24/12oz",
+     20,
+     16,
+     11,
+     5,
+     6.4
+    ],
+    [
+     "Spring Water 6/1gal",
+     52,
+     20,
+     13,
+     12,
+     5.5
+    ],
+    [
+     "Alkaline Water 12/1L",
+     28,
+     14,
+     10,
+     11,
+     7
+    ]
+   ],
+   "variants": {
+    "pack": [
+     "Case"
+    ]
+   },
+   "sku": "{p}-{n4}",
+   "case_qty": [
+    1,
+    1
+   ],
+   "cases_per_pallet": [
+    48,
+    84
+   ],
+   "hs": "2201.10",
+   "origin": [
+    "US"
+   ],
+   "shelf_life": [
+    540,
+    730
+   ],
+   "mods": "water"
+  },
+  "snacks": {
+   "items": [
+    [
+     "Kettle Chips Sea Salt 12/8oz",
+     6.8,
+     18,
+     12,
+     10,
+     14
+    ],
+    [
+     "Pretzel Twists 12/10oz",
+     8.3,
+     16,
+     12,
+     10,
+     12
+    ],
+    [
+     "Trail Mix 12/12oz",
+     9.5,
+     14,
+     10,
+     8,
+     22
+    ],
+    [
+     "Granola Bars 12/6ct",
+     6.2,
+     12,
+     9,
+     7,
+     18
+    ],
+    [
+     "Popcorn White Cheddar 12/6oz",
+     5.1,
+     20,
+     14,
+     10,
+     13
+    ],
+    [
+     "Veggie Straws 12/7oz",
+     5.6,
+     18,
+     12,
+     10,
+     12
+    ]
+   ],
+   "variants": {
+    "pack": [
+     "Case"
+    ]
+   },
+   "sku": "{p}-{n4}",
+   "case_qty": [
+    1,
+    1
+   ],
+   "cases_per_pallet": [
+    50,
+    90
+   ],
+   "hs": "2005.20",
+   "origin": [
+    "US",
+    "CA"
+   ],
+   "shelf_life": [
+    180,
+    300
+   ],
+   "mods": "food"
+  },
+  "syrup": {
+   "items": [
+    [
+     "Pure Maple Syrup Grade A Amber 12/250ml",
+     8.4,
+     10,
+     8,
+     8,
+     48
+    ],
+    [
+     "Pure Maple Syrup Dark 12/500ml",
+     16,
+     12,
+     9,
+     9,
+     86
+    ],
+    [
+     "Maple Butter 12/250g",
+     7.1,
+     10,
+     8,
+     5,
+     52
+    ],
+    [
+     "Maple Sugar Candy 24/50g",
+     3.2,
+     10,
+     8,
+     5,
+     38
+    ],
+    [
+     "Maple Syrup Jug 4/4L",
+     38,
+     16,
+     16,
+     12,
+     140
+    ]
+   ],
+   "variants": {
+    "pack": [
+     "Case"
+    ]
+   },
+   "sku": "{p}-{n4}",
+   "case_qty": [
+    1,
+    1
+   ],
+   "cases_per_pallet": [
+    60,
+    100
+   ],
+   "hs": "1702.20",
+   "origin": [
+    "CA"
+   ],
+   "shelf_life": [
+    540,
+    730
+   ],
+   "mods": "food"
+  },
+  "salsas_es": {
+   "items": [
+    [
+     "Salsa Verde 12/16oz",
+     14,
+     13,
+     10,
+     6,
+     14
+    ],
+    [
+     "Salsa Roja Tatemada 12/16oz",
+     14,
+     13,
+     10,
+     6,
+     14
+    ],
+    [
+     "Chiles Chipotle en Adobo 24/7oz",
+     12,
+     12,
+     9,
+     5,
+     16
+    ],
+    [
+     "Mole Poblano 12/8.25oz",
+     7.6,
+     12,
+     9,
+     5,
+     19
+    ],
+    [
+     "Salsa Habanero 12/5oz",
+     5.2,
+     10,
+     8,
+     6,
+     15
+    ],
+    [
+     "Frijoles Refritos 12/20oz",
+     16.4,
+     13,
+     10,
+     5,
+     11
+    ],
+    [
+     "Salsa Macha 12/8oz",
+     7.5,
+     12,
+     9,
+     5,
+     20
+    ]
+   ],
+   "variants": {
+    "pack": [
+     "Caja"
+    ]
+   },
+   "sku": "{p}-{n4}",
+   "case_qty": [
+    1,
+    1
+   ],
+   "cases_per_pallet": [
+    60,
+    100
+   ],
+   "hs": "2103.90",
+   "origin": [
+    "MX"
+   ],
+   "shelf_life": [
+    270,
+    540
+   ],
+   "lang": "es",
+   "mods": "food_es"
+  },
+  "health_beauty": {
+   "items": [
+    [
+     "Hydrating Hyaluronic Serum 30ml",
+     0.2,
+     5,
+     2,
+     2,
+     5.5
+    ],
+    [
+     "Vitamin C Brightening Cream 50ml",
+     0.3,
+     4,
+     3,
+     3,
+     7
+    ],
+    [
+     "Gentle Foaming Cleanser 150ml",
+     0.4,
+     7,
+     3,
+     2,
+     4.5
+    ],
+    [
+     "Mineral Sunscreen SPF 50 75ml",
+     0.3,
+     6,
+     2,
+     2,
+     6
+    ],
+    [
+     "Repair Shampoo 300ml",
+     0.8,
+     8,
+     3,
+     2,
+     4
+    ],
+    [
+     "Repair Conditioner 300ml",
+     0.8,
+     8,
+     3,
+     2,
+     4
+    ],
+    [
+     "Lip Balm Trio",
+     0.1,
+     4,
+     3,
+     1,
+     2.5
+    ],
+    [
+     "Retinol Night Cream 50ml",
+     0.3,
+     4,
+     3,
+     3,
+     9
+    ],
+    [
+     "Body Wash Eucalyptus 500ml",
+     1.3,
+     9,
+     3,
+     3,
+     4.2
+    ],
+    [
+     "Dry Shampoo 150ml",
+     0.4,
+     7,
+     2,
+     2,
+     3.5
+    ],
+    [
+     "Clay Mask 100ml",
+     0.4,
+     5,
+     3,
+     3,
+     5
+    ]
+   ],
+   "variants": {
+    "size": [
+     "Travel",
+     "Standard",
+     "Value"
+    ]
+   },
+   "sku": "{p}-{n4}-{s2}",
+   "case_qty": [
+    12,
+    48
+   ],
+   "cases_per_pallet": [
+    40,
+    80
+   ],
+   "hs": "3304.99",
+   "origin": [
+    "US",
+    "FR",
+    "KR",
+    "CA"
+   ],
+   "shelf_life": [
+    540,
+    1095
+   ],
+   "mods": "beauty"
+  },
+  "derm_rx": {
+   "items": [
+    [
+     "Probiotic Barrier Cream 50ml",
+     0.3,
+     4,
+     3,
+     3,
+     11
+    ],
+    [
+     "Peptide Eye Serum 15ml",
+     0.1,
+     4,
+     2,
+     2,
+     14
+    ],
+    [
+     "Live-Culture Toner 120ml",
+     0.4,
+     6,
+     2,
+     2,
+     9
+    ],
+    [
+     "Prescription-Strength Spot Gel 15g",
+     0.1,
+     4,
+     2,
+     1,
+     8
+    ],
+    [
+     "Bakuchiol Night Oil 30ml",
+     0.2,
+     4,
+     2,
+     2,
+     12
+    ]
+   ],
+   "variants": {
+    "size": [
+     "Standard",
+     "Clinic"
+    ]
+   },
+   "sku": "{p}-{n4}-{s2}",
+   "case_qty": [
+    12,
+    36
+   ],
+   "cases_per_pallet": [
+    60,
+    100
+   ],
+   "hs": "3304.99",
+   "origin": [
+    "US"
+   ],
+   "shelf_life": [
+    120,
+    365
+   ],
+   "mods": "beauty"
+  },
+  "home_goods": {
+   "items": [
+    [
+     "Stoneware Dinner Plate Set (4)",
+     9,
+     12,
+     12,
+     6,
+     18
+    ],
+    [
+     "Linen Duvet Cover Queen",
+     3.2,
+     15,
+     12,
+     4,
+     34
+    ],
+    [
+     "Chunky Knit Throw Blanket",
+     3.8,
+     16,
+     13,
+     6,
+     22
+    ],
+    [
+     "Glass Storage Containers (10)",
+     8.5,
+     16,
+     11,
+     8,
+     19
+    ],
+    [
+     "Bamboo Bath Towel Set",
+     4.2,
+     16,
+     12,
+     6,
+     24
+    ],
+    [
+     "Ceramic Table Lamp",
+     6.8,
+     18,
+     12,
+     12,
+     29
+    ],
+    [
+     "Cast Iron Skillet 12in",
+     8.1,
+     20,
+     13,
+     3,
+     17
+    ],
+    [
+     "Wool Area Rug 5x8",
+     22,
+     60,
+     10,
+     10,
+     95
+    ],
+    [
+     "Wall Mirror Round 30in",
+     16,
+     32,
+     32,
+     3,
+     48
+    ],
+    [
+     "Velvet Accent Pillow",
+     1.5,
+     18,
+     18,
+     5,
+     9
+    ]
+   ],
+   "variants": {
+    "color": [
+     "Natural",
+     "Charcoal",
+     "Sage",
+     "Terracotta",
+     "Ivory"
+    ]
+   },
+   "sku": "{p}-{n4}-{c3}",
+   "case_qty": [
+    2,
+    8
+   ],
+   "cases_per_pallet": [
+    20,
+    40
+   ],
+   "hs": "6302.31",
+   "origin": [
+    "IN",
+    "CN",
+    "PT",
+    "TR",
+    "VN"
+   ],
+   "mods": "goods"
+  },
+  "furniture": {
+   "items": [
+    [
+     "Solid Oak Dining Chair",
+     19,
+     24,
+     22,
+     18,
+     85
+    ],
+    [
+     "Mid-Century Accent Chair",
+     42,
+     32,
+     30,
+     26,
+     160
+    ],
+    [
+     "Walnut Coffee Table",
+     48,
+     48,
+     26,
+     8,
+     190
+    ],
+    [
+     "5-Shelf Bookcase",
+     58,
+     72,
+     14,
+     6,
+     140
+    ],
+    [
+     "Upholstered Queen Bed Frame",
+     96,
+     82,
+     20,
+     12,
+     310
+    ],
+    [
+     "Oak Nightstand",
+     34,
+     24,
+     20,
+     16,
+     110
+    ],
+    [
+     "Counter Stool 2-Pack",
+     38,
+     30,
+     22,
+     20,
+     120
+    ]
+   ],
+   "variants": {
+    "color": [
+     "Natural Oak",
+     "Walnut",
+     "Black",
+     "White"
+    ]
+   },
+   "sku": "{p}-{n4}-{c3}",
+   "case_qty": [
+    1,
+    2
+   ],
+   "cases_per_pallet": [
+    4,
+    12
+   ],
+   "hs": "9403.60",
+   "origin": [
+    "VN",
+    "MY",
+    "US",
+    "MX"
+   ],
+   "mods": "goods"
+  },
+  "rugs": {
+   "items": [
+    [
+     "Hand-Tufted Wool Rug 5x8",
+     24,
+     62,
+     12,
+     12,
+     110
+    ],
+    [
+     "Flatweave Cotton Runner 2.5x8",
+     6,
+     32,
+     8,
+     8,
+     38
+    ],
+    [
+     "Vintage Wash Rug 8x10",
+     42,
+     98,
+     14,
+     14,
+     180
+    ],
+    [
+     "Jute Area Rug 6x9",
+     28,
+     74,
+     12,
+     12,
+     95
+    ],
+    [
+     "Washable Kitchen Mat 2x3",
+     3,
+     26,
+     6,
+     6,
+     15
+    ]
+   ],
+   "variants": {
+    "color": [
+     "Ivory",
+     "Blue",
+     "Rust",
+     "Grey",
+     "Multi"
+    ]
+   },
+   "sku": "{p}-{n4}-{c3}",
+   "case_qty": [
+    1,
+    4
+   ],
+   "cases_per_pallet": [
+    10,
+    24
+   ],
+   "hs": "5703.29",
+   "origin": [
+    "IN",
+    "TR"
+   ],
+   "mods": "goods"
+  },
+  "lighting": {
+   "items": [
+    [
+     "Brass Pendant Light",
+     4.2,
+     14,
+     14,
+     12,
+     46
+    ],
+    [
+     "LED Floor Lamp",
+     9.5,
+     40,
+     10,
+     10,
+     52
+    ],
+    [
+     "Rattan Table Lamp",
+     3.8,
+     16,
+     12,
+     12,
+     31
+    ],
+    [
+     "Wall Sconce Pair",
+     4.6,
+     14,
+     10,
+     8,
+     58
+    ],
+    [
+     "LED Edison Bulb 4-Pack",
+     0.8,
+     8,
+     6,
+     4,
+     6
+    ],
+    [
+     "Glass Globe Chandelier",
+     12,
+     24,
+     24,
+     18,
+     110
+    ]
+   ],
+   "variants": {
+    "finish": [
+     "Brass",
+     "Matte Black",
+     "Nickel"
+    ]
+   },
+   "sku": "{p}-{n4}-{c3}",
+   "case_qty": [
+    2,
+    12
+   ],
+   "cases_per_pallet": [
+    20,
+    50
+   ],
+   "hs": "9405.11",
+   "origin": [
+    "CN",
+    "VN"
+   ],
+   "mods": "goods"
+  },
+  "pottery": {
+   "items": [
+    [
+     "Hand-Thrown Mug",
+     1.1,
+     6,
+     5,
+     5,
+     7
+    ],
+    [
+     "Speckled Serving Bowl",
+     3.4,
+     12,
+     12,
+     6,
+     16
+    ],
+    [
+     "Bud Vase",
+     0.9,
+     6,
+     4,
+     4,
+     6
+    ],
+    [
+     "Stoneware Planter 8in",
+     4.5,
+     10,
+     10,
+     9,
+     14
+    ],
+    [
+     "Dinner Plate Set (2)",
+     4.8,
+     12,
+     12,
+     4,
+     18
+    ]
+   ],
+   "variants": {
+    "glaze": [
+     "Speckled White",
+     "Ocean",
+     "Moss",
+     "Clay"
+    ]
+   },
+   "sku": "{p}-{n4}-{c3}",
+   "case_qty": [
+    4,
+    12
+   ],
+   "cases_per_pallet": [
+    20,
+    40
+   ],
+   "hs": "6912.00",
+   "origin": [
+    "US",
+    "PT",
+    "MX"
+   ],
+   "mods": "goods"
+  },
+  "auto_parts": {
+   "items": [
+    [
+     "Ceramic Brake Pad Set Front",
+     4.1,
+     8,
+     6,
+     3,
+     18
+    ],
+    [
+     "Ceramic Brake Pad Set Rear",
+     3.6,
+     8,
+     6,
+     3,
+     16
+    ],
+    [
+     "Vented Brake Rotor",
+     18,
+     13,
+     13,
+     4,
+     32
+    ],
+    [
+     "Synthetic Oil Filter",
+     0.9,
+     5,
+     4,
+     4,
+     3.8
+    ],
+    [
+     "Engine Air Filter",
+     1.2,
+     12,
+     10,
+     3,
+     6
+    ],
+    [
+     "Cabin Air Filter",
+     0.6,
+     10,
+     9,
+     2,
+     5
+    ],
+    [
+     "Iridium Spark Plug 4-Pack",
+     0.5,
+     6,
+     4,
+     2,
+     14
+    ],
+    [
+     "Wiper Blade 22in",
+     0.7,
+     24,
+     3,
+     2,
+     5.5
+    ],
+    [
+     "Remanufactured Alternator",
+     14,
+     10,
+     8,
+     8,
+     88
+    ],
+    [
+     "Serpentine Belt",
+     0.9,
+     10,
+     6,
+     2,
+     11
+    ],
+    [
+     "Wheel Hub Assembly",
+     9.5,
+     10,
+     10,
+     8,
+     46
+    ],
+    [
+     "Ignition Coil",
+     1.1,
+     8,
+     4,
+     4,
+     19
+    ]
+   ],
+   "variants": {
+    "fit": "$fitments"
+   },
+   "sku": "{p}-{m}{fit}",
+   "case_qty": [
+    1,
+    24
+   ],
+   "cases_per_pallet": [
+    20,
+    60
+   ],
+   "hs": "8708.30",
+   "origin": [
+    "US",
+    "MX",
+    "CN",
+    "JP",
+    "DE"
+   ],
+   "mods": "auto"
+  },
+  "tires": {
+   "items": [
+    [
+     "All-Season Tire 225/65R17",
+     29,
+     29,
+     29,
+     9,
+     92
+    ],
+    [
+     "All-Season Tire 205/55R16",
+     22,
+     25,
+     25,
+     8,
+     78
+    ],
+    [
+     "All-Terrain Tire 265/70R17",
+     42,
+     32,
+     32,
+     11,
+     145
+    ],
+    [
+     "Commercial Tire 225/75R16",
+     36,
+     30,
+     30,
+     9,
+     120
+    ],
+    [
+     "Winter Tire 215/60R16",
+     25,
+     27,
+     27,
+     9,
+     99
+    ]
+   ],
+   "variants": {
+    "load": [
+     "SL",
+     "XL"
+    ]
+   },
+   "sku": "{p}-{m}-{s2}",
+   "case_qty": [
+    1,
+    1
+   ],
+   "cases_per_pallet": [
+    12,
+    24
+   ],
+   "hs": "4011.10",
+   "origin": [
+    "US",
+    "MX",
+    "TH",
+    "KR"
+   ],
+   "mods": "auto"
+  },
+  "auto_es": {
+   "items": [
+    [
+     "Balatas Cerámicas Delanteras",
+     4.1,
+     8,
+     6,
+     3,
+     16
+    ],
+    [
+     "Balatas Cerámicas Traseras",
+     3.6,
+     8,
+     6,
+     3,
+     14
+    ],
+    [
+     "Disco de Freno Ventilado",
+     18,
+     13,
+     13,
+     4,
+     28
+    ],
+    [
+     "Filtro de Aceite",
+     0.9,
+     5,
+     4,
+     4,
+     3.2
+    ],
+    [
+     "Filtro de Aire de Motor",
+     1.2,
+     12,
+     10,
+     3,
+     5
+    ],
+    [
+     "Bujías de Iridio (4)",
+     0.5,
+     6,
+     4,
+     2,
+     12
+    ],
+    [
+     "Amortiguador Trasero",
+     6.5,
+     22,
+     5,
+     5,
+     24
+    ],
+    [
+     "Banda Serpentina",
+     0.9,
+     10,
+     6,
+     2,
+     9
+    ],
+    [
+     "Bomba de Agua",
+     4.2,
+     9,
+     8,
+     7,
+     27
+    ],
+    [
+     "Sensor de Oxígeno",
+     0.6,
+     8,
+     4,
+     3,
+     21
+    ]
+   ],
+   "variants": {
+    "fit": "$fitments"
+   },
+   "sku": "{p}-{m}{fit}",
+   "case_qty": [
+    1,
+    24
+   ],
+   "cases_per_pallet": [
+    20,
+    60
+   ],
+   "hs": "8708.30",
+   "origin": [
+    "MX",
+    "US",
+    "CN"
+   ],
+   "lang": "es",
+   "mods": "auto_es"
+  },
+  "pet": {
+   "items": [
+    [
+     "Grain-Free Dog Kibble Salmon 24lb",
+     24.5,
+     24,
+     16,
+     5,
+     31
+    ],
+    [
+     "Small Breed Dog Kibble 12lb",
+     12.3,
+     18,
+     12,
+     4,
+     19
+    ],
+    [
+     "Indoor Cat Kibble 7lb",
+     7.2,
+     15,
+     10,
+     4,
+     14
+    ],
+    [
+     "Freeze-Dried Chicken Treats 4oz",
+     0.3,
+     8,
+     6,
+     2,
+     6
+    ],
+    [
+     "Clumping Cat Litter 20lb",
+     20.5,
+     16,
+     12,
+     7,
+     9
+    ],
+    [
+     "Puppy Training Pads 100ct",
+     5.8,
+     16,
+     12,
+     8,
+     15
+    ],
+    [
+     "Rope Tug Toy",
+     0.6,
+     12,
+     5,
+     3,
+     3.5
+    ],
+    [
+     "Reflective Leash 6ft",
+     0.4,
+     8,
+     6,
+     2,
+     5
+    ],
+    [
+     "Salmon Oil Supplement 16oz",
+     1.2,
+     8,
+     3,
+     3,
+     8
+    ],
+    [
+     "Dental Chews 30ct",
+     1.9,
+     10,
+     7,
+     3,
+     12
+    ]
+   ],
+   "variants": {
+    "size": [
+     "S",
+     "M",
+     "L"
+    ]
+   },
+   "sku": "{p}-{n4}-{s}",
+   "case_qty": [
+    1,
+    12
+   ],
+   "cases_per_pallet": [
+    30,
+    60
+   ],
+   "hs": "2309.10",
+   "origin": [
+    "US",
+    "CA",
+    "TH"
+   ],
+   "shelf_life": [
+    270,
+    540
+   ],
+   "mods": "pet"
+  },
+  "pet_fresh": {
+   "items": [
+    [
+     "Fresh Beef Recipe 2lb",
+     2.2,
+     8,
+     6,
+     3,
+     6
+    ],
+    [
+     "Fresh Turkey Recipe 2lb",
+     2.2,
+     8,
+     6,
+     3,
+     5.5
+    ],
+    [
+     "Fresh Salmon Recipe 2lb",
+     2.2,
+     8,
+     6,
+     3,
+     7
+    ],
+    [
+     "Gently Cooked Chicken 1lb",
+     1.1,
+     6,
+     5,
+     2,
+     3.4
+    ],
+    [
+     "Bone Broth Topper 16oz",
+     1.2,
+     7,
+     4,
+     4,
+     3
+    ]
+   ],
+   "variants": {
+    "pack": [
+     "Single",
+     "4-Pack"
+    ]
+   },
+   "sku": "{p}-{n4}-{s2}",
+   "case_qty": [
+    8,
+    24
+   ],
+   "cases_per_pallet": [
+    60,
+    100
+   ],
+   "hs": "2309.10",
+   "origin": [
+    "US"
+   ],
+   "shelf_life": [
+    21,
+    60
+   ],
+   "mods": "pet"
+  },
+  "supplements": {
+   "items": [
+    [
+     "Whey Protein Isolate Chocolate 2lb",
+     2.3,
+     8,
+     8,
+     10,
+     17
+    ],
+    [
+     "Whey Protein Isolate Vanilla 5lb",
+     5.4,
+     10,
+     10,
+     13,
+     36
+    ],
+    [
+     "Creatine Monohydrate 500g",
+     1.2,
+     6,
+     6,
+     7,
+     9
+    ],
+    [
+     "Daily Multivitamin 90ct",
+     0.4,
+     5,
+     3,
+     3,
+     6
+    ],
+    [
+     "Omega-3 Fish Oil 120ct",
+     0.6,
+     6,
+     3,
+     3,
+     8
+    ],
+    [
+     "Magnesium Glycinate 120ct",
+     0.5,
+     5,
+     3,
+     3,
+     6.5
+    ],
+    [
+     "Collagen Peptides 20oz",
+     1.4,
+     7,
+     5,
+     8,
+     15
+    ],
+    [
+     "Pre-Workout Citrus 30 Servings",
+     0.8,
+     5,
+     5,
+     6,
+     11
+    ],
+    [
+     "Electrolyte Stick Packs 30ct",
+     0.7,
+     7,
+     4,
+     4,
+     10
+    ],
+    [
+     "Vitamin D3 5000IU 240ct",
+     0.3,
+     4,
+     2,
+     2,
+     5
+    ]
+   ],
+   "variants": {
+    "flavor": [
+     "Unflavored",
+     "Chocolate",
+     "Vanilla",
+     "Berry",
+     "Citrus"
+    ]
+   },
+   "sku": "{p}-{n4}-{c3}",
+   "case_qty": [
+    6,
+    24
+   ],
+   "cases_per_pallet": [
+    40,
+    80
+   ],
+   "hs": "2106.90",
+   "origin": [
+    "US",
+    "CA"
+   ],
+   "shelf_life": [
+    540,
+    900
+   ],
+   "mods": "supplements"
+  },
+  "supplements_es": {
+   "items": [
+    [
+     "Té de Manzanilla Orgánico 25 sobres",
+     0.2,
+     6,
+     3,
+     3,
+     2.5
+    ],
+    [
+     "Cápsulas de Moringa 90ct",
+     0.3,
+     4,
+     2,
+     2,
+     4
+    ],
+    [
+     "Colágeno Hidrolizado 500g",
+     1.2,
+     6,
+     6,
+     7,
+     11
+    ],
+    [
+     "Extracto de Árnica 60ml",
+     0.3,
+     4,
+     2,
+     2,
+     4.5
+    ],
+    [
+     "Cúrcuma con Pimienta 60ct",
+     0.3,
+     4,
+     2,
+     2,
+     5
+    ],
+    [
+     "Miel de Agave Orgánica 500ml",
+     1.6,
+     8,
+     3,
+     3,
+     4
+    ],
+    [
+     "Espirulina en Polvo 250g",
+     0.7,
+     6,
+     4,
+     4,
+     7
+    ]
+   ],
+   "variants": {
+    "presentacion": [
+     "Chico",
+     "Grande"
+    ]
+   },
+   "sku": "{p}-{n4}-{s2}",
+   "case_qty": [
+    12,
+    48
+   ],
+   "cases_per_pallet": [
+    40,
+    80
+   ],
+   "hs": "2106.90",
+   "origin": [
+    "MX"
+   ],
+   "shelf_life": [
+    365,
+    730
+   ],
+   "lang": "es",
+   "mods": "supp_es"
+  },
+  "office": {
+   "items": [
+    [
+     "Copy Paper Letter 10-Ream Case",
+     50,
+     18,
+     11,
+     11,
+     32
+    ],
+    [
+     "Ballpoint Pens Blue 12ct",
+     0.3,
+     7,
+     4,
+     1,
+     2.2
+    ],
+    [
+     "Heavy-Duty Stapler",
+     1.1,
+     9,
+     4,
+     3,
+     8
+    ],
+    [
+     "Letter File Folders 100ct",
+     3.4,
+     12,
+     10,
+     3,
+     9
+    ],
+    [
+     "Sticky Notes 3x3 24-Pack",
+     2.1,
+     10,
+     6,
+     4,
+     11
+    ],
+    [
+     "Dry Erase Markers 8ct",
+     0.4,
+     7,
+     5,
+     1,
+     5
+    ],
+    [
+     "Ergonomic Mesh Office Chair",
+     38,
+     28,
+     26,
+     16,
+     95
+    ],
+    [
+     "Laminated Whiteboard 36x24",
+     8,
+     38,
+     26,
+     2,
+     22
+    ]
+   ],
+   "variants": {
+    "pack": [
+     "Each",
+     "Bulk"
+    ]
+   },
+   "sku": "{p}-{n4}-{s2}",
+   "case_qty": [
+    1,
+    24
+   ],
+   "cases_per_pallet": [
+    30,
+    60
+   ],
+   "hs": "4802.56",
+   "origin": [
+    "US",
+    "CN",
+    "MX"
+   ],
+   "mods": "goods"
+  },
+  "hardware": {
+   "items": [
+    [
+     "Drywall Screws #6 x 1-5/8in 5lb",
+     5.2,
+     8,
+     6,
+     4,
+     11
+    ],
+    [
+     "Claw Hammer 16oz",
+     1.6,
+     13,
+     5,
+     2,
+     8
+    ],
+    [
+     "LED A19 Bulb 60W Eq 4-Pack",
+     0.9,
+     9,
+     6,
+     3,
+     5
+    ],
+    [
+     "Outdoor Extension Cord 25ft",
+     2.4,
+     10,
+     10,
+     4,
+     12
+    ],
+    [
+     "Utility Knife",
+     0.4,
+     8,
+     3,
+     1,
+     3
+    ],
+    [
+     "Cordless Drill 20V Kit",
+     6.5,
+     14,
+     12,
+     5,
+     64
+    ],
+    [
+     "Painter's Tape 1.88in 3-Pack",
+     1.3,
+     8,
+     8,
+     3,
+     9
+    ],
+    [
+     "Tape Measure 25ft",
+     0.9,
+     5,
+     4,
+     2,
+     6
+    ],
+    [
+     "Safety Glasses",
+     0.2,
+     7,
+     4,
+     2,
+     2.5
+    ],
+    [
+     "Galvanized Deck Screws 1lb",
+     1.1,
+     6,
+     4,
+     3,
+     6
+    ]
+   ],
+   "variants": {
+    "pack": [
+     "Each",
+     "Contractor"
+    ]
+   },
+   "sku": "{p}-{n4}-{s2}",
+   "case_qty": [
+    4,
+    48
+   ],
+   "cases_per_pallet": [
+    30,
+    60
+   ],
+   "hs": "7318.12",
+   "origin": [
+    "US",
+    "CN",
+    "TW",
+    "MX"
+   ],
+   "mods": "goods"
+  },
+  "toys": {
+   "items": [
+    [
+     "Wooden Puzzle 48pc",
+     1.1,
+     12,
+     9,
+     2,
+     6
+    ],
+    [
+     "Plush Bear 12in",
+     0.7,
+     12,
+     8,
+     6,
+     5
+    ],
+    [
+     "Building Blocks 500pc",
+     3.2,
+     15,
+     11,
+     4,
+     14
+    ],
+    [
+     "Remote Control Truck",
+     2.8,
+     14,
+     9,
+     8,
+     19
+    ],
+    [
+     "Art Easel Double-Sided",
+     14,
+     26,
+     22,
+     5,
+     32
+    ],
+    [
+     "Board Game Family Edition",
+     2.1,
+     11,
+     11,
+     3,
+     11
+    ],
+    [
+     "Magnetic Tiles 60pc",
+     4.1,
+     14,
+     10,
+     4,
+     24
+    ]
+   ],
+   "variants": {
+    "edition": [
+     "Standard",
+     "Deluxe"
+    ]
+   },
+   "sku": "{p}-{n4}-{s2}",
+   "case_qty": [
+    4,
+    12
+   ],
+   "cases_per_pallet": [
+    30,
+    60
+   ],
+   "hs": "9503.00",
+   "origin": [
+    "CN",
+    "VN"
+   ],
+   "mods": "goods"
+  },
+  "books": {
+   "items": [
+    [
+     "Paperback Novel",
+     0.7,
+     8,
+     5,
+     1,
+     4.5
+    ],
+    [
+     "Hardcover Cookbook",
+     3.1,
+     11,
+     9,
+     1,
+     12
+    ],
+    [
+     "Children's Picture Book",
+     1.0,
+     10,
+     10,
+     1,
+     4
+    ],
+    [
+     "Trade Paperback Nonfiction",
+     1.1,
+     9,
+     6,
+     1,
+     6
+    ],
+    [
+     "Hardcover Biography",
+     2.2,
+     10,
+     7,
+     2,
+     10
+    ],
+    [
+     "Activity Book",
+     0.6,
+     11,
+     8,
+     1,
+     2.5
+    ]
+   ],
+   "variants": {
+    "edition": [
+     "EN",
+     "FR"
+    ]
+   },
+   "sku": "{p}-{n4}-{s2}",
+   "case_qty": [
+    12,
+    40
+   ],
+   "cases_per_pallet": [
+    40,
+    70
+   ],
+   "hs": "4901.99",
+   "origin": [
+    "CA",
+    "US"
+   ],
+   "isbn": true,
+   "mods": "goods"
+  },
+  "general": {
+   "items": [
+    [
+     "Storage Tote 18gal",
+     4.2,
+     24,
+     17,
+     14,
+     7
+    ],
+    [
+     "Folding Utility Cart",
+     15,
+     30,
+     18,
+     8,
+     34
+    ],
+    [
+     "Insulated Water Bottle 24oz",
+     0.9,
+     10,
+     4,
+     4,
+     6
+    ],
+    [
+     "Shop Towels 50ct",
+     1.4,
+     10,
+     8,
+     6,
+     4
+    ],
+    [
+     "LED Work Light",
+     2.2,
+     10,
+     8,
+     5,
+     15
+    ]
+   ],
+   "variants": {
+    "color": [
+     "Black",
+     "Grey",
+     "Blue"
+    ]
+   },
+   "sku": "{p}-{n4}-{c3}",
+   "case_qty": [
+    4,
+    24
+   ],
+   "cases_per_pallet": [
+    30,
+    60
+   ],
+   "hs": "3924.90",
+   "origin": [
+    "CN",
+    "US",
+    "MX"
+   ],
+   "mods": "goods"
+  }
+ },
+ "client_category": {
+  "FERNKID": "kids_apparel",
+  "SOLSWIM": "swim",
+  "BRTLINE": "cables",
+  "KINETIC": "gaming",
+  "BLRIDGE": "coffee",
+  "SIERRA": "water",
+  "MAPLEH": "syrup",
+  "CASADOR": "salsas_es",
+  "POLARPK": "frozen_desserts",
+  "HRVMOON": "snacks",
+  "DERMACL": "derm_rx",
+  "OAKLINE": "furniture",
+  "RIVSTN": "rugs",
+  "LUMHAUS": "lighting",
+  "CLAYWRK": "pottery",
+  "TORQUE": "auto_es",
+  "HWYTIRE": "tires",
+  "BARKLEY": "pet_fresh",
+  "HERBCOL": "supplements_es",
+  "CRSTOFF": "office",
+  "BEACNHW": "hardware",
+  "LAKETOY": "toys",
+  "PAPRLF": "books"
+ },
+ "vertical_default": {
+  "apparel": "apparel",
+  "electronics": "electronics",
+  "food_bev": "food_bev",
+  "health_beauty": "health_beauty",
+  "home_goods": "home_goods",
+  "auto_parts": "auto_parts",
+  "pet": "pet",
+  "supplements": "supplements",
+  "b2b_general": "general"
+ },
+ "suppliers": {
+  "apparel": [
+   "Hongda Garment Co., Ltd.",
+   "Saigon Apparel Joint Stock Co.",
+   "Dhaka Knitwear Ltd.",
+   "Textiles del Norte S.A. de C.V.",
+   "Lima Cotton Mills S.A.C."
+  ],
+  "kids_apparel": [
+   "Hongda Garment Co., Ltd.",
+   "Dhaka Knitwear Ltd.",
+   "Tiruppur Kids Wear Pvt Ltd"
+  ],
+  "swim": [
+   "Guangzhou Swimwear Mfg.",
+   "Medellín Swim S.A.S."
+  ],
+  "electronics": [
+   "Shenzhen Brightway Electronics",
+   "Penang Precision Assembly Sdn Bhd",
+   "Taichung Audio Corp.",
+   "Electrónica Fronteriza S.A. de C.V."
+  ],
+  "cables": [
+   "Dongguan Linkcable Co.",
+   "Shenzhen Brightway Electronics"
+  ],
+  "gaming": [
+   "Taichung Audio Corp.",
+   "Shenzhen Brightway Electronics"
+  ],
+  "food_bev": [
+   "Copper Kettle Foods - Plant 2 (Elgin IL)",
+   "Midwest Co-Packers LLC",
+   "Prairie Dairy Cooperative",
+   "Lakeview Fresh Kitchens"
+  ],
+  "frozen_desserts": [
+   "Polar Peak Creamery (Wausau WI)",
+   "Northwoods Frozen Co-Pack"
+  ],
+  "coffee": [
+   "Blue Ridge Roastery (Asheville NC)",
+   "Carolina Packaging Co-Op"
+  ],
+  "water": [
+   "Sierra Spring Bottling (Truckee CA)",
+   "Lone Star Bottling Co."
+  ],
+  "snacks": [
+   "Harvest Moon Bakery (Fort Wayne IN)",
+   "Great Lakes Snack Co-Pack"
+  ],
+  "syrup": [
+   "Érablière Maple Hollow (Beauce QC)",
+   "Fédération des Producteurs Acéricoles Co-op"
+  ],
+  "salsas_es": [
+   "Casa Dorada Planta Guadalupe",
+   "Conservas del Noreste S.A. de C.V."
+  ],
+  "health_beauty": [
+   "Garden State Cosmetics Labs",
+   "Seoul Skin Science Co.",
+   "Laboratoires Rive Gauche",
+   "Toronto Botanicals Mfg."
+  ],
+  "derm_rx": [
+   "Dermaclear Compounding Lab (Skokie IL)"
+  ],
+  "home_goods": [
+   "Jaipur Home Textiles",
+   "Porto Ceramics Lda.",
+   "Ningbo Homeware Co.",
+   "Izmir Linen Mills"
+  ],
+  "furniture": [
+   "Binh Duong Furniture Co.",
+   "Muebles Finos de Jalisco",
+   "Carolina Hardwood Works"
+  ],
+  "rugs": [
+   "Bhadohi Handloom Exports",
+   "Gaziantep Rug Mills"
+  ],
+  "lighting": [
+   "Zhongshan Lighting Works",
+   "Hanoi Lamp Co."
+  ],
+  "pottery": [
+   "Clayworks Studio (Sparks NV)",
+   "Talavera del Centro"
+  ],
+  "auto_parts": [
+   "Ohio Friction Products",
+   "Monterrey Autopartes S.A. de C.V.",
+   "Ningbo Filtration Co.",
+   "Detroit Reman Industries"
+  ],
+  "tires": [
+   "Carolina Tire Mfg.",
+   "Llantas del Bajío",
+   "Rayong Rubber Co."
+  ],
+  "auto_es": [
+   "Monterrey Autopartes S.A. de C.V.",
+   "Frenos y Partes de Saltillo"
+  ],
+  "pet": [
+   "Heartland Pet Nutrition",
+   "Ontario Pet Foods Inc.",
+   "Bangkok Pet Treats Co."
+  ],
+  "pet_fresh": [
+   "Barkley Fresh Kitchen (Racine WI)"
+  ],
+  "supplements": [
+   "Utah Nutraceutical Mfg.",
+   "Ontario Sport Nutrition Labs",
+   "Peak Protein Co-Packing"
+  ],
+  "supplements_es": [
+   "Herbolaria del Norte S.A. de C.V.",
+   "Agaves Orgánicos de Jalisco"
+  ],
+  "office": [
+   "Crestview Paper Mill",
+   "Ningbo Stationery Co.",
+   "Midwest Office Products"
+  ],
+  "hardware": [
+   "Midwest Fastener Corp.",
+   "Taiwan Tool Works",
+   "Keystone Electrical Supply"
+  ],
+  "toys": [
+   "Shantou Toy Factory",
+   "Hanoi Wooden Toys Co."
+  ],
+  "books": [
+   "Marquis Book Printing (QC)",
+   "Friesens Press Services"
+  ],
+  "general": [
+   "Ningbo Homeware Co.",
+   "Monterrey Plásticos S.A."
+  ]
+ },
+ "lot_formats": {
+  "default": "{yy}{doy}{letter}",
+  "CPRKTL": "L{yy}{doy}{letter}",
+  "GRNFLD": "GF{yy}{mm}{dd}-{n2}",
+  "POLARPK": "PP{yy}{doy}",
+  "CASADOR": "CD{yy}{mm}-{n3}",
+  "BARKLEY": "BB{yy}{doy}{letter}",
+  "DERMACL": "DX{n6}"
+ },
+ "fitments": {
+  "en": [
+   "Ford F-150 2015-2020",
+   "Chevrolet Silverado 1500 2014-2019",
+   "Toyota Camry 2018-2023",
+   "Honda Civic 2016-2021",
+   "Jeep Wrangler JL 2018-2023",
+   "Ram 1500 2019-2024",
+   "Nissan Altima 2013-2018",
+   "Toyota RAV4 2019-2024",
+   "Honda CR-V 2017-2022",
+   "Hyundai Elantra 2017-2022",
+   "Toyota Tacoma 2016-2023",
+   "Subaru Outback 2015-2019",
+   "Ford Explorer 2020-2024",
+   "GMC Sierra 2019-2024"
+  ],
+  "es": [
+   "Nissan Versa 2012-2019",
+   "Chevrolet Aveo 2018-2023",
+   "VW Jetta A6 2011-2018",
+   "Nissan Tsuru 2005-2017",
+   "Toyota Hilux 2016-2023",
+   "Nissan NP300 2016-2023",
+   "Chevrolet Spark 2016-2022",
+   "VW Vento 2016-2022",
+   "Kia Rio 2018-2023",
+   "Ford Lobo 2015-2020"
+  ]
+ },
+ "modifier_groups": {
+  "food": [
+   "Original",
+   "Organic",
+   "Family Size",
+   "Club Pack",
+   "Reduced Sodium",
+   "Limited Edition",
+   "Value Pack",
+   "Premium",
+   "Classic",
+   "Light",
+   "Seasonal"
+  ],
+  "food_es": [
+   "Original",
+   "Orgánico",
+   "Tamaño Familiar",
+   "Picante",
+   "Edición Especial",
+   "Paquete Económico",
+   "Tradicional",
+   "Casero",
+   "Ahumado",
+   "Suave",
+   "Norteño"
+  ],
+  "water": [
+   "Original",
+   "Club Pack",
+   "Value Pack",
+   "Premium",
+   "Mountain Source"
+  ],
+  "beauty": [
+   "Original",
+   "Sensitive",
+   "Fragrance-Free",
+   "Travel Size",
+   "Value Size",
+   "Limited Edition",
+   "Professional",
+   "Daily"
+  ],
+  "apparel": [
+   "Classic",
+   "Essential",
+   "Relaxed Fit",
+   "Slim Fit",
+   "Lightweight",
+   "Heritage",
+   "Everyday"
+  ],
+  "goods": [
+   "Premium",
+   "Pro",
+   "Value Pack",
+   "Classic",
+   "Essentials",
+   "Signature",
+   "Everyday",
+   "Limited Edition",
+   "Deluxe"
+  ],
+  "auto": [
+   "Premium",
+   "Heavy Duty",
+   "OE Replacement",
+   "Economy",
+   "Severe Duty",
+   "Performance"
+  ],
+  "auto_es": [
+   "Premium",
+   "Uso Rudo",
+   "Económico",
+   "Original",
+   "Reforzado",
+   "Alto Desempeño"
+  ],
+  "supp_es": [
+   "Original",
+   "Orgánico",
+   "Natural",
+   "Concentrado",
+   "Edición Especial"
+  ],
+  "pet": [
+   "Original",
+   "Grain-Free",
+   "Senior",
+   "Puppy",
+   "Value Size",
+   "Limited Ingredient"
+  ],
+  "supplements": [
+   "Original",
+   "Unflavored",
+   "Sport",
+   "Women's",
+   "Men's",
+   "Value Size",
+   "Clinical Strength"
+  ]
+ }
+}

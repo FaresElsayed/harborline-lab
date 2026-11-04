@@ -1,0 +1,269 @@
+/* Fallbacks for the brand token contract (DESIGN_SPEC §8), copied from brand/tokens.css v1.0.
+   brand/tokens.css is inlined right after this file (vite.config.ts, virtual:brand-tokens.css) and wins.
+   Keep this file only as a safety net: never edit colours here, edit the brand kit. */
+
+:root {
+  color-scheme: light;
+
+  /* Brand constants (same in both modes) */
+  --hl-navy: #0E2A47;
+  --hl-teal: #0E7C7B;
+  --hl-signal: #F2662B;
+  --hl-sand: #F4EFE6;
+
+  /* Type */
+  --hl-font-sans: "Hanken Grotesk", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  --hl-font-display: "Archivo Narrow", "Arial Narrow", "Roboto Condensed", "Segoe UI", sans-serif;
+  --hl-font-mono: "JetBrains Mono", "Cascadia Mono", Consolas, ui-monospace, Menlo, monospace;
+  --hl-step-small: 0.8125rem;
+  --hl-step-body: 1rem;
+  --hl-step-lead: 1.25rem;
+  --hl-step-head: 2rem;
+  --hl-step-display: clamp(2.5rem, 1.6rem + 3vw, 4rem);
+
+  /* Shape, space, motion */
+  --hl-radius-s: 4px;
+  --hl-radius-m: 8px;
+  --hl-radius-l: 12px;
+  --hl-space-1: 4px;
+  --hl-space-2: 8px;
+  --hl-space-3: 12px;
+  --hl-space-4: 16px;
+  --hl-space-5: 24px;
+  --hl-space-6: 32px;
+  --hl-space-7: 48px;
+  --hl-space-8: 64px;
+  --hl-ease: cubic-bezier(0.2, 0, 0, 1);
+  --hl-dur-fast: 120ms;
+  --hl-dur: 200ms;
+
+  /* Surfaces and ink */
+  --hl-bg: #F3F5F7;
+  --hl-surface: #FFFFFF;
+  --hl-surface-2: #E9EEF2;
+  --hl-border: #D2DAE2;
+  --hl-text: #0F2338;
+  --hl-text-muted: #4F6175;
+
+  /* Accent and focus */
+  --hl-accent: #0E7C7B;
+  --hl-accent-strong: #09605F;
+  --hl-accent-contrast: #FFFFFF;
+  --hl-focus: #C9501C;
+
+  /* Status (reserved meaning; always pair with an icon + label) */
+  --hl-good: #1A763F;
+  --hl-warn: #9B5F02;
+  --hl-bad: #C22826;
+  --hl-info: #1D5C9B;
+  --hl-good-bg: #E3F2E8;
+  --hl-warn-bg: #FBF0DC;
+  --hl-bad-bg: #FBE5E3;
+  --hl-info-bg: #E2EDF8;
+
+  /* Data viz: categorical, fixed order, never cycled (validated) */
+  --hl-viz-1: #2973D0;
+  --hl-viz-2: #F2672D;
+  --hl-viz-3: #069B8D;
+  --hl-viz-4: #E6A313;
+  --hl-viz-5: #DB6397;
+  --hl-viz-6: #288420;
+  --hl-viz-7: #6B4EC7;
+  --hl-viz-8: #8C4A11;
+
+  /* Data viz: sequential, one hue, low -> high */
+  --hl-seq-1: #DFECFE;
+  --hl-seq-2: #B8D3F9;
+  --hl-seq-3: #8AB7F4;
+  --hl-seq-4: #5A97E7;
+  --hl-seq-5: #3077D0;
+  --hl-seq-6: #1A57A1;
+  --hl-seq-7: #103A6D;
+
+  /* Data viz: diverging, blue (below) <- neutral -> orange (above) */
+  --hl-div-1: #1253A1;
+  --hl-div-2: #367AD1;
+  --hl-div-3: #76A7E9;
+  --hl-div-4: #B5D0F5;
+  --hl-div-5: #E6E8EA;
+  --hl-div-6: #F6C0A8;
+  --hl-div-7: #E28B63;
+  --hl-div-8: #C4530F;
+  --hl-div-9: #8C3701;
+
+  /* Data viz chrome */
+  --hl-viz-other: #8A97A5;
+  --hl-grid: #E3E8ED;
+  --hl-axis: #AEB9C4;
+
+  /* Department accents (chrome only: stripe, chip, active tab; never series colours) */
+  --hl-dept-it: #4759B7;
+  --hl-dept-ops: #0E7C7B;
+  --hl-dept-fin: #7D5D1C;
+  --hl-dept-transport: #C74C09;
+  --hl-dept-sales: #BC2C4F;
+  --hl-dept-cs: #853692;
+  --hl-dept-qa: #3A6D12;
+  --hl-dept-exec: #2A4A6C;
+
+  /* Report header band */
+  --hl-header-bg: #0E2A47;
+  --hl-header-text: #FFFFFF;
+  --hl-header-muted: #A9BCD0;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  /* Surfaces and ink */
+  --hl-bg: #08131F;
+  --hl-surface: #0F1E2E;
+  --hl-surface-2: #16293D;
+  --hl-border: #26394E;
+  --hl-text: #E6EDF3;
+  --hl-text-muted: #9BAEC1;
+
+  /* Accent and focus */
+  --hl-accent: #33B5AE;
+  --hl-accent-strong: #74D3CC;
+  --hl-accent-contrast: #04211F;
+  --hl-focus: #FF8A4C;
+
+  /* Status (reserved meaning; always pair with an icon + label) */
+  --hl-good: #5BCC80;
+  --hl-warn: #F3B94C;
+  --hl-bad: #F66D67;
+  --hl-info: #7FB6EE;
+  --hl-good-bg: #12321F;
+  --hl-warn-bg: #382A10;
+  --hl-bad-bg: #3D1A1A;
+  --hl-info-bg: #132C47;
+
+  /* Data viz: categorical, fixed order, never cycled (validated) */
+  --hl-viz-1: #3983E1;
+  --hl-viz-2: #E05E27;
+  --hl-viz-3: #08A799;
+  --hl-viz-4: #BF8608;
+  --hl-viz-5: #D0598E;
+  --hl-viz-6: #33862C;
+  --hl-viz-7: #8C79E0;
+  --hl-viz-8: #9B5824;
+
+  /* Data viz: sequential, one hue, low -> high */
+  --hl-seq-1: #142E50;
+  --hl-seq-2: #194276;
+  --hl-seq-3: #215AA2;
+  --hl-seq-4: #3377CD;
+  --hl-seq-5: #5D97E4;
+  --hl-seq-6: #8AB7F4;
+  --hl-seq-7: #BBD7FC;
+
+  /* Data viz: diverging, blue (below) <- neutral -> orange (above) */
+  --hl-div-1: #A2C7F8;
+  --hl-div-2: #66A0EE;
+  --hl-div-3: #367AD1;
+  --hl-div-4: #215AA2;
+  --hl-div-5: #3A3D41;
+  --hl-div-6: #933D08;
+  --hl-div-7: #C4530F;
+  --hl-div-8: #E97C48;
+  --hl-div-9: #F6B294;
+
+  /* Data viz chrome */
+  --hl-viz-other: #6F7F90;
+  --hl-grid: #1C3046;
+  --hl-axis: #3A5068;
+
+  /* Department accents (chrome only: stripe, chip, active tab; never series colours) */
+  --hl-dept-it: #889EF6;
+  --hl-dept-ops: #39BAB4;
+  --hl-dept-fin: #DAB060;
+  --hl-dept-transport: #F78955;
+  --hl-dept-sales: #F3798B;
+  --hl-dept-cs: #CA88D5;
+  --hl-dept-qa: #89C06A;
+  --hl-dept-exec: #9CBBDD;
+
+  /* Report header band */
+  --hl-header-bg: #0B2038;
+  --hl-header-text: #E6EDF3;
+  --hl-header-muted: #8FA6BD;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    /* Surfaces and ink */
+    --hl-bg: #08131F;
+    --hl-surface: #0F1E2E;
+    --hl-surface-2: #16293D;
+    --hl-border: #26394E;
+    --hl-text: #E6EDF3;
+    --hl-text-muted: #9BAEC1;
+
+    /* Accent and focus */
+    --hl-accent: #33B5AE;
+    --hl-accent-strong: #74D3CC;
+    --hl-accent-contrast: #04211F;
+    --hl-focus: #FF8A4C;
+
+    /* Status (reserved meaning; always pair with an icon + label) */
+    --hl-good: #5BCC80;
+    --hl-warn: #F3B94C;
+    --hl-bad: #F66D67;
+    --hl-info: #7FB6EE;
+    --hl-good-bg: #12321F;
+    --hl-warn-bg: #382A10;
+    --hl-bad-bg: #3D1A1A;
+    --hl-info-bg: #132C47;
+
+    /* Data viz: categorical, fixed order, never cycled (validated) */
+    --hl-viz-1: #3983E1;
+    --hl-viz-2: #E05E27;
+    --hl-viz-3: #08A799;
+    --hl-viz-4: #BF8608;
+    --hl-viz-5: #D0598E;
+    --hl-viz-6: #33862C;
+    --hl-viz-7: #8C79E0;
+    --hl-viz-8: #9B5824;
+
+    /* Data viz: sequential, one hue, low -> high */
+    --hl-seq-1: #142E50;
+    --hl-seq-2: #194276;
+    --hl-seq-3: #215AA2;
+    --hl-seq-4: #3377CD;
+    --hl-seq-5: #5D97E4;
+    --hl-seq-6: #8AB7F4;
+    --hl-seq-7: #BBD7FC;
+
+    /* Data viz: diverging, blue (below) <- neutral -> orange (above) */
+    --hl-div-1: #A2C7F8;
+    --hl-div-2: #66A0EE;
+    --hl-div-3: #367AD1;
+    --hl-div-4: #215AA2;
+    --hl-div-5: #3A3D41;
+    --hl-div-6: #933D08;
+    --hl-div-7: #C4530F;
+    --hl-div-8: #E97C48;
+    --hl-div-9: #F6B294;
+
+    /* Data viz chrome */
+    --hl-viz-other: #6F7F90;
+    --hl-grid: #1C3046;
+    --hl-axis: #3A5068;
+
+    /* Department accents (chrome only: stripe, chip, active tab; never series colours) */
+    --hl-dept-it: #889EF6;
+    --hl-dept-ops: #39BAB4;
+    --hl-dept-fin: #DAB060;
+    --hl-dept-transport: #F78955;
+    --hl-dept-sales: #F3798B;
+    --hl-dept-cs: #CA88D5;
+    --hl-dept-qa: #89C06A;
+    --hl-dept-exec: #9CBBDD;
+
+    /* Report header band */
+    --hl-header-bg: #0B2038;
+    --hl-header-text: #E6EDF3;
+    --hl-header-muted: #8FA6BD;
+  }
+}

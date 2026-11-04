@@ -1,0 +1,1052 @@
+# Project 2 - Warehouse Performance Scorecard (program weeks 5-8)
+# Requester: Luis Moreno (VP Operations); site detail: Shanice Carter (GM ATL1)
+project: 2
+epic:
+  id: P2
+  summary: "Warehouse Performance Scorecard: one set of Ops numbers every GM trusts"
+  department: Operations
+  reporter: luis.moreno
+  priority: High
+  labels: [operations, scorecard, dashboards]
+  description: |
+    **Sponsor:** Luis Moreno, VP Operations. **Site partner:** Shanice Carter, GM ATL1.
+
+    > "I run eight buildings and every Monday I get eight spreadsheets that measure on-time eight different ways. When a
+    > client asks for OTIF in a quarterly review, my GMs scramble for two days and the answer still depends on who built
+    > the spreadsheet." (Luis)
+
+    Peak season (15 November to 24 December) is coming. Luis needs to know which sites are struggling *before* the
+    client calls him, and his GMs need to trust the numbers, which means they need to drill into their own building.
+
+    **What this project delivers**
+    - Reference data that makes measurement fair: site master, holidays, weather and a business-day calendar per site.
+    - Order, shipment, inventory and labor models built on the Project 1 silver layer.
+    - One agreed, owned definition for every scorecard KPI, computed in exactly one place.
+    - Dashboards **P2-D1 Warehouse Ops Scorecard** (network view) and **P2-D2 Site Operations Detail** (for GMs).
+
+    **KPIs Luis cares about:** OTIF, order cycle time, dock-to-stock, pick productivity, inventory accuracy and space
+    utilization. Fair warning from Luis: Client Success and Finance have their own ideas about what on-time means.
+
+    **Context**
+    - Eight sites in three countries. TOR1 and MTY1 work in kilograms and centimetres. CHI1 is cold chain and runs three
+      shifts. LAX1 opened about a year and a half ago.
+    - All WMS times are local to the warehouse. US, Canadian and Mexican holidays differ.
+    - Volume on Large: ~2.5 M orders and ~7 M lines over 3 years (Medium is about 40% of that over 2 years); some verticals run at 3-4× normal volume in peak weeks.
+
+    **Success measures**
+    - The Monday ops call runs off P2-D1 instead of spreadsheets.
+    - Every GM confirms their site's numbers, and every KPI has a named owner who signed off its definition.
+    - Release **v0.2.0** tagged with CHANGELOG.
+
+    **Platform note:** if you're on the Snowflake path, your 30-day trial ends during this project. Re-provisioning from
+    the infrastructure code you wrote in P1.S2 should be a non-event; if it isn't, fix that first.
+  dashboards: [P2-D1, P2-D2]
+
+stories:
+  # ---------------------------------------------------------------- S1
+  - id: P2.S1
+    summary: "Reference enrichment: site master, holidays, weather and business-day calendar"
+    type: Story
+    reporter: luis.moreno
+    priority: High
+    story_points: 8
+    sprint: 1
+    due_day: 4
+    components: [Ingestion, Modeling]
+    labels: [reference-data, files, public-api, calendar]
+    description: |
+      Raw WMS events don't know that Canadian Thanksgiving isn't the US one, that MTY1's B shift ends at midnight, or
+      what the weather was on the day a site fell behind. Before measuring performance, build the reference data that
+      makes measurement fair.
+
+      **Sources**
+      - **Warehouse master**: an Excel workbook in `landing/files/` maintained by Ops (capacity, dock doors, pallet
+        positions, pick faces, shifts, cutoffs). New versions appear when something changes, and the layout is made for
+        humans, not machines.
+      - **Public holidays**: the Nager.Date API for the US, Canada and Mexico.
+      - **Weather**: the Open-Meteo historical and forecast APIs, for each site's coordinates.
+      - **Business-day calendar**: per warehouse, built from all of the above.
+
+      **Talk to:** Shanice Carter (how shifts and cutoffs really work on the floor), Marcus Bell (WMS time conventions),
+      Luis Moreno (which holidays actually close a building).
+
+      **Definition of Done**
+      - All sub-tasks done; reference tables in silver with tests and a documented refresh cadence
+      - Calendar checked against at least one GM's description of their shifts
+      - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
+    acceptance_criteria:
+      - "Every warehouse-master workbook version ingested with effective dates; layout changes never silently mis-map"
+      - "Public holidays for the US, Canada and Mexico for the full history plus the next 12 months, mapped to sites"
+      - "Daily weather per warehouse for the full history, kept current"
+      - "Business-day calendar per warehouse with local date, working-day flag, shifts, cutoffs and peak-season flag"
+      - "Reference data has DQ checks (completeness, gaps, duplicates) in the P1 results table"
+    depends_on: [P1.S5]
+    tasks:
+      - id: P2.S1.T1
+        type: Task
+        summary: "Ingest the warehouse master workbook"
+        estimate_hours: 5
+        due_day: 2
+        priority: High
+        components: [Ingestion]
+        labels: [files, xlsx, scd2]
+        description: |
+          Ops keeps site attributes in an Excel workbook dropped into `landing/files/`. People edit it, so expect merged
+          header cells, notes in odd places and new versions over time. Capacity changes (new racking, say) must not
+          rewrite history: last year's utilization uses last year's capacity.
+        acceptance_criteria:
+          - "Every workbook version loaded with file name, file timestamp and checksum"
+          - "Silver holds site attributes with effective-from and effective-to dates and one current row per site"
+          - "A layout change (moved column, extra note row) fails loudly or is handled, and is never silently mis-mapped"
+          - "Overlapping values (code, name, time zone) reconciled with the WMS warehouse table"
+          - &git "Merged via PR from a feat/DATA-<n>-… branch; Conventional Commits carry the key; PR self-review done; CI green"
+        depends_on: [P1.S5.T1]
+      - id: P2.S1.T2
+        type: Task
+        summary: "Public holidays from Nager.Date"
+        estimate_hours: 3
+        due_day: 2
+        priority: Medium
+        components: [Ingestion]
+        labels: [public-api, calendar]
+        description: |
+          Pull public holidays for the US, Canada and Mexico for the full history and next year. Not every public holiday
+          closes a building, and some are regional (state or province). Ask Luis Moreno, or whoever he sends you to,
+          which holidays each site observes, and record the answer.
+        acceptance_criteria:
+          - "Holidays for each country and year loaded; refreshed yearly and on demand"
+          - "Regional holidays kept with their region codes"
+          - "Site observance rules stored as data, with the source of the answer recorded"
+          - *git
+        depends_on: [P1.S5.T1]
+      - id: P2.S1.T3
+        type: Task
+        summary: "Daily weather per site from Open-Meteo"
+        estimate_hours: 4
+        due_day: 3
+        priority: Medium
+        components: [Ingestion]
+        labels: [public-api, weather]
+        description: |
+          Ops believes weather explains some bad days. Give them data instead of anecdotes: load daily weather for each
+          warehouse's coordinates (temperature, precipitation, snowfall, wind) for the full history, then keep it
+          current. Respect the API's fair-use limits.
+        acceptance_criteria:
+          - "Daily weather per warehouse for the full history, plus daily increments"
+          - "Coordinates come from reference data, not hard-coded"
+          - "Rate limits respected and documented; transient errors retried"
+          - "Units and the local-day boundary documented"
+          - *git
+        depends_on: [P2.S1.T1]
+      - id: P2.S1.T4
+        type: Task
+        summary: "Business-day calendar per warehouse"
+        estimate_hours: 5
+        due_day: 3
+        priority: Highest
+        components: [Modeling]
+        labels: [calendar, time-zones, shifts]
+        description: |
+          Build the calendar every Ops metric will use: per warehouse and local date, whether it's a working day, which
+          shifts run and when, the parcel and LTL cutoffs, peak season (15 November - 24 December), and a business-day
+          sequence so "two business days later" is easy.
+
+          Shifts can cross midnight (CHI1's C shift, MTY1's B shift). Decide with Shanice Carter which date such a shift
+          belongs to, and document it.
+        acceptance_criteria:
+          - "One row per warehouse per local date for the history plus 12 months ahead"
+          - "Working-day flag uses weekends, observed holidays and site rules"
+          - "Shift windows and cutoffs per day, including shifts that cross midnight"
+          - "Business-day number and next and previous business day available"
+          - "Tested on known dates: a holiday, a DST change, a cross-midnight shift"
+          - *git
+        depends_on: [P2.S1.T1, P2.S1.T2]
+      - id: P2.S1.T5
+        type: Task
+        summary: "Time standard: local vs UTC"
+        estimate_hours: 3
+        due_day: 4
+        priority: High
+        components: [Documentation, Modeling]
+        labels: [time-zones, standards]
+        description: |
+          WMS times are local warehouse time with no offset, AX is UTC, and the carrier and sensor feeds have their own
+          conventions. Write down the rules the team will use: which time a metric is measured in, how durations across
+          DST are counted, and how a day is defined per site. Confirm the WMS behaviour with Marcus Bell.
+        acceptance_criteria:
+          - "Time standard documented (storage, display, durations, day boundaries) and linked from the README"
+          - "Handling of the repeated hour (fall back) and the missing hour (spring forward) stated explicitly"
+          - "P1 silver models checked against the standard; gaps raised as tickets"
+          - &docs "Committed via PR (docs/DATA-<n>-… branch, Conventional Commit with the key) and linked from this ticket"
+        depends_on: [P1.S4.T2]
+      - id: P2.S1.T6
+        type: Task
+        summary: "Data-quality checks for reference data"
+        estimate_hours: 2
+        due_day: 4
+        priority: Medium
+        components: [Data Quality]
+        labels: [dq, reference-data]
+        description: |
+          A missing day of weather or a duplicated holiday quietly skews every metric downstream. Add checks.
+        acceptance_criteria:
+          - "Calendar completeness per warehouse and date checked"
+          - "Weather gaps and implausible values flagged"
+          - "Duplicate holidays and workbook version anomalies flagged"
+          - "Results written to the P1 DQ results table"
+          - *git
+        depends_on: [P2.S1.T3, P2.S1.T4]
+
+  # ---------------------------------------------------------------- S2
+  - id: P2.S2
+    summary: "Order and shipment models with milestone timestamps"
+    type: Story
+    reporter: luis.moreno
+    priority: Highest
+    story_points: 13
+    sprint: 1
+    due_day: 10
+    components: [Modeling]
+    labels: [wms, orders, shipments, accumulating-snapshot, time-zones]
+    description: |
+      Every Ops metric starts with an order's life: when Harborline received it, released it to the floor, picked, packed
+      and shipped it, and whether that happened in time.
+
+      > "Nobody can tell me the median time from order receipt to ship at RNO1 last Tuesday without a day of spreadsheet
+      > work." (Luis)
+
+      Build order and shipment models that make that a one-line question: one row per order that fills in as each
+      milestone happens (an accumulating snapshot), plus line-level and shipment-level detail.
+
+      **Things to watch**
+      - Milestones live in different places: order status, pick and pack tasks, the inventory ledger, shipments. Some are
+        overwritten in place, so decide what you can recover from history and what you must capture going forward.
+      - WMS times are local; network views need UTC; durations should respect business hours and the site calendar.
+      - Orders get cancelled, lines get deleted, labels get reprinted with new tracking numbers.
+
+      **Talk to:** Shanice Carter (what each status means on the floor) and Marcus Bell (where the WMS records each event).
+
+      **Definition of Done**
+      - All sub-tasks done; order, order-line and shipment facts in gold with tests and incremental runs
+      - Milestone definitions documented and reviewed by Shanice
+      - Facts reconcile to the WMS per site per day
+      - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
+    acceptance_criteria:
+      - "One row per order with milestone timestamps (local and UTC), current status, cancellation and business-hour durations"
+      - "Line-level facts with ordered, allocated, picked and shipped quantities, including deleted (cancelled) lines"
+      - "Shipment and carton facts with canonical weights and the full tracking-number history"
+      - "Every order carries its ship-by date from the site cutoffs, calendar and requested ship date"
+      - "Facts update incrementally; a full rebuild finishes in a documented time on the free tier"
+      - "Counts and units reconcile to the WMS per site per day, with documented tolerance"
+    depends_on: [P1.S4, P2.S1]
+    tasks:
+      - id: P2.S2.T1
+        type: Task
+        summary: "Map the order lifecycle with Ops"
+        estimate_hours: 3
+        due_day: 5
+        priority: High
+        components: [Documentation]
+        labels: [stakeholder, orders]
+        description: |
+          Map the order lifecycle with Shanice Carter and Marcus Bell: which statuses exist, which are skipped for some
+          order types (B2B vs B2C, EDI vs portal), what each milestone means on the floor, and where the WMS records it.
+          Some milestones are visible only as status changes that overwrite each other.
+        acceptance_criteria:
+          - "Lifecycle diagram with each milestone, its meaning and its source table and column"
+          - "Milestones that can't be recovered from history identified, with what you'll capture from now on"
+          - "Reviewed by Shanice; her comments recorded"
+          - *docs
+        depends_on: [P1.S4.T2]
+      - id: P2.S2.T2
+        type: Task
+        summary: "Order accumulating snapshot"
+        estimate_hours: 8
+        due_day: 7
+        priority: Highest
+        components: [Modeling]
+        labels: [orders, accumulating-snapshot, time-zones]
+        description: |
+          One row per order that fills in as the order moves: received, allocated, released, pick start and end, packed,
+          shipped or cancelled. Each milestone in local and UTC time, plus elapsed business hours between the key
+          milestones using the site calendar.
+        acceptance_criteria:
+          - "Grain is one row per order, with the milestone columns agreed in P2.S2.T1"
+          - "Local and UTC timestamps for every milestone"
+          - "Business-hour durations between milestones use the P2.S1 calendar"
+          - "Orders that skip a status or move backwards are handled, and the handling is documented"
+          - "Incremental runs process only orders that changed since the last run"
+          - *git
+        depends_on: [P2.S2.T1, P2.S1.T4]
+      - id: P2.S2.T3
+        type: Task
+        summary: "Order line fact"
+        estimate_hours: 4
+        due_day: 7
+        priority: High
+        components: [Modeling]
+        labels: [orders, fill-rate]
+        description: |
+          Lines carry the quantities: ordered, allocated, picked and shipped. Fill-rate and short-ship analysis start here.
+          Lines are deleted when cancelled and have no audit timestamp; your Project 1 ingestion should already capture both.
+        acceptance_criteria:
+          - "Grain is one row per order line, with quantities, UOM, material and client"
+          - "Cancelled (deleted) lines kept and flagged"
+          - "Header totals vs line totals mismatches flagged by a DQ rule"
+          - "Unit fill rate and line fill rate derivable"
+          - *git
+        depends_on: [P2.S2.T1]
+      - id: P2.S2.T4
+        type: Task
+        summary: "Shipment and carton facts"
+        estimate_hours: 5
+        due_day: 8
+        priority: High
+        components: [Modeling]
+        labels: [shipments, tracking]
+        description: |
+          Shipments and their cartons carry the carrier, service, weights, dimensions and tracking numbers. A label reprint
+          voids the old carton and creates a new tracking number. Transportation (Project 4) will need the whole trail;
+          Ops needs the final one.
+        acceptance_criteria:
+          - "Shipment-level and carton-level facts"
+          - "Canonical weights and dimensions from the P1 unit normalization"
+          - "Every tracking number a shipment ever had kept with valid-from and valid-to"
+          - "Ship time in local and UTC"
+          - *git
+        depends_on: [P1.S4.T3]
+      - id: P2.S2.T5
+        type: Task
+        summary: "Cutoff and ship-by date logic"
+        estimate_hours: 4
+        due_day: 9
+        priority: Highest
+        components: [Modeling]
+        labels: [calendar, sla, cutoffs]
+        description: |
+          An order that arrives at 16:05 at a site with a 15:00 parcel cutoff isn't late if it ships tomorrow. Work out,
+          per order, the ship-by date the floor is actually held to, from the site's cutoffs, working days and the
+          requested ship date.
+
+          Ask Shanice Carter how the floor treats orders that arrive after cutoff, at weekends, or with a requested ship
+          date in the future.
+        acceptance_criteria:
+          - "Ship-by date per order, with the rule documented"
+          - "Parcel and LTL cutoffs applied by carrier mode"
+          - "Shanice's rules recorded with examples"
+          - "Tested on edge cases: after cutoff on a Friday, a holiday, a future requested ship date"
+          - *git
+        depends_on: [P2.S2.T2, P2.S1.T4]
+      - id: P2.S2.T6
+        type: Task
+        summary: "Incremental performance at full volume"
+        estimate_hours: 3
+        due_day: 9
+        priority: Medium
+        components: [Modeling, Platform]
+        labels: [performance, finops]
+        description: |
+          These models will run every day for years. Make sure a daily run touches only what changed, and that a full
+          rebuild is still possible on the free tier.
+        acceptance_criteria:
+          - "Daily incremental run time and full rebuild time recorded for your build size"
+          - "Late changes to old orders (address edits, cancellations) handled in incremental mode"
+          - "Compute used per run visible on P1-D1"
+          - *git
+        depends_on: [P2.S2.T2, P2.S2.T3]
+      - id: P2.S2.T7
+        type: Task
+        summary: "Reconcile order and shipment facts to the WMS"
+        estimate_hours: 3
+        due_day: 10
+        priority: High
+        components: [Data Quality]
+        labels: [reconciliation, orders]
+        description: |
+          Before anyone sees a dashboard, prove the facts match the source. Pick sample days per site, including a peak
+          day, and reconcile counts and units.
+        acceptance_criteria:
+          - "Orders, lines, units and shipments reconciled per site for at least three sample days, one of them in peak"
+          - "Differences explained or ticketed"
+          - "Reconciliation automated as a test that runs daily"
+          - *git
+        depends_on: [P2.S2.T2, P2.S2.T3, P2.S2.T4]
+
+  # ---------------------------------------------------------------- S3
+  - id: P2.S3
+    summary: "Inventory models: daily snapshot, ledger reconciliation, accuracy, dock-to-stock and utilization"
+    type: Story
+    reporter: luis.moreno
+    priority: High
+    story_points: 13
+    sprint: 1
+    due_day: 10
+    components: [Modeling, Data Quality]
+    labels: [wms, inventory, periodic-snapshot, reconciliation]
+    description: |
+      > "Clients pay us to know exactly what's on the shelf. If our system says 120 and the shelf has 112, the client
+      > oversells, we ship short, and it lands on my desk." (Luis)
+
+      Luis needs daily inventory positions, proof that the ledger and on-hand agree, inventory accuracy from cycle
+      counts, how fast received goods become available to sell (dock-to-stock), and how full the buildings are.
+
+      **Things to watch**
+      - `inventory` holds current positions only and deletes rows at zero. `inventory_txn` is the immutable ledger
+        (~20 M rows; corrections are reversing entries).
+      - Cycle counts go through recount and approval.
+      - A completed receipt is not the same as stock available to sell: putaway matters.
+      - Capacity comes from the warehouse master (P2.S1) and changes over time.
+
+      **Talk to:** Shanice Carter (how ATL1 measures accuracy and dock-to-stock today), Marcus Bell (ledger transaction types).
+
+      **Definition of Done**
+      - All sub-tasks done; snapshot, reconciliation, accuracy, dock-to-stock and utilization models in gold with tests
+      - Definitions written down and reviewed with Shanice
+      - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
+    acceptance_criteria:
+      - "Daily inventory snapshot by site, client, material, lot and status for the full history"
+      - "Ledger reconciliation shows, per day, where on-hand and the ledger disagree"
+      - "Inventory accuracy from cycle counts using the definition agreed with Ops"
+      - "Dock-to-stock per receipt in business hours, with agreed start and stop events"
+      - "Space utilization per site and zone against the capacity in effect on each date"
+      - "Held, damaged and QC inventory visible by reason and age"
+    depends_on: [P1.S4, P2.S1]
+    tasks:
+      - id: P2.S3.T1
+        type: Task
+        summary: "Daily inventory snapshot"
+        estimate_hours: 7
+        due_day: 6
+        priority: High
+        components: [Modeling]
+        labels: [inventory, periodic-snapshot]
+        description: |
+          Ops wants what was on hand at the end of each day, for trend lines and client billing checks, but the WMS only
+          knows what's on hand now. Build a daily periodic snapshot for the full 3-year history. Decide and document how
+          you reconstruct the days before your first load, and how you keep the daily increment cheap.
+        acceptance_criteria:
+          - "Grain: site × client × material × lot × status × local date"
+          - "Full history back to the start of the data; reconstruction method documented"
+          - "Daily increment run time recorded"
+          - "Today's snapshot spot-checked against the live inventory table"
+          - *git
+        depends_on: [P1.S4.T2]
+      - id: P2.S3.T2
+        type: Task
+        summary: "Ledger vs on-hand reconciliation"
+        estimate_hours: 5
+        due_day: 7
+        priority: High
+        components: [Data Quality]
+        labels: [inventory, reconciliation]
+        description: |
+          On-hand quantity and the sum of the ledger should agree. Where they don't, Ops wants to know where, since when
+          and by how much. It's either a system issue or a data issue, and both matter.
+        acceptance_criteria:
+          - "Per site, client and material: on-hand vs ledger difference by day"
+          - "Breaks listed with first-seen date and size"
+          - "Expected timing differences (transactions in flight at snapshot time) explained, not hidden"
+          - "Runs daily and writes to the DQ results table"
+          - *git
+        depends_on: [P2.S3.T1]
+      - id: P2.S3.T3
+        type: Task
+        summary: "Inventory accuracy from cycle counts"
+        estimate_hours: 4
+        due_day: 8
+        priority: High
+        components: [Modeling]
+        labels: [inventory, kpi, cycle-count]
+        description: |
+          Inventory accuracy means different things to different people: location hit rate, unit accuracy, value-weighted
+          accuracy. Ask Shanice Carter how ATL1 reports it today and Luis Moreno which version goes on the scorecard.
+          Handle recounts and approvals so one counting mistake isn't counted twice.
+        acceptance_criteria:
+          - "Accuracy definition agreed and documented, with who agreed it"
+          - "Recounts and approval status handled per the definition"
+          - "Accuracy by site, zone and client by week"
+          - "Variance quantity and value available for drill-down"
+          - *git
+        depends_on: [P1.S4.T2]
+      - id: P2.S3.T4
+        type: Task
+        summary: "Dock-to-stock time"
+        estimate_hours: 4
+        due_day: 9
+        priority: High
+        components: [Modeling]
+        labels: [receiving, kpi]
+        description: |
+          How long from a trailer arriving to the goods being available to pick? Where the clock starts (arrival or start
+          of receiving) and stops (receipt complete or putaway complete) is up for debate. Agree it with Shanice Carter and
+          measure it in business hours per receipt.
+        acceptance_criteria:
+          - "Per-receipt dock-to-stock with start and stop events documented and agreed"
+          - "Business-hour duration using the site calendar and shifts"
+          - "Available by site, client, arrival shift and week"
+          - "Receipts with no putaway after an agreed number of days flagged"
+          - *git
+        depends_on: [P2.S1.T4]
+      - id: P2.S3.T5
+        type: Task
+        summary: "Space utilization"
+        estimate_hours: 4
+        due_day: 10
+        priority: Medium
+        components: [Modeling]
+        labels: [capacity, kpi]
+        description: |
+          Luis wants to know how full each building is before peak. Utilization compares occupied positions (pallet and
+          pick) with capacity, and capacity changes over time according to the warehouse master.
+        acceptance_criteria:
+          - "Daily occupied vs available positions per site and zone"
+          - "Capacity as of each date from P2.S1, not today's value"
+          - "Definition of occupied documented"
+          - "Trend available over the full history"
+          - *git
+        depends_on: [P2.S1.T1, P2.S3.T1]
+      - id: P2.S3.T6
+        type: Task
+        summary: "Held, damaged and QC inventory"
+        estimate_hours: 2
+        due_day: 10
+        priority: Medium
+        components: [Modeling]
+        labels: [inventory, holds]
+        description: |
+          Stock that can't be sold is a cost and a client complaint waiting to happen. Make holds visible by reason and age.
+        acceptance_criteria:
+          - "On-hand by status and hold reason per day"
+          - "Age of held inventory"
+          - "Available to the Site Operations Detail dashboard"
+          - *git
+        depends_on: [P2.S3.T1]
+
+  # ---------------------------------------------------------------- S4
+  - id: P2.S4
+    summary: "Labor productivity: tasks, picks per hour and shifts"
+    type: Story
+    reporter: shanice.carter
+    priority: High
+    story_points: 8
+    sprint: 2
+    due_day: 15
+    components: [Modeling]
+    labels: [labor, productivity, wms, ax2012]
+    description: |
+      **From Shanice Carter, GM ATL1:**
+      > "Labor is my biggest cost and the thing I can actually control. I want picks per hour by picker, shift and zone
+      > that my leads will believe, and that I can defend if I use it for coaching or incentives."
+
+      **Context**
+      - Tasks (pick, putaway, replenishment, count, load) are in the WMS with assigned, started and completed times. The
+        WMS deletes tasks older than 180 days, so history depends on what Project 1 kept.
+      - People are in WMS `app_user`; HR's worker record is AX `hcmworker` (linked by `personnel_nbr`). People transfer
+        between shifts and sites.
+      - Ops has an engineered standard for picks per hour. It's a starting point, not gospel; ask Shanice or Luis what it is.
+      - CHI1 runs three shifts; MTY1's B shift ends at midnight.
+
+      > "Before any number is used for incentives, I need to know it's real. If something looks too good, I want the
+      > dashboard to tell me so." (Shanice)
+
+      **Definition of Done**
+      - All sub-tasks done; task and worker models in gold with tests
+      - Productivity definition agreed with Shanice and documented; outlier review rules agreed and visible
+      - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
+    acceptance_criteria:
+      - "Task fact with type, worker, site, zone, shift, timings and quantities, including tasks purged from the WMS"
+      - "Worker dimension with history (role, shift, site, active dates) linked to AX workers"
+      - "Picks per productive hour by worker, shift, site and week, using the definition agreed with Shanice"
+      - "Shifts that cross midnight attributed to the right shift date"
+      - "Implausible productivity values flagged for review before they reach a GM"
+      - "Actual vs engineered standard per site and shift"
+      - "Closed periods don't change between runs without an explained reason"
+    depends_on: [P1.S3, P2.S1]
+    tasks:
+      - id: P2.S4.T1
+        type: Task
+        summary: "Task fact"
+        estimate_hours: 5
+        due_day: 12
+        priority: High
+        components: [Modeling]
+        labels: [labor, tasks]
+        description: |
+          Build the task fact from your own task history, not just the WMS's last 180 days. Include durations
+          (assigned → started → completed), quantities, locations, and the order or receipt the task served.
+        acceptance_criteria:
+          - "Grain is one row per task, with durations, quantities and links to order, receipt, material and location"
+          - "Tasks older than 180 days come from the history kept in P1.S3.T6"
+          - "Cancelled tasks distinguished from purged ones"
+          - *git
+        depends_on: [P1.S3.T6, P2.S1.T4]
+      - id: P2.S4.T2
+        type: Task
+        summary: "Worker dimension with history"
+        estimate_hours: 4
+        due_day: 12
+        priority: High
+        components: [Modeling, Ingestion]
+        labels: [labor, scd2, ax2012]
+        description: |
+          Pickers change shifts, get promoted to lead, transfer between sites and leave. Productivity by shift must use the
+          shift the person was on *that day*. HR's record is in AX (`hcmworker`, `dirpersonname`, `hcmemployment`); the
+          WMS has `app_user` with `personnel_nbr`. Full AX ingestion comes in Project 3, so land just the worker tables you
+          need now, the way you landed AX customers in P1.S3.T8. Ask Priya Raman how workers are set up in AX.
+        acceptance_criteria:
+          - "Worker dimension with type-2 history on role, shift, site and active status"
+          - "WMS-to-AX worker match rate measured; unmatched workers listed"
+          - "Terminated workers kept"
+          - *git
+        depends_on: [P1.S3.T8]
+      - id: P2.S4.T3
+        type: Task
+        summary: "Pick productivity: definition and metric"
+        estimate_hours: 5
+        due_day: 13
+        priority: Highest
+        components: [Modeling]
+        labels: [labor, kpi, stakeholder]
+        description: |
+          Picks per hour needs a numerator (lines, units or tasks?) and, harder, a denominator: scan-to-scan time, task
+          time or paid shift hours? Each tells a different story. Agree the definition with Shanice Carter, then build it
+          by worker, shift, zone, site and week. B2B carton picks and B2C each picks shouldn't be compared naively.
+        acceptance_criteria:
+          - "Definition agreed with Shanice and documented (numerator, denominator, exclusions)"
+          - "Productivity by worker, shift, zone, site and week, split by order type"
+          - "Idle gaps and breaks handled per the definition"
+          - "One ATL1 shift hand-checked against task detail"
+          - *git
+        depends_on: [P2.S4.T1, P2.S4.T2]
+      - id: P2.S4.T4
+        type: Task
+        summary: "Attribute tasks to shifts across midnight and DST"
+        estimate_hours: 3
+        due_day: 14
+        priority: Medium
+        components: [Modeling]
+        labels: [labor, shifts, time-zones]
+        description: |
+          A CHI1 C-shift picker who starts at 22:00 on Monday and finishes at 05:00 on Tuesday worked Monday's C shift.
+          Apply the shift-date rule from the calendar (P2.S1.T4) to tasks and workers, and make sure DST nights don't
+          create phantom hours or lose real ones.
+        acceptance_criteria:
+          - "Every task assigned a shift and shift date per the calendar rule"
+          - "Both DST nights tested"
+          - "Shift-level totals reconcile to task totals"
+          - *git
+        depends_on: [P2.S4.T1, P2.S1.T4]
+      - id: P2.S4.T5
+        type: Task
+        summary: "Flag implausible productivity before it reaches a GM"
+        estimate_hours: 3
+        due_day: 14
+        priority: High
+        components: [Data Quality]
+        labels: [labor, dq, outliers]
+        description: |
+          Shanice will use these numbers for coaching and possibly incentives. Before a number reaches her, flag values
+          that are statistically or physically implausible, with enough detail for her to judge. Don't decide for her what's
+          real; show the evidence.
+        acceptance_criteria:
+          - "Outlier rules agreed with Shanice; method and thresholds documented"
+          - "Flagged worker-days visible with supporting detail (task timing patterns)"
+          - "Flags don't silently remove data from totals"
+          - *git
+        depends_on: [P2.S4.T3]
+      - id: P2.S4.T6
+        type: Task
+        summary: "Productivity vs the engineered standard"
+        estimate_hours: 2
+        due_day: 15
+        priority: Medium
+        components: [Modeling]
+        labels: [labor, kpi]
+        description: |
+          Ops has an engineered standard for picks per hour by order type. Ask Luis Moreno for it and compare actuals per
+          site and shift.
+        acceptance_criteria:
+          - "Standard stored as reference data, with its source and date"
+          - "Actual vs standard (%) per site, shift and week"
+          - *git
+        depends_on: [P2.S4.T3]
+      - id: P2.S4.T7
+        type: Bug
+        reporter: luis.moreno
+        summary: "Bug: historical pick productivity changes between scorecard runs"
+        estimate_hours: 3
+        due_day: 15
+        priority: High
+        components: [Modeling]
+        labels: [bug, labor, retention]
+        description: |
+          **Reported by Luis Moreno:**
+          > "I took a screenshot of DFW1's pick productivity for a month about seven months back, for my budget deck. A week
+          > later I looked again and that month is different: fewer picks, same hours. Closed months shouldn't move. What's
+          > going on?"
+
+          Find out why closed periods change, fix it, and make sure it can't silently happen again. If your models are
+          stable, prove it by comparing two runs a simulated week apart.
+        acceptance_criteria:
+          - "Root cause identified with evidence, or stability proven across two runs a simulated week apart"
+          - "Closed-period metrics no longer change without an explained reason"
+          - "A test or monitor detects unexpected changes to closed periods"
+          - "Luis gets a short plain-language explanation he can forward"
+          - &fix "Fix merged via PR from a fix/DATA-<n>-… branch with a regression test; Conventional Commits carry the key; CI green"
+        depends_on: [P2.S4.T3]
+      - id: P2.S4.T8
+        type: Task
+        summary: "Headcount and workload by shift"
+        estimate_hours: 3
+        due_day: 15
+        priority: Medium
+        components: [Modeling]
+        labels: [labor, staffing]
+        description: |
+          Shanice plans peak staffing from gut feel. Show active pickers and packers per shift and site next to the work that
+          arrived, so she can see which shifts were short-handed.
+        acceptance_criteria:
+          - "Active headcount per site, shift and day by role, from the worker dimension"
+          - "Workload per shift (tasks, units) alongside headcount"
+          - "Hires and terminations per month by site"
+          - *git
+        depends_on: [P2.S4.T2, P2.S4.T4]
+
+  # ---------------------------------------------------------------- S5
+  - id: P2.S5
+    summary: "Metric definitions and semantic layer: resolve what on-time means"
+    type: Story
+    reporter: luis.moreno
+    priority: Highest
+    story_points: 8
+    sprint: 2
+    due_day: 16
+    components: [Modeling, Documentation]
+    labels: [metrics, semantic-layer, stakeholder, governance]
+    description: |
+      > "My on-time and Omar's on-time and Alan's on-time are three different numbers, and each of us thinks the others
+      > are wrong." (Luis)
+
+      - **Operations** (Luis) cares whether the building did its job.
+      - **Client Success** (Omar Haddad) cares whether the client's customer got the package when promised.
+      - **Finance** (Alan Brooks) cares what the contract says, because SLA misses cost Harborline credits.
+
+      Luis doesn't need you to pick a winner. He needs each definition written down, named so nobody confuses them, owned
+      by someone, and computed in exactly one place so every dashboard agrees. The same goes for OTIF, cycle time,
+      dock-to-stock, accuracy, productivity and utilization. Later projects will add their definitions to the same
+      metric catalog.
+
+      **Talk to:** Luis Moreno, Omar Haddad and Alan Brooks. Hannah Price or Dana Whitfield know where contract SLA terms
+      are recorded. If a definition needs data you don't have yet (contract terms from Salesforce, delivery dates from
+      carriers), record it and mark it *pending source* with the project that will bring it.
+
+      **Definition of Done**
+      - All sub-tasks done; the metric catalog in the repository covers every scorecard KPI
+      - Metrics computed once and reused by P2-D1 and P2-D2
+      - Owner sign-off recorded for each KPI
+      - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
+    acceptance_criteria:
+      - "Each stakeholder's definition of on-time recorded in their own words, with the differences explained"
+      - "Agreed metric names and owners; no two metrics share a name"
+      - "Metric catalog covers OTIF, the on-time variants, cycle time, dock-to-stock, inventory accuracy, pick productivity and space utilization"
+      - "Metrics defined once and consumed by both dashboards; no metric logic lives in the dashboard tool"
+      - "Golden-dataset tests pin metric values for a fixed sample"
+      - "Owner sign-off recorded for each KPI"
+    depends_on: [P2.S2, P2.S3]
+    tasks:
+      - id: P2.S5.T1
+        type: Task
+        summary: "Interview the three owners of on-time"
+        estimate_hours: 4
+        due_day: 11
+        priority: Highest
+        components: [Documentation]
+        labels: [stakeholder, metrics]
+        description: |
+          Talk to Luis Moreno, Omar Haddad and Alan Brooks separately. For each: which event starts the clock, which stops
+          it, what threshold counts as on time, what's excluded (weekends, holidays, client-caused delays, cancelled lines),
+          and what decision the number drives. Use concrete examples; an order received after cutoff on a Friday is a good one.
+        acceptance_criteria:
+          - "Three written definitions in each owner's own words, with the examples you used"
+          - "Comparison table showing where they differ"
+          - "Data each definition needs, with sources available now vs in later projects"
+          - *docs
+        depends_on: [P2.S2.T5]
+      - id: P2.S5.T2
+        type: Task
+        summary: "Agree metric names, owners and the scorecard set"
+        estimate_hours: 3
+        due_day: 13
+        priority: High
+        components: [Documentation]
+        labels: [stakeholder, metrics, governance]
+        description: |
+          Take the differences back to Luis with a proposal: how each variant is named, who owns it, and which ones the
+          scorecard shows. Do the same for OTIF (what counts as in full?), cycle time and the P2.S3 definitions.
+        acceptance_criteria:
+          - "Proposal and Luis's decision recorded"
+          - "Each on-time variant has a distinct name and owner"
+          - "Definitions that need unavailable data marked pending source, with the project that will provide it"
+          - *docs
+        depends_on: [P2.S5.T1]
+      - id: P2.S5.T3
+        type: Task
+        summary: "Write the metric catalog"
+        estimate_hours: 2
+        due_day: 14
+        priority: Medium
+        components: [Documentation]
+        labels: [metrics, docs]
+        description: |
+          Write the catalog everyone can read: one entry per KPI with name, owner, business question, definition, formula
+          in words, grain, filters, exclusions, source models and a worked example. Publish it where a non-engineer can
+          read it (a generated docs site or a page in the repository).
+        acceptance_criteria:
+          - "Catalog entry for every KPI on P2-D1 and P2-D2"
+          - "Each entry links to its source model"
+          - "Published and linked from both dashboards"
+          - *docs
+        depends_on: [P2.S5.T2, P2.S4.T3, P2.S3.T3]
+      - id: P2.S5.T4
+        type: Task
+        summary: "Implement the metrics once in a semantic layer"
+        estimate_hours: 6
+        due_day: 16
+        priority: Highest
+        components: [Modeling]
+        labels: [semantic-layer, metrics]
+        description: |
+          Compute each KPI in exactly one governed place that both dashboards read: your platform's semantic or metric
+          layer, your modeling tool's semantic layer, or governed metric tables. The dashboard tool should do formatting,
+          not maths.
+        acceptance_criteria:
+          - "Every catalog KPI implemented once"
+          - "Both dashboards consume these metrics with no duplicated formulas"
+          - "Metrics aggregate correctly by site, client, week and month (ratios are not averaged)"
+          - *git
+        depends_on: [P2.S5.T3]
+      - id: P2.S5.T5
+        type: Task
+        summary: "Golden-dataset tests for metrics"
+        estimate_hours: 3
+        due_day: 16
+        priority: High
+        components: [Data Quality]
+        labels: [tests, metrics]
+        description: |
+          Pick a small fixed sample (a few orders, receipts and counts whose answers you've worked out by hand) and pin the
+          metric values in tests, so a refactor can't change a KPI silently.
+        acceptance_criteria:
+          - "Hand-worked expected values for every KPI"
+          - "Tests run in CI"
+          - "A deliberately broken definition makes CI fail"
+          - *git
+        depends_on: [P2.S5.T4]
+      - id: P2.S5.T6
+        type: Bug
+        reporter: shanice.carter
+        summary: "Bug: negative order cycle times at ATL1 on the clocks-back night"
+        estimate_hours: 3
+        due_day: 16
+        priority: High
+        components: [Modeling]
+        labels: [bug, time-zones, dst]
+        description: |
+          **Reported by Shanice Carter, GM ATL1:**
+          > "My leads noticed a handful of orders received overnight with negative cycle times, and a few others an hour too
+          > long, all on the Sunday the clocks went back last fall. Every other day looks fine. Is the scorecard wrong, or
+          > is the WMS?"
+
+          Investigate, fix, and add tests for both DST transitions. If your models already handle it, show Shanice the evidence.
+        acceptance_criteria:
+          - "Root cause explained in plain language for Shanice"
+          - "Durations correct across both DST transitions for every US and Canadian site; MTY1's rules checked too"
+          - "Tests cover fall back and spring forward"
+          - "Affected history rebuilt"
+          - *fix
+        depends_on: [P2.S2.T2]
+
+  # ---------------------------------------------------------------- S6
+  - id: P2.S6
+    summary: "Warehouse Ops Scorecard dashboards"
+    type: Story
+    reporter: luis.moreno
+    priority: Highest
+    story_points: 8
+    sprint: 2
+    due_day: 20
+    components: [Dashboards]
+    labels: [dashboard, scorecard]
+    attachments: [wireframes/P2-D1.svg, wireframes/P2-D2.svg]
+    description: |
+      This is what Ops will actually use. Two dashboards; specs are in the dashboard catalog and wireframes are attached.
+
+      - **P2-D1 Warehouse Ops Scorecard**: the network view for Luis, Daniel Reyes and the GMs. Six KPIs, site comparison,
+        trends and peak readiness. It runs the Monday ops call.
+      - **P2-D2 Site Operations Detail**: for GMs like Shanice Carter. One building by shift, zone, client and worker.
+
+      **Non-negotiables:** under 3 seconds per view; data through the previous local day ready by 06:00 ET, before the
+      07:30 ops call; the Harborline brand kit with the Operations accent; KPI definitions exactly as in the metric
+      catalog; worker-level detail only for the people allowed to see it.
+
+      **Readout:** 5 minutes with Luis and Shanice. Show them something they didn't know.
+
+      **Definition of Done**
+      - All sub-tasks done; both dashboards published in prod with access rules tested
+      - Release **v0.2.0** tagged on `main` with CHANGELOG
+      - Readout recorded; feedback captured as follow-up tickets
+      - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
+    acceptance_criteria:
+      - "KPI definitions on screen match the metric catalog (OTIF, cycle time, dock-to-stock, pick productivity, inventory accuracy, space utilization), with targets where Ops has them"
+      - "Filters for date range, site, client, order type and channel on P2-D1, plus shift, zone and worker role on P2-D2"
+      - "Data through the previous local day available by 06:00 ET daily; freshness shown in the footer"
+      - "Access: Ops leadership and GMs see all sites; worker-level productivity only for that site's GM and Luis; no consumer PII anywhere"
+      - "Every view loads in under 3 seconds on the free-tier warehouse (measured)"
+      - "Harborline brand kit applied: logo, Operations accent, background template, palette, number formats"
+      - "5-minute readout to Luis Moreno and Shanice Carter delivered and recorded"
+      - "Iris Novak's UAT sign-off recorded for P2-D1 and P2-D2 before the readout"
+    depends_on: [P2.S5, P2.S4]
+    tasks:
+      - id: P2.S6.T1
+        type: Task
+        summary: "Scorecard marts"
+        estimate_hours: 5
+        due_day: 17
+        priority: High
+        components: [Modeling]
+        labels: [gold, performance]
+        description: |
+          Pre-aggregate what the dashboards need (site × day, site × client × week, site × shift × day, worker × day) on top
+          of the semantic layer, so every view is fast on a small warehouse.
+        acceptance_criteria:
+          - "Marts cover every visual in both specs"
+          - "Each visual's query runs in under 3 seconds on the free-tier warehouse"
+          - "Marts refresh in the daily pipeline; their freshness is tracked on P1-D1"
+          - *git
+        depends_on: [P2.S5.T4]
+      - id: P2.S6.T2
+        type: Task
+        summary: "Build P2-D1 Warehouse Ops Scorecard"
+        estimate_hours: 6
+        due_day: 18
+        priority: Highest
+        components: [Dashboards]
+        labels: [dashboard, brand]
+        description: |
+          Build the network scorecard to the P2-D1 spec and wireframe. Luis will look at it for 30 seconds before the
+          call: the KPI row and the site comparison must tell the story on their own.
+        acceptance_criteria:
+          - "Every P2-D1 KPI and visual present per spec"
+          - "Site comparison and weekly trends with peak-season shading and holiday and weather annotations"
+          - "Brand kit applied; footer shows freshness and a link to the metric catalog"
+          - *git
+        depends_on: [P2.S6.T1]
+      - id: P2.S6.T3
+        type: Task
+        summary: "Build P2-D2 Site Operations Detail"
+        estimate_hours: 5
+        due_day: 19
+        priority: High
+        components: [Dashboards]
+        labels: [dashboard, brand]
+        description: |
+          Build the site drill-down to the P2-D2 spec. Shanice wants to get from "ATL1 is behind" to "B shift, the CAGE
+          zone, these clients" in three clicks.
+        acceptance_criteria:
+          - "Every P2-D2 visual present per spec"
+          - "Drill path site → shift → zone → client or worker works"
+          - "Productivity outlier flags visible with their evidence"
+          - "Brand kit applied"
+          - *git
+        depends_on: [P2.S6.T1, P2.S4.T5]
+      - id: P2.S6.T4
+        type: Task
+        summary: "Peak readiness view"
+        estimate_hours: 3
+        due_day: 19
+        priority: Medium
+        components: [Dashboards, Modeling]
+        labels: [peak, capacity]
+        description: |
+          Luis's real question for November: which site breaks first? Compare each site's current run-rate for volume,
+          utilization and productivity against its own last peak. No forecasting model needed; a clear, honest comparison
+          is enough.
+        acceptance_criteria:
+          - "Per site: last peak weeks vs current run-rate for orders, utilization and productivity"
+          - "Sites at risk highlighted, with the rule documented"
+          - "Shown on P2-D1 per spec"
+          - *git
+        depends_on: [P2.S6.T1]
+      - id: P2.S6.T5
+        type: Task
+        summary: "Access rules and performance test"
+        estimate_hours: 2
+        due_day: 20
+        priority: High
+        components: [Dashboards, Security]
+        labels: [access, performance]
+        description: |
+          Implement the access rules in the spec and prove them; measure load times.
+        acceptance_criteria:
+          - "Worker-level data restricted to the site's GM and Luis, tested with two identities (or the free-tier limitation documented with a mitigation)"
+          - "Cold and warm load times recorded per view"
+          - *git
+        depends_on: [P2.S6.T2, P2.S6.T3]
+      - id: P2.S6.T6
+        type: Task
+        summary: "Usability check with a shift lead's eyes"
+        estimate_hours: 2
+        due_day: 20
+        priority: Medium
+        components: [Dashboards]
+        labels: [ux, stakeholder]
+        description: |
+          Ask Shanice Carter to walk through P2-D2 as a shift lead would, trying to find out why yesterday's B shift fell
+          behind. Note where she gets stuck and fix the top two issues.
+        acceptance_criteria:
+          - "Session notes recorded"
+          - "Top two issues fixed, or ticketed with a reason"
+          - *git
+        depends_on: [P2.S6.T3]
+      - id: P2.S6.T7
+        type: Task
+        summary: "UAT sign-off from Iris Novak for P2-D1 and P2-D2"
+        estimate_hours: 4
+        due_day: 20
+        priority: Highest
+        reporter: iris.novak
+        components: [Dashboards, Data Quality]
+        labels: [uat, sign-off, reconciliation]
+        description: |
+          Nothing goes to Luis and Shanice until Iris Novak (Business Performance Manager) has signed it off. She ties
+          your numbers back to the source systems herself, checks every KPI against your metric catalog and the
+          dashboard spec, and writes up numbered findings with a verdict.
+
+          For each dashboard: stop the stream, refresh, download the source extract from the Control Center, and put
+          a submission in `uat/<dashboard id>/round-1/` as the team page describes (Dashboard sign-off). Attach the
+          package zip, the zipped submission and the extract to a chat with Iris (or ask her in your coding agent).
+          Fix or answer every finding, and resubmit as round 2, 3 and so on until she signs off. Blockers and Majors
+          must be fixed before the readout; Minors can become tickets if she agrees.
+        acceptance_criteria:
+          - "A submission for each dashboard: every page as PNG, CSV exports of the headline visuals and the end tables behind them, data-as-of and sim clock, a copy of the metric catalog, bridge.csv and the matching source extract"
+          - "Iris's review report committed under uat/ for every round"
+          - "No open Blocker or Major findings; agreed Minors ticketed"
+          - "Verdict Signed off (or Signed off with conditions) for P2-D1 and P2-D2"
+        depends_on: [P2.S6.T4, P2.S6.T5, P2.S6.T6]
+      - id: P2.S6.T8
+        type: Task
+        summary: "Readout to Luis and Shanice and release v0.2.0"
+        estimate_hours: 2
+        due_day: 20
+        priority: High
+        components: [Documentation]
+        labels: [readout, release]
+        description: |
+          Five minutes: how the network looks, one thing they didn't know, and what you'd build next. Record it; it's your
+          portfolio demo too. Then tag the release and close the epic.
+        acceptance_criteria:
+          - "Readout delivered and recording (or script plus screenshots) linked here"
+          - "Feedback captured as new tickets"
+          - "v0.2.0 tagged on main; CHANGELOG lists every ticket key in the release"
+          - "Retro notes (keep / change / try) committed"
+        depends_on: [P2.S6.T7]

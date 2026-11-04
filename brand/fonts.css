@@ -1,0 +1,5 @@
+/* Harborline brand fonts (SIL Open Font License 1.1, served by Google Fonts).
+   Link this file before tokens.css when a page is online. Offline, the stacks in tokens.css fall back
+   to Segoe UI / Arial Narrow / Consolas on Windows, so nothing breaks.
+   For Power BI Desktop, install the fonts on Windows instead (see handbook/brand.html#fonts). */
+@import url("https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");

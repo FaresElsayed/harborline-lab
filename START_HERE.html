@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en" data-hb-page="start">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Start here · Harborline handbook</title>
+<meta name="description" content="Harborline 3PL Simulator: a data engineering job in a box. What it is, the story, what is in the package, the five-minute quick start and links to every handbook page.">
+<script>try{var t=localStorage.getItem("harborline.theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<link rel="stylesheet" href="brand/fonts.css">
+<link rel="stylesheet" href="brand/tokens.css">
+<link rel="stylesheet" href="handbook/assets/handbook.css">
+<link rel="icon" href="brand/logo/favicon.svg" type="image/svg+xml">
+<script src="handbook/assets/handbook.js" defer></script>
+<style>
+  .start-hero { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .start-overall { margin: 8px 0 30px; padding: 18px 20px; border-radius: var(--r-l); background: var(--c-surface-2); }
+  .start-overall p { margin: 0 0 10px; }
+  .start-overall .hb-progress-track { height: 10px; }
+  .start-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; }
+  .start-steps .task { margin: 12px 0 14px; }
+  .start-steps .task-body { padding-top: 8px; }
+  .box-table td:first-child { white-space: nowrap; }
+  .timeline td:nth-child(2) { white-space: nowrap; color: var(--c-muted); }
+</style>
+</head>
+<body>
+<div class="hb-shell">
+<aside class="hb-side" data-hb-side></aside>
+<main class="hb-sheet" id="main"><div class="hb-page">
+<article class="hb-content">
+
+<h1>Welcome to Harborline</h1>
+<p class="hb-lead">You have just joined Harborline Logistics, a warehouse and fulfilment company, as its first data
+engineer. This package is that job: live source systems that never stop changing, a backlog of tickets with due dates,
+colleagues you can question, and eight departments waiting for their dashboards.</p>
+
+<div class="start-overall" aria-label="Overall progress">
+<p><strong>Your progress across the handbook</strong></p>
+<div data-hb-overall data-progress-label="Progress across the handbook"></div>
+<div class="start-actions hb-noprint">
+<a class="hb-btn hb-btn--primary" href="http://localhost:8080/team" data-hb-app="/team">Open Team</a>
+<a class="hb-btn" href="handbook/getting-started.html">Getting started</a>
+<a class="hb-btn" href="http://localhost:8080/" data-hb-app="/">Open the Control Center</a>
+<a class="hb-btn" href="http://localhost:8080/tracker" data-hb-app="/tracker">Open the Tracker</a>
+</div>
+</div>
+
+<section data-section="story" data-no-progress>
+<h2 id="story">The story</h2>
+<p>Harborline stores inventory for about sixty brands in eight warehouses across the United States, Canada and Mexico,
+picks and packs their orders, ships them with a dozen carriers and handles their returns. It runs on a legacy
+warehouse system, Microsoft Dynamics AX 2012 for finance and Salesforce for sales, plus carrier feeds, temperature
+sensors and EDI with retail partners. Every department reports from its own spreadsheets, and the numbers disagree.</p>
+<p>Sam Okafor, the Director of IT, hired you to fix that. Over about 32 weeks you will build a data platform on
+Databricks or Snowflake and deliver one project per department, each ending in dashboards: platform health, warehouse
+performance, billing assurance, freight audit, client 360, real-time operations, cold chain, and finally a client
+portal and the executive scorecard.</p>
+<p>The data is simulated, but it behaves like the real thing. Orders arrive, change and get cancelled; rows are
+physically deleted; timestamps are in local time; a carrier quietly overbills; a sensor gets stuck. Each project has a
+real business story hidden in the data, and the people who own the systems know the rules but not the answers.</p>
+</section>
+
+<section data-section="quickstart">
+<h2 id="quickstart">Quick start</h2>
+<p>One setup file does the installing, on Windows or Mac. It skips what you already have and only stops when it needs
+you. <a href="handbook/getting-started.html#setup-file">The details are here</a>.</p>
+<div class="start-steps">
+<div class="task">
+<label class="task-head"><input type="checkbox" data-track="start:quickstart.setup"><span class="task-title">Run the setup file</span><span class="task-time">About 40 min</span></label>
+<div class="task-body"><p>Extract the zip. On Windows, double-click <code>SETUP-WINDOWS.cmd</code>
+(<em>More info</em>, then <em>Run anyway</em> if Windows warns you). On a Mac, open Terminal, type <code>bash </code>, drag
+<code>SETUP-MAC.command</code> into the window and press Return. It finishes by setting up your team chats. If it stops, paste
+its report to Kevin O’Hara, do what he says and run it again.</p></div>
+</div>
+<div class="task">
+<label class="task-head"><input type="checkbox" data-track="start:quickstart.team"><span class="task-title">Finish your team chats</span><span class="task-time">About 1 min each</span></label>
+<div class="task-body"><p>The setup file walks you through one saved AI chat per colleague; run it again for anyone you
+skipped. The <a href="http://localhost:8080/team" data-hb-app="/team">Team page</a> shows who does what and what to ask
+them. Start with Kevin O’Hara (IT help) and Nadia Petrov (your team lead).</p></div>
+</div>
+<div class="task">
+<label class="task-head"><input type="checkbox" data-track="start:quickstart.brief"><span class="task-title">Read the project brief</span><span class="task-time">30 min</span></label>
+<div class="task-body"><p>The company, the people, the rules of engagement, the eight projects and the engineering
+standards: <a href="handbook/project-brief.html">Project brief</a>.</p></div>
+</div>
+<div class="task">
+<label class="task-head"><input type="checkbox" data-track="start:quickstart.next"><span class="task-title">Try the sources and choose a platform</span><span class="task-time">1 hour</span></label>
+<div class="task-body"><p>Query each system, sign up for Databricks or Snowflake and open your first pull request:
+<a href="handbook/getting-started.html#connect">Getting started</a>.</p></div>
+</div>
+</div>
+</section>
+
+<section data-section="pages" data-no-progress>
+<h2 id="pages">The handbook</h2>
+<p>Every page saves your ticks. Opened by double-click, they live in this browser; opened through the app at
+<span data-hb-app-origin>http://localhost:8080</span>, they are also saved in the simulator’s database. The browser keeps
+those two apart, so use <em>Export</em> and <em>Import</em> in the sidebar to move progress between them.</p>
+<ul class="hb-pages">
+<li><div><a class="hb-pages-title" href="handbook/getting-started.html">Getting started</a><p>The setup file, WSL2, Docker
+Desktop, Git and GitHub, VS Code, Python, DBeaver, the simulator, cloud accounts, your own repository,
+troubleshooting.</p></div><div data-progress="getting-started" data-variant="slim" data-total="18"></div></li>
+<li><div><a class="hb-pages-title" href="handbook/project-brief.html">Project brief</a><p>The company, who’s who, the
+systems, the rules, the eight projects, Git standards, the Tracker, how the work is judged.</p></div><div
+data-progress="project-brief" data-variant="slim" data-total="62"></div></li>
+<li><div><a class="hb-pages-title" href="handbook/team.html">Your team</a><p>Nineteen colleagues as AI chat personas,
+with the company directory and copyable prompts, and Iris Novak, who signs off every dashboard against a source
+extract.</p></div><div
+data-progress="team" data-variant="slim" data-total="26"></div></li>
+<li><div><a class="hb-pages-title" href="handbook/source-systems.html">Source systems</a><p>How to connect to each
+system, how it behaves, how they join, and the full data dictionary.</p></div><div data-progress="source-systems"
+data-variant="slim" data-total="10"></div></li>
+<li><div><a class="hb-pages-title" href="handbook/brand.html">Brand kit</a><p>Logos, colours, type and the rules for
+dashboards that look like Harborline’s.</p></div><div data-progress="brand" data-variant="slim"></div></li>
+<li><div><a class="hb-pages-title" href="handbook/dashboards.html">Dashboard specs</a><p>What each of the fifteen
+dashboards must answer, with KPI definitions, filters, refresh times and wireframes.</p></div><div
+data-progress="dashboards" data-variant="slim"></div></li>
+<li><div><a class="hb-pages-title" href="handbook/answer-key.html">Answer key</a><p>How to score your data-quality
+findings, and each project’s planted story behind a spoiler gate.</p></div><div class="small muted">Reference, no
+checklist</div></li>
+</ul>
+</section>
+
+<section data-section="app" data-no-progress>
+<h2 id="app">The app</h2>
+<p>Once the setup file has run, one local web app serves everything:</p>
+<div class="hb-table-wrap"><table class="hb-table">
+<thead><tr><th>Where</th><th>What</th></tr></thead>
+<tbody>
+<tr><td><a href="http://localhost:8080/" data-hb-app="/">Control Center</a></td><td>Build data, generate batches, stream
+changes, set the defect rate, trigger scenarios (peak surge, carrier outage, schema change, account merge), copy
+connection details</td></tr>
+<tr><td><a href="http://localhost:8080/tracker" data-hb-app="/tracker">Tracker</a></td><td>Every ticket of the eight
+projects: board, backlog, sprints, timeline, reports, Jira CSV export</td></tr>
+<tr><td><a href="http://localhost:8080/docs" data-hb-app="/docs">API docs</a></td><td>The simulator’s own API
+reference</td></tr>
+<tr><td><a href="http://localhost:8080/START_HERE.html" data-hb-app="/START_HERE.html">This handbook</a></td><td>The same
+pages, with progress saved in the database</td></tr>
+</tbody></table></div>
+</section>
+
+<section data-section="box" data-no-progress>
+<h2 id="box">What’s in the box</h2>
+<div class="hb-table-wrap"><table class="hb-table box-table">
+<thead><tr><th>Item</th><th>What it is</th></tr></thead>
+<tbody>
+<tr><td><code>START_HERE.html</code></td><td>This page</td></tr>
+<tr><td><code>SETUP-WINDOWS.cmd</code>, <code>SETUP-MAC.command</code></td><td>Installs and connects everything; safe to run again. If it stops: <a href="handbook/known-issues.html">Known issues</a></td></tr>
+<tr><td><code>start.bat</code>, <code>stop.bat</code></td><td>Start everything and open the Control Center; stop it and keep all data</td></tr>
+<tr><td><code>reset.bat</code></td><td>Delete all data, including the Tracker, after you type YES</td></tr>
+<tr><td><code>doctor.ps1</code></td><td>Checks your machine; changes nothing</td></tr>
+<tr><td><code>.env.example</code></td><td>Ports, passwords and API credentials; copied to <code>.env</code> on first start</td></tr>
+<tr><td><code>docker-compose.yml</code></td><td>Postgres 17 with logical replication, and the app</td></tr>
+<tr><td><code>handbook/</code></td><td>Every page of this handbook</td></tr>
+<tr><td><code>brand/</code></td><td>Logos, colour and type tokens, dashboard templates and themes</td></tr>
+<tr><td><code>team/</code></td><td>The colleague definitions behind the chat prompts</td></tr>
+<tr><td><code>tracker/</code></td><td>The pre-written tickets and dashboard specs the Tracker loads</td></tr>
+<tr><td><code>landing/</code></td><td>Where EDI and business files arrive while the simulation runs</td></tr>
+<tr><td><code>answer_key/</code></td><td>Spoilers: the planted stories and the log of injected defects</td></tr>
+<tr><td><code>simulator/</code>, <code>web/</code>, <code>config/</code>, <code>db/</code></td><td>The simulator itself. Treat it as a vendor’s system: you do not need to read it</td></tr>
+</tbody></table></div>
+</section>
+
+<section data-section="program" data-no-progress>
+<h2 id="program">The program at a glance</h2>
+<div class="hb-table-wrap"><table class="hb-table timeline">
+<thead><tr><th>Project</th><th>Weeks</th><th>Requester</th><th>Dashboards</th></tr></thead>
+<tbody>
+<tr><td>1 · Data Platform Foundation</td><td>1–4</td><td>Sam Okafor, IT</td><td>Data Platform Health</td></tr>
+<tr><td>2 · Warehouse Performance</td><td>5–8</td><td>Luis Moreno, Operations</td><td>Warehouse Ops Scorecard, Site Operations Detail</td></tr>
+<tr><td>3 · Billing Assurance and AR</td><td>9–12</td><td>Rebecca Lindqvist, Finance</td><td>Revenue Assurance, AR &amp; Cash, Warehouse P&amp;L vs Budget</td></tr>
+<tr><td>4 · Freight Audit</td><td>13–16</td><td>Beth Kowalczyk, Transportation</td><td>Freight Audit, Carrier Scorecard</td></tr>
+<tr><td>5 · Client 360</td><td>17–20</td><td>Hannah Price and Omar Haddad</td><td>Sales Pipeline, Client Health 360</td></tr>
+<tr><td>6 · Real-Time Operations</td><td>21–24</td><td>Luis Moreno, Operations</td><td>Live Operations Board</td></tr>
+<tr><td>7 · Cold Chain and Traceability</td><td>25–28</td><td>Dr. Ayesha Khan, Quality</td><td>Cold Chain Monitor, Recall Trace</td></tr>
+<tr><td>8 · Client Portal and Executive Scorecard</td><td>29–32</td><td>Daniel Reyes, CEO</td><td>Client Portal, Executive Scorecard</td></tr>
+</tbody></table></div>
+</section>
+
+</article>
+<aside class="hb-toc" data-hb-toc></aside>
+</div></main>
+</div>
+</body>
+</html>

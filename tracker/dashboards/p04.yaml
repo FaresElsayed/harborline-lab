@@ -1,0 +1,113 @@
+# Dashboard specs - Project 4 (Freight Audit & Carrier Performance). Wireframes: brand/wireframes/<id>.svg
+- id: P4-D1
+  name: Freight Audit
+  audience: Beth Kowalczyk (Transportation Manager) every Monday after carrier bills post; AP and Alan Brooks for payment holds; Rebecca Lindqvist quarterly
+  owner: beth.kowalczyk
+  questions:
+    - What were we billed, and what should we have paid, by carrier and week?
+    - Which carriers overbill, by how much, and how (weight, duplicates, surcharges, service, fuel, base rate)?
+    - How much can still be disputed inside each carrier's window, and with what evidence?
+    - How many bill lines can't be matched to a shipment, and why?
+    - Is each carrier applying its own fuel-surcharge table at the right time?
+  kpis:
+    - name: Billed freight
+      definition: Sum of parsed carrier bill-line amounts (AX vendor invoices, CARRIER vendor group) for the period, USD per the currency policy.
+    - name: Expected freight
+      definition: Sum of expected charges for matched packages from the rate-card version in effect on the ship date (base + fuel + applicable accessorials).
+    - name: Overbilled amount and %
+      definition: Sum of (billed − expected) over lines flagged by an audit rule, and that sum ÷ billed freight. Under-billing is reported separately.
+    - name: Disputable now
+      definition: Overbilled amount on lines still inside the carrier's dispute window, as defined with beth.kowalczyk.
+    - name: Match rate
+      definition: Matched package bill lines ÷ parsed package bill lines, by carrier.
+    - name: Duplicate charges
+      definition: Count and amount of packages billed more than once across invoices and weeks.
+    - name: Fuel surcharge variance
+      definition: Applied fuel % − expected fuel % for the week (carrier table, EIA diesel price, carrier effective-date rule), by carrier.
+  filters:
+    - Carrier
+    - Mode (parcel / LTL)
+    - Service
+    - Origin site
+    - Invoice week (default last 13 weeks)
+    - Discrepancy class
+    - Legal entity
+  visuals:
+    - { title: KPI row, type: kpi_tiles, notes: "Billed, expected, overbilled %, disputable now, match rate, duplicate charges; delta vs prior 4 weeks" }
+    - { title: Billed vs expected by carrier, type: bar, notes: "Grouped bars per carrier for the selected period, overbilled % as a label" }
+    - { title: Overbilling trend, type: line, notes: "Weekly overbilled % per carrier, 52 weeks; carriers selectable; network line for comparison" }
+    - { title: Discrepancy mix, type: stacked_bar, notes: "Per carrier, overbilled amount by class: weight, duplicate, residential or area surcharge, service level, fuel, base rate" }
+    - { title: Fuel surcharge - applied vs expected, type: line, notes: "Per carrier, weekly applied fuel % vs expected fuel %, with the weekly diesel price in a strip underneath" }
+    - { title: Dispute queue, type: table, notes: "Carrier, invoice, lines, disputable amount, days left in window; export button for the dispute file" }
+    - { title: Unmatched queue, type: table, notes: "Bill lines with no shipment, by carrier and reason category, with age" }
+    - { title: Line evidence, type: table, notes: "Drill-through: tracking or PRO number, ship date, measured weight and dimensions, billed weight, zone, service, expected components, billed amount, rule hit" }
+  refresh_sla: Daily by 07:00 America/New_York, and within 2 hours of the Monday carrier-bill postings in AX.
+  access: Transportation (beth.kowalczyk) and Finance (alan.brooks, rebecca.lindqvist, priya.raman). Never shared with carriers; carrier-facing material comes only from the P4-D2 single-carrier export.
+  layout: |
+    1920×1080, Harborline light dashboard background with the Transportation department accent.
+    Header band: Harborline lockup left, title "Freight Audit", selected weeks and last-refresh time right.
+    Left filter rail (240 px): carrier, mode, service, origin site, invoice week, discrepancy class, legal entity.
+    Row 1: six KPI tiles across the full width.
+    Row 2: "Billed vs expected by carrier" (left, 40%) and "Overbilling trend" (right, 60%).
+    Row 3: "Discrepancy mix" (left, 35%), "Fuel surcharge - applied vs expected" (middle, 35%), "Dispute queue" table (right, 30%).
+    Drill-through page "Evidence": "Line evidence" table (top, full width) and "Unmatched queue" table (bottom, full width).
+    Footer: data freshness, rate-card versions in use, dashboard version.
+
+- id: P4-D2
+  name: Carrier Scorecard
+  audience: Beth Kowalczyk for the Q1 RFP and quarterly business reviews; Luis Moreno; each carrier sees only its own single-carrier export
+  owner: beth.kowalczyk
+  questions:
+    - Which carriers deliver on time, on which lanes and services?
+    - How long does transit take (median and p90) by lane, and is it improving?
+    - How often do packages hit exceptions (damage, address, delay, lost)?
+    - What does each carrier really cost per package and per pound, fully loaded?
+    - How accurate is each carrier's billing?
+    - When a delivery is late, is it Harborline's fault or the carrier's?
+  kpis:
+    - name: On-time delivery (carrier commitment)
+      definition: Delivered packages delivered within the carrier's committed transit for the service ÷ delivered packages, per the catalog definition owned by beth.kowalczyk.
+      owner_definition_conflict: Transportation measures against the carrier's commitment; Client Success measures against the promise made to the end customer. Both appear, with distinct catalog names agreed with beth.kowalczyk and omar.haddad (P4.S5.T1).
+    - name: On-time delivery (customer promise)
+      definition: Delivered packages delivered by the date promised to the end customer ÷ delivered packages, per the catalog definition owned by omar.haddad.
+      owner_definition_conflict: Same disagreement as above, seen from Client Success; business vs calendar days and exclusions differ too.
+    - name: Transit time p50 / p90
+      definition: Business days from first carrier scan to delivery, by carrier, service and lane.
+    - name: Tender lag
+      definition: Hours from WMS ship confirmation to first carrier scan; late deliveries split into warehouse-caused and carrier-caused per the rule agreed with beth.kowalczyk.
+    - name: Exception rate
+      definition: Packages with at least one exception event ÷ packages shipped, by exception type.
+    - name: Cost per package and per billable lb
+      definition: Matched billed amount ÷ packages (or ÷ billable pounds), by carrier, service, lane and weight band; Canadian and Mexican bills converted per the currency policy.
+    - name: Billing accuracy
+      definition: 1 − (overbilled amount ÷ billed amount), from the freight audit.
+    - name: Composite score
+      definition: Weighted score of the measures above with the weights and minimum-volume rule agreed with beth.kowalczyk (P4.S5.T8).
+  filters:
+    - Carrier
+    - Mode (parcel / LTL)
+    - Service
+    - Origin site
+    - Destination region (state)
+    - Zone
+    - Period (month / quarter; default last full quarter)
+    - Weight band
+  visuals:
+    - { title: KPI row, type: kpi_tiles, notes: "Both on-time measures, transit p50, exception rate, cost per package, billing accuracy" }
+    - { title: Carrier ranking, type: table, notes: "One row per carrier: composite score, both on-time measures, transit p50/p90, exception rate, cost per package, billing accuracy, volume share; 12-month sparkline per row" }
+    - { title: Lane map, type: map, notes: "Origin sites to destination states; line colour = on-time % (carrier commitment), width = volume; filtered by carrier and service" }
+    - { title: On-time trend, type: line, notes: "Monthly on-time % for both definitions per carrier, 18 months; holiday and severe-weather markers" }
+    - { title: Lateness attribution, type: stacked_bar, notes: "Late packages by cause (warehouse vs carrier) per carrier and origin site" }
+    - { title: Exceptions by type, type: stacked_bar, notes: "Exception rate by type per carrier" }
+    - { title: Cost per lb by weight band, type: line, notes: "Cost per billable lb across weight bands, carriers as series, for the selected lane and service" }
+  refresh_sla: Daily by 07:00 America/New_York with delivery events through the previous day; cost and billing accuracy refresh after the Monday carrier-bill postings.
+  access: Transportation (beth.kowalczyk), Operations leadership (luis.moreno) and Finance see all carriers. Each carrier receives only a single-carrier export - its own metrics, no other carrier's name, and no Harborline cost or margin beyond its own billed amounts.
+  layout: |
+    1920×1080, Harborline light dashboard background with the Transportation department accent.
+    Header band: Harborline lockup left, title "Carrier Scorecard", period and last-refresh time right; "Export for carrier" button.
+    Left filter rail (240 px): carrier, mode, service, origin site, destination region, zone, period, weight band.
+    Row 1: six KPI tiles across the full width.
+    Row 2: "Carrier ranking" table (left, 55%) and "Lane map" (right, 45%).
+    Row 3: "On-time trend" (left, 40%), "Lateness attribution" (middle, 30%), "Exceptions by type" (right, 30%).
+    Page 2 "Cost": "Cost per lb by weight band", full width.
+    Footer: data freshness, metric catalog link (both on-time definitions), dashboard version.

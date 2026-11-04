@@ -1,0 +1,14 @@
+# Keep the Docker build context small: only web/, brand/ and simulator/ are copied into the image.
+.git
+**/.DS_Store
+**/node_modules
+**/dist
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.ruff_cache
+simulator/.venv
+simulator/*.egg-info
+landing
+answer_key/anomalies.csv
+.env

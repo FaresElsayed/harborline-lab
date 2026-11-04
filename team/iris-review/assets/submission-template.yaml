@@ -1,0 +1,45 @@
+# UAT submission for Iris Novak (Business Performance Manager).
+# Copy to uat/<DASHBOARD-ID>/round-<n>/submission.yaml in your repository, fill it in, and put the screenshots and
+# exports listed below in the same folder. In a website chat, zip the folder and attach it with the Harborline package zip
+# and the source extract from the Control Center. In a coding agent, just ask Iris for a review.
+
+dashboard: P2-D1                  # id from the dashboard catalog (tracker/dashboards)
+round: 1                          # 1 for the first submission, then 2, 3, ...
+submitted_on: 2027-01-14
+platform: Databricks AI/BI        # or Power BI, Snowsight, Streamlit, ...
+dashboard_link: ""                # URL or file, if Iris could open it herself
+
+# Freeze the data before you refresh: stop the stream in the Control Center, run your pipelines, refresh the
+# dashboard, then take the screenshots and exports. Leave the stream stopped until Iris replies.
+stream_paused: true
+sim_clock_at_refresh: "2027-01-14T05:00:00+00:00"   # Control Center › Sim clock (UTC), after your refresh
+data_as_of: "2027-01-13 23:59 America/New_York"     # exactly what the dashboard footer says
+source_extract: ""                # Website chats only: the extract's file name (Control Center › Source extract)
+
+pages:                            # one PNG per dashboard page, full screen, filter rail visible
+  - file: page-1-overview.png
+    filters: "Last full week (2027-W02), all sites, all clients"
+  - file: page-2-trends.png
+    filters: "Last 13 weeks, all sites"
+
+exports:                          # CSV exports of the headline visuals, with the same filters as the screenshots
+  - file: kpi-tiles.csv
+    visual: KPI row
+  - file: site-comparison.csv
+    visual: Site comparison
+
+end_tables:                       # CSV exports of the end (gold) tables behind the dashboard, for the extract's
+  - file: gold-fct-order-ship.csv #   months (or the periods under review), one per table
+    table: gold.fct_order_ship
+    filter: "ship_date in 2026-10 and 2027-01"
+
+metric_catalog: metric-catalog.yml         # a copy in this folder (from e.g. docs/metrics/); one entry per KPI with
+                                            # definition, owner and sign-off
+bridge: bridge.csv                          # dashboard totals to source totals (copy bridge-template.csv)
+
+access_evidence:                  # what proves the spec's access rules (screenshots as two identities, or the
+  - file: access-gm-atl1.png      # documented free-tier limitation and your mitigation)
+    note: "Signed in as the ATL1 GM test user: only ATL1 worker detail visible"
+
+known_issues: []                  # anything you already know is wrong; Iris checks these but doesn't count them twice
+questions_for_iris: []

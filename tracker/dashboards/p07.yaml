@@ -1,0 +1,107 @@
+# Dashboard specs - Project 7 (Cold Chain & Lot Traceability). Wireframes: brand/wireframes/<id>.svg
+- id: P7-D1
+  name: Cold Chain Monitor
+  audience: Dr. Ayesha Khan (Quality & Food Safety), Grace Liu (Facilities & Controls), CHI1 and TOR1 site management, Luis Moreno
+  owner: ayesha.khan
+  questions:
+    - Are all regulated zones in range right now?
+    - How many excursions did we have in the period, how long did they last, and how severe were they?
+    - Which lots were exposed, and were they held, released or destroyed, and how quickly?
+    - Which sensors are unhealthy (stuck, spiking, silent, low battery, calibration overdue), and which zones are blind?
+    - When do excursions happen (hour of day, day of week), and what door activity surrounds them?
+  kpis:
+    - name: Time in range
+      definition: Sensor-minutes in range ÷ sensor-minutes in the period, per zone, using the effective-dated thresholds; periods with an unhealthy sensor are classed as unknown.
+      owner_definition_conflict: Ayesha counts unknown time against compliance (conservative). Luis wants unknown time excluded from the denominator. Show the agreed headline and the unknown share next to it.
+    - name: Excursions
+      definition: Count of excursion episodes meeting the SOP duration rule for their zone type in the period.
+      owner_definition_conflict: Luis wants short door-open blips during loading excluded. Quality's SOP decides. Record the rule version used.
+    - name: Excursion minutes
+      definition: Sum of episode durations in minutes, plus degree-minutes outside range, for severity.
+    - name: Lots exposed
+      definition: Distinct lots stored in an affected zone during at least one episode in the period.
+    - name: Hold compliance
+      definition: Lots exposed and placed on HOLD ÷ lots exposed.
+    - name: Hold review time (days)
+      definition: Median days from HOLD to RELEASE or DESTROY for lots held after an excursion, against the target agreed with Ayesha.
+    - name: Mean kinetic temperature
+      definition: MKT per zone over the period, using the activation energy documented in the metric catalog.
+    - name: Healthy sensors
+      definition: Share of active temperature sensors with no stuck, spike, dropout or overdue-calibration flag at the end of the period.
+  filters:
+    - Warehouse (default CHI1)
+    - Zone type (COOLER / FREEZER / AMBIENT)
+    - Zone
+    - Sensor
+    - Date range (default last 7 days)
+    - Client (for exposed lots)
+  visuals:
+    - { title: KPI row, type: kpi_tiles, notes: "Time in range (with unknown share), excursions, excursion minutes, lots exposed, hold compliance, healthy sensors" }
+    - { title: Zone status now, type: tile_grid, notes: "One tile per regulated zone: current reading, in range / excursion / unknown status color from the palette" }
+    - { title: Temperature timeline, type: line, notes: "Selected zone or sensor readings with the threshold band shaded, excursion episodes highlighted, unknown periods hatched, door-open intervals as a strip below" }
+    - { title: Excursion episodes, type: table, notes: "Start and end (site-local), duration, peak, degree-minutes, rule version, lots exposed, hold status" }
+    - { title: Exposed lots, type: table, notes: "Client, SKU, lot, quantity, status (held / released / destroyed), days to decision" }
+    - { title: When excursions happen, type: heatmap, notes: "Hour of day × day of week, excursion minutes" }
+    - { title: Sensor health, type: table, notes: "Sensor, zone, flags (stuck / spike / dropout / drift / battery), calibration due date" }
+  refresh_sla: Readings ≤ 15 minutes behind gateway ingestion; episode and lot tables refreshed every 15 minutes; live alerts handled separately (≤ 15 minutes).
+  access: Quality sees everything. Operations sees its own sites. Facilities (Grace) has full access to sensor health. No consignee PII on this dashboard. Not client-facing.
+  layout: |
+    1920×1080, Harborline light dashboard background with the Quality department accent; status colors (good / warn / bad / unknown) from the brand palette.
+    Header band: lockup, title "Cold Chain Monitor", site selector, as-of time.
+    Left filter rail (240 px).
+    Row 1: KPI row, six tiles. Row 2: "Zone status now" tile grid (left, 30%) and "Temperature timeline" (right, 70%).
+    Row 3: "Excursion episodes" table (left, 55%) and "Exposed lots" table (right, 45%).
+    Row 4: "When excursions happen" heatmap (left, 40%) and "Sensor health" table (right, 60%).
+    Footer: data freshness, rule version in force, KPI definitions link.
+
+- id: P7-D2
+  name: Recall Trace
+  audience: Quality (Dr. Ayesha Khan and the recall response group), Omar Haddad for client communication, Daniel Reyes during a live recall
+  owner: ayesha.khan
+  questions:
+    - For a given lot (or SKU and date range), which orders, shipments and ship-to locations received it, and how many units?
+    - How many units are still in our buildings, and are they on hold?
+    - Which shipments are delivered, which are still in transit, and with which carriers?
+    - Where did the lot come from (supplier, ASN, receipt), and which other lots arrived with it?
+    - How long did it take us to produce the trace?
+  kpis:
+    - name: Lot balance
+      definition: Received − shipped − destroyed ± adjustments ± returns − on hand; must be 0 for a complete trace.
+    - name: Units shipped
+      definition: Units of the selected lots shipped to customers, from the genealogy.
+    - name: Orders affected
+      definition: Distinct orders that shipped at least one unit of the selected lots.
+    - name: Ship-to locations affected
+      definition: Distinct ship-to addresses (normalized) that received the selected lots.
+    - name: Units in transit
+      definition: Units on shipments not yet delivered per carrier events.
+    - name: Units on hand
+      definition: Units of the selected lots in inventory now, split by status (HOLD / AVAILABLE).
+    - name: Trace completeness
+      definition: Shipped units with a linked shipment and tracking number ÷ shipped units.
+    - name: Time to trace
+      definition: Minutes from the recall request being logged to the package being exported.
+  filters:
+    - Client
+    - SKU
+    - Lot (multi-select)
+    - Receipt date range
+    - Expiry date range
+    - Warehouse
+  visuals:
+    - { title: Lot summary, type: kpi_tiles, notes: "Lot balance (must show 0 in green), units shipped, orders, ship-tos, in transit, on hand" }
+    - { title: Genealogy flow, type: sankey, notes: "Receipt / supplier → warehouse → order channel → delivered / in transit / on hand / destroyed" }
+    - { title: Ship-to map, type: map, notes: "State or province level for most roles; point level only for the Quality recall role" }
+    - { title: Affected orders, type: table, notes: "Order, client PO, ship date, carrier, tracking (all versions), status, units; consignee columns masked unless Quality recall role" }
+    - { title: Source and sibling lots, type: table, notes: "Supplier, ASN, receipt, other lots on the same receipt" }
+    - { title: Export, type: action, notes: "Generate recall package (logged with request id); Quality recall role only" }
+  refresh_sla: Daily by 06:00 site-local; on-demand refresh during a live recall completes within 15 minutes of being triggered; data as-of shown prominently.
+  access: Quality recall role sees clear consignee data and may export. Other Quality users and Omar see masked consignee data. Every export is logged (who, when, request id, rows). Not client-facing.
+  layout: |
+    1920×1080, Harborline light dashboard background with the Quality department accent.
+    Header band: lockup, title "Recall Trace", lot selector (large, top left), as-of time and "Recall mode" badge when on-demand refresh is active.
+    Row 1: Lot summary tiles, with lot balance first.
+    Row 2: "Genealogy flow" sankey (left, 60%) and "Ship-to map" (right, 40%).
+    Row 3: "Affected orders" table, full width, with the Export button above it on the right.
+    Row 4: "Source and sibling lots" table (left, 50%) and the time-to-trace note (right, 50%).
+    Footer: data freshness, masking notice, KPI definitions link.

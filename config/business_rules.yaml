@@ -1,0 +1,410 @@
+# Harborline Logistics: business rules used by the simulator.
+# This is the company's "reference data". Changing a value here changes the data the simulator produces.
+# Dates in `onboard_month` / `churn_month` are months relative to the END of the generated history
+# (0 = the last month, -35 = 35 months before). Clients with onboard_month earlier than the history start
+# simply exist from day one with opening inventory.
+
+company:
+  name: Harborline Logistics
+  legal_name: Harborline Logistics Holdings, Inc.
+  email_domain: harborline-logistics.example
+  hq: { city: Atlanta, state: GA, country: US }
+  reporting_currency: USD
+  fiscal_year_start_month: 1
+
+legal_entities:
+  - { dataareaid: us01, name: "Harborline Logistics USA, Inc.", currency: USD, country: USA }
+  - { dataareaid: ca01, name: "Harborline Logistics Canada Ltd.", currency: CAD, country: CAN }
+  - { dataareaid: mx01, name: "Harborline Logística México S. de R.L. de C.V.", currency: MXN, country: MEX }
+
+warehouses:
+  - code: ATL1
+    name: Harborline Atlanta South
+    address: { street: "1450 Greenwood Industrial Pkwy", city: McDonough, state: GA, postal: "30253", country: US, lat: 33.4473, lon: -84.1469 }
+    time_zone: America/New_York
+    legal_entity: us01
+    uom: { weight: LB, dim: IN }
+    profile: ecommerce
+    opened: "2014-03-01"
+    sqft: 612000
+    dock_doors: 64
+    pallet_positions: 38000
+    pick_faces: 22000
+    cutoffs: { parcel: "15:00", ltl: "13:00" }
+    shifts: { A: "06:00-14:30", B: "14:30-23:00" }
+    zones: [AMBIENT, CAGE, BULK, RETURNS]
+    presets: [small, medium, large]
+  - code: DFW1
+    name: Harborline Dallas
+    address: { street: "2201 W Wintergreen Rd", city: Lancaster, state: TX, postal: "75134", country: US, lat: 32.6068, lon: -96.7561 }
+    time_zone: America/Chicago
+    legal_entity: us01
+    uom: { weight: LB, dim: IN }
+    profile: mixed
+    opened: "2016-07-01"
+    sqft: 455000
+    dock_doors: 48
+    pallet_positions: 29000
+    pick_faces: 14000
+    cutoffs: { parcel: "15:30", ltl: "13:30" }
+    shifts: { A: "06:00-14:30", B: "14:30-23:00" }
+    zones: [AMBIENT, BULK, HAZMAT, RETURNS]
+    presets: [medium, large]
+  - code: RNO1
+    name: Harborline Reno
+    address: { street: "900 Waltham Way", city: Sparks, state: NV, postal: "89437", country: US, lat: 39.5349, lon: -119.4499 }
+    time_zone: America/Los_Angeles
+    legal_entity: us01
+    uom: { weight: LB, dim: IN }
+    profile: ecommerce
+    opened: "2017-02-01"
+    sqft: 388000
+    dock_doors: 40
+    pallet_positions: 24000
+    pick_faces: 16000
+    cutoffs: { parcel: "14:00", ltl: "12:00" }
+    shifts: { A: "05:30-14:00", B: "14:00-22:30" }
+    zones: [AMBIENT, CAGE, RETURNS]
+    presets: [medium, large]
+  - code: CHI1
+    name: Harborline Chicago Cold Chain
+    address: { street: "3100 Channahon Rd", city: Joliet, state: IL, postal: "60436", country: US, lat: 41.4917, lon: -88.1270 }
+    time_zone: America/Chicago
+    legal_entity: us01
+    uom: { weight: LB, dim: IN }
+    profile: cold_chain
+    opened: "2015-05-01"
+    sqft: 298000
+    dock_doors: 36
+    pallet_positions: 21000
+    pick_faces: 6500
+    cutoffs: { parcel: "14:00", ltl: "12:00" }
+    shifts: { A: "05:00-13:30", B: "13:30-22:00", C: "22:00-05:00" }
+    zones: [AMBIENT, COOLER, FREEZER]
+    presets: [small, medium, large]
+  - code: NJ1
+    name: Harborline Cranbury
+    address: { street: "8 Station Rd", city: Cranbury, state: NJ, postal: "08512", country: US, lat: 40.3165, lon: -74.5135 }
+    time_zone: America/New_York
+    legal_entity: us01
+    uom: { weight: LB, dim: IN }
+    profile: b2b_retail
+    opened: "2013-09-01"
+    sqft: 520000
+    dock_doors: 72
+    pallet_positions: 41000
+    pick_faces: 9000
+    cutoffs: { parcel: "15:00", ltl: "14:00" }
+    shifts: { A: "06:00-14:30", B: "14:30-23:00" }
+    zones: [AMBIENT, BULK, CAGE]
+    presets: [medium, large]
+  - code: LAX1
+    name: Harborline Inland Empire
+    address: { street: "4250 E Airport Dr", city: Ontario, state: CA, postal: "91761", country: US, lat: 34.0559, lon: -117.5605 }
+    time_zone: America/Los_Angeles
+    legal_entity: us01
+    uom: { weight: LB, dim: IN }
+    profile: ecommerce
+    opened_month: -17          # opened during the history: expansion story
+    sqft: 410000
+    dock_doors: 52
+    pallet_positions: 30000
+    pick_faces: 18000
+    cutoffs: { parcel: "14:30", ltl: "12:30" }
+    shifts: { A: "05:30-14:00", B: "14:00-22:30" }
+    zones: [AMBIENT, BULK, RETURNS]
+    presets: [medium, large]
+  - code: TOR1
+    name: Harborline Mississauga
+    address: { street: "6705 Millcreek Dr", city: Mississauga, state: "ON", postal: "L5N 5M4", country: CA, lat: 43.5995, lon: -79.7516 }
+    time_zone: America/Toronto
+    legal_entity: ca01
+    uom: { weight: KG, dim: CM }
+    profile: mixed
+    opened: "2018-04-01"
+    sqft: 265000
+    dock_doors: 30
+    pallet_positions: 17000
+    pick_faces: 8000
+    cutoffs: { parcel: "15:00", ltl: "13:00" }
+    shifts: { A: "06:00-14:30", B: "14:30-23:00" }
+    zones: [AMBIENT, COOLER]
+    presets: [small, medium, large]
+  - code: MTY1
+    name: Harborline Monterrey
+    address: { street: "Carretera Miguel Alemán km 21.5", city: Apodaca, state: NL, postal: "66600", country: MX, lat: 25.7814, lon: -100.1883 }
+    time_zone: America/Monterrey
+    legal_entity: mx01
+    uom: { weight: KG, dim: CM }
+    profile: b2b_retail
+    opened: "2019-10-01"
+    sqft: 240000
+    dock_doors: 28
+    pallet_positions: 15000
+    pick_faces: 5000
+    cutoffs: { parcel: "14:00", ltl: "12:00" }
+    shifts: { A: "07:00-15:30", B: "15:30-00:00" }
+    zones: [AMBIENT, BULK]
+    language: es
+    presets: [medium, large]
+
+size_presets:
+  small:  { months: 6,  volume_scale: 0.35, iot_days: 30, carrier_api_retention_days: 90 }
+  medium: { months: 24, volume_scale: 0.6,  iot_days: 60, carrier_api_retention_days: 90 }
+  large:  { months: 36, volume_scale: 1.0,  iot_days: 90, carrier_api_retention_days: 90 }
+
+# Orders per day once a client is fully ramped (before seasonality and volume_scale).
+volume_tiers: { S: 15, M: 60, L: 200, XL: 600 }
+
+verticals:
+  apparel:        { b2c_share: 0.92, lines_b2c: [1, 4], lines_b2b: [8, 40], return_rate: 0.24, lot: false, serial: false, temp: AMBIENT, peak_multiplier: 3.6 }
+  electronics:    { b2c_share: 0.80, lines_b2c: [1, 3], lines_b2b: [5, 25], return_rate: 0.09, lot: false, serial: true,  temp: AMBIENT, peak_multiplier: 4.2 }
+  food_bev:       { b2c_share: 0.25, lines_b2c: [1, 6], lines_b2b: [10, 60], return_rate: 0.01, lot: true,  serial: false, temp: COOLER,  peak_multiplier: 1.6, shelf_life_days: [60, 540] }
+  health_beauty:  { b2c_share: 0.85, lines_b2c: [1, 5], lines_b2b: [6, 30], return_rate: 0.06, lot: true,  serial: false, temp: AMBIENT, peak_multiplier: 2.4, shelf_life_days: [365, 1095] }
+  home_goods:     { b2c_share: 0.70, lines_b2c: [1, 3], lines_b2b: [4, 20], return_rate: 0.11, lot: false, serial: false, temp: AMBIENT, peak_multiplier: 2.2, bulky_share: 0.35 }
+  auto_parts:     { b2c_share: 0.15, lines_b2c: [1, 3], lines_b2b: [10, 80], return_rate: 0.05, lot: false, serial: false, temp: AMBIENT, peak_multiplier: 1.2, edi: true }
+  pet:            { b2c_share: 0.88, lines_b2c: [1, 5], lines_b2b: [8, 40], return_rate: 0.04, lot: true,  serial: false, temp: AMBIENT, peak_multiplier: 1.8, shelf_life_days: [180, 720] }
+  supplements:    { b2c_share: 0.90, lines_b2c: [1, 4], lines_b2b: [6, 30], return_rate: 0.05, lot: true,  serial: false, temp: AMBIENT, peak_multiplier: 2.0, shelf_life_days: [365, 900] }
+  b2b_general:    { b2c_share: 0.10, lines_b2c: [1, 3], lines_b2b: [10, 70], return_rate: 0.03, lot: false, serial: false, temp: AMBIENT, peak_multiplier: 1.5, edi: true }
+
+# Public client attributes. Hidden behaviours (payment habits, planted stories) live in answer_key/planted_stories.yaml.
+# currency = billing currency; entity = AX legal entity that invoices them.
+clients:
+  # --- apparel ---
+  - { code: NBOUT,   name: Northbound Outfitters,       vertical: apparel,       tier: XL, currency: USD, entity: us01, warehouses: [ATL1, RNO1, LAX1], onboard_month: -60 }
+  - { code: LUMEN,   name: Lumen Activewear,             vertical: apparel,       tier: L,  currency: USD, entity: us01, warehouses: [RNO1, LAX1],       onboard_month: -48 }
+  - { code: KESTREL, name: Kestrel & Co.,                vertical: apparel,       tier: M,  currency: USD, entity: us01, warehouses: [ATL1],             onboard_month: -30 }
+  - { code: VELVET,  name: Velvet Thread,                vertical: apparel,       tier: M,  currency: USD, entity: us01, warehouses: [NJ1],              onboard_month: -52 }
+  - { code: COBALT,  name: Cobalt Denim Co.,             vertical: apparel,       tier: L,  currency: USD, entity: us01, warehouses: [DFW1, ATL1],       onboard_month: -44 }
+  - { code: FERNKID, name: Fernhill Kids,                vertical: apparel,       tier: S,  currency: USD, entity: us01, warehouses: [ATL1],             onboard_month: -12 }
+  - { code: SUMMIT,  name: Summit Trail Gear,            vertical: apparel,       tier: M,  currency: CAD, entity: ca01, warehouses: [TOR1],             onboard_month: -40 }
+  - { code: MARIGLD, name: Marigold Studio,              vertical: apparel,       tier: S,  currency: USD, entity: us01, warehouses: [LAX1],             onboard_month: -9 }
+  - { code: URBLOOM, name: UrbanLoom,                    vertical: apparel,       tier: M,  currency: USD, entity: us01, warehouses: [NJ1, ATL1],        onboard_month: -26, churn_month: -5 }
+  - { code: BRUNE,   name: Atelier Brune,                vertical: apparel,       tier: M,  currency: EUR, entity: us01, warehouses: [NJ1],              onboard_month: -22 }
+  - { code: HARROW,  name: Harrow & Finch,               vertical: apparel,       tier: S,  currency: GBP, entity: us01, warehouses: [NJ1],              onboard_month: -15 }
+  - { code: SOLSWIM, name: Solstice Swim,                vertical: apparel,       tier: M,  currency: USD, entity: us01, warehouses: [RNO1],             onboard_month: -33 }
+  # --- electronics ---
+  - { code: VOLTWV,  name: Voltwave Audio,               vertical: electronics,   tier: L,  currency: USD, entity: us01, warehouses: [DFW1, RNO1],       onboard_month: -50 }
+  - { code: PIXCRFT, name: Pixelcraft Devices,           vertical: electronics,   tier: M,  currency: USD, entity: us01, warehouses: [ATL1],             onboard_month: -28 }
+  - { code: ORBITSH, name: Orbit Smart Home,             vertical: electronics,   tier: XL, currency: USD, entity: us01, warehouses: [ATL1, DFW1, LAX1], onboard_month: -46 }
+  - { code: NIMBUS,  name: Nimbus Wearables,             vertical: electronics,   tier: M,  currency: CAD, entity: ca01, warehouses: [TOR1],             onboard_month: -19 }
+  - { code: BRTLINE, name: Brightline Cables,            vertical: electronics,   tier: S,  currency: USD, entity: us01, warehouses: [DFW1],             onboard_month: -38 }
+  - { code: KINETIC, name: Kinetic Gaming,               vertical: electronics,   tier: M,  currency: USD, entity: us01, warehouses: [RNO1],             onboard_month: -6 }
+  # --- food & beverage (cold chain) ---
+  - { code: CPRKTL,  name: Copper Kettle Foods,          vertical: food_bev,      tier: L,  currency: USD, entity: us01, warehouses: [CHI1],             onboard_month: -55 }
+  - { code: GRNFLD,  name: Greenfield Organics,          vertical: food_bev,      tier: M,  currency: USD, entity: us01, warehouses: [CHI1],             onboard_month: -42 }
+  - { code: BLRIDGE, name: Blue Ridge Coffee Roasters,   vertical: food_bev,      tier: M,  currency: USD, entity: us01, warehouses: [ATL1],             onboard_month: -31, temp: AMBIENT }
+  - { code: SIERRA,  name: Sierra Spring Water,          vertical: food_bev,      tier: M,  currency: USD, entity: us01, warehouses: [RNO1, DFW1],       onboard_month: -47, temp: AMBIENT }
+  - { code: MAPLEH,  name: Maple Hollow Syrups,          vertical: food_bev,      tier: S,  currency: CAD, entity: ca01, warehouses: [TOR1],             onboard_month: -36 }
+  - { code: CASADOR, name: Casa Dorada Salsas,           vertical: food_bev,      tier: M,  currency: MXN, entity: mx01, warehouses: [MTY1],             onboard_month: -29 }
+  - { code: POLARPK, name: Polar Peak Frozen Desserts,    vertical: food_bev,      tier: M,  currency: USD, entity: us01, warehouses: [CHI1],             onboard_month: -34, temp: FREEZER }
+  - { code: HRVMOON, name: Harvest Moon Snacks,          vertical: food_bev,      tier: L,  currency: USD, entity: us01, warehouses: [CHI1, NJ1],        onboard_month: -41, temp: AMBIENT }
+  # --- health & beauty ---
+  - { code: LUMIERE, name: Lumière Skin,                 vertical: health_beauty, tier: M,  currency: EUR, entity: us01, warehouses: [NJ1],              onboard_month: -24 }
+  - { code: PETALPN, name: Petal & Pine,                 vertical: health_beauty, tier: M,  currency: USD, entity: us01, warehouses: [ATL1],             onboard_month: -37 }
+  - { code: GLOWTH,  name: Glow Theory,                  vertical: health_beauty, tier: L,  currency: USD, entity: us01, warehouses: [RNO1, LAX1],       onboard_month: -27 }
+  - { code: PUREFRM, name: PureForm Labs,                vertical: health_beauty, tier: S,  currency: USD, entity: us01, warehouses: [DFW1],             onboard_month: -20 }
+  - { code: AURORA,  name: Aurora Haircare,              vertical: health_beauty, tier: M,  currency: CAD, entity: ca01, warehouses: [TOR1],             onboard_month: -45 }
+  - { code: SALTWTR, name: Saltwater Botanics,           vertical: health_beauty, tier: S,  currency: USD, entity: us01, warehouses: [LAX1],             onboard_month: -8 }
+  - { code: DERMACL, name: Dermaclear Rx,                vertical: health_beauty, tier: M,  currency: USD, entity: us01, warehouses: [CHI1],             onboard_month: -32, temp: COOLER }
+  - { code: BLOOMBT, name: Bloom Bath Co.,               vertical: health_beauty, tier: S,  currency: USD, entity: us01, warehouses: [ATL1],             onboard_month: -16, churn_month: -2 }
+  # --- home goods ---
+  - { code: HEARTH,  name: Hearth & Haven,               vertical: home_goods,    tier: L,  currency: USD, entity: us01, warehouses: [ATL1, DFW1],       onboard_month: -58 }
+  - { code: OAKLINE, name: Oakline Furniture,            vertical: home_goods,    tier: M,  currency: USD, entity: us01, warehouses: [DFW1],             onboard_month: -43, bulky: true }
+  - { code: NORDHS,  name: Nordhaus Living,              vertical: home_goods,    tier: M,  currency: EUR, entity: us01, warehouses: [NJ1],              onboard_month: -18 }
+  - { code: CLAYWRK, name: Clayworks Pottery,            vertical: home_goods,    tier: S,  currency: USD, entity: us01, warehouses: [RNO1],             onboard_month: -25 }
+  - { code: LUMHAUS, name: Lumenhaus Lighting,           vertical: home_goods,    tier: M,  currency: USD, entity: us01, warehouses: [LAX1],             onboard_month: -14 }
+  - { code: TIDYNST, name: Tidy Nest,                    vertical: home_goods,    tier: M,  currency: CAD, entity: ca01, warehouses: [TOR1],             onboard_month: -23 }
+  - { code: RIVSTN,  name: Riverstone Rugs,              vertical: home_goods,    tier: S,  currency: USD, entity: us01, warehouses: [ATL1],             onboard_month: -35, bulky: true }
+  # --- auto parts (B2B, EDI) ---
+  - { code: APEXAUT, name: Apex Autoparts,               vertical: auto_parts,    tier: L,  currency: USD, entity: us01, warehouses: [DFW1, ATL1],       onboard_month: -57 }
+  - { code: IRNCLAD, name: Ironclad Brakes,              vertical: auto_parts,    tier: M,  currency: USD, entity: us01, warehouses: [NJ1],              onboard_month: -39 }
+  - { code: TORQUE,  name: Torque Masters,               vertical: auto_parts,    tier: M,  currency: MXN, entity: mx01, warehouses: [MTY1],             onboard_month: -30 }
+  - { code: RDLINE,  name: Roadline Filters,             vertical: auto_parts,    tier: S,  currency: USD, entity: us01, warehouses: [DFW1],             onboard_month: -21 }
+  - { code: HWYTIRE, name: Highway Tire Supply,          vertical: auto_parts,    tier: M,  currency: USD, entity: us01, warehouses: [NJ1, CHI1],        onboard_month: -49, temp: AMBIENT, bulky: true }
+  # --- pet ---
+  - { code: PAWSOME, name: Pawsome Supply,               vertical: pet,           tier: L,  currency: USD, entity: us01, warehouses: [ATL1, RNO1],       onboard_month: -40 }
+  - { code: WHISKER, name: Whisker Works,                vertical: pet,           tier: M,  currency: USD, entity: us01, warehouses: [DFW1],             onboard_month: -17 }
+  - { code: TRLHND,  name: Trailhound Gear,              vertical: pet,           tier: S,  currency: USD, entity: us01, warehouses: [RNO1],             onboard_month: -11 }
+  - { code: AQUAHVN, name: Aqua Haven Pet,               vertical: pet,           tier: S,  currency: CAD, entity: ca01, warehouses: [TOR1],             onboard_month: -27 }
+  - { code: BARKLEY, name: Barkley Bites,                vertical: pet,           tier: M,  currency: USD, entity: us01, warehouses: [CHI1],             onboard_month: -33, temp: COOLER }
+  # --- supplements ---
+  - { code: VITROOT, name: Vital Root Nutrition,         vertical: supplements,   tier: M,  currency: USD, entity: us01, warehouses: [ATL1],             onboard_month: -29 }
+  - { code: PKPROT,  name: Peak Protein Co.,             vertical: supplements,   tier: L,  currency: USD, entity: us01, warehouses: [DFW1, LAX1],       onboard_month: -44 }
+  - { code: EVGRVIT, name: Evergreen Vitamins,           vertical: supplements,   tier: S,  currency: USD, entity: us01, warehouses: [RNO1],             onboard_month: -13 }
+  - { code: MOMNTM,  name: Momentum Sports Nutrition,    vertical: supplements,   tier: M,  currency: USD, entity: us01, warehouses: [NJ1],              onboard_month: -36, churn_month: -11 }
+  - { code: HERBCOL, name: Herbalist Collective,         vertical: supplements,   tier: S,  currency: MXN, entity: mx01, warehouses: [MTY1],             onboard_month: -10 }
+  # --- general B2B (EDI) ---
+  - { code: CRSTOFF, name: Crestview Office Supply,      vertical: b2b_general,   tier: M,  currency: USD, entity: us01, warehouses: [NJ1],              onboard_month: -54 }
+  - { code: BEACNHW, name: Beacon Hardware,              vertical: b2b_general,   tier: L,  currency: USD, entity: us01, warehouses: [DFW1, NJ1],        onboard_month: -51 }
+  - { code: LAKETOY, name: Lakeside Toys,                vertical: b2b_general,   tier: M,  currency: USD, entity: us01, warehouses: [ATL1],             onboard_month: -4 }
+  - { code: PAPRLF,  name: Paperleaf Books,              vertical: b2b_general,   tier: S,  currency: CAD, entity: ca01, warehouses: [TOR1],             onboard_month: -3 }
+
+# Prospects that exist only in Salesforce (pipeline that never closes, or closes in the future).
+prospect_count: 140
+
+carriers:
+  - { scac: UPSN, name: UPS, mode: PARCEL, countries: [US, CA], tracking_format: ups,
+      services: [ { code: GND, name: UPS Ground, transit: [1, 5] }, { code: 3DS, name: UPS 3 Day Select, transit: [3, 3] },
+                 { code: 2DA, name: UPS 2nd Day Air, transit: [2, 2] }, { code: NDA, name: UPS Next Day Air, transit: [1, 1] } ] }
+  - { scac: FDEG, name: FedEx Ground, mode: PARCEL, countries: [US, CA], tracking_format: fedex,
+      services: [ { code: FXG, name: FedEx Ground, transit: [1, 5] }, { code: FHD, name: FedEx Home Delivery, transit: [1, 5] } ] }
+  - { scac: FDE, name: FedEx Express, mode: PARCEL, countries: [US, CA, MX], tracking_format: fedex,
+      services: [ { code: F2D, name: FedEx 2Day, transit: [2, 2] }, { code: FPO, name: FedEx Priority Overnight, transit: [1, 1] } ] }
+  - { scac: USPS, name: USPS, mode: PARCEL, countries: [US], tracking_format: usps,
+      services: [ { code: UGA, name: USPS Ground Advantage, transit: [2, 5] }, { code: UPM, name: USPS Priority Mail, transit: [1, 3] } ] }
+  - { scac: DHLC, name: DHL eCommerce, mode: PARCEL, countries: [US], tracking_format: dhl,
+      services: [ { code: DPE, name: DHL Parcel Expedited, transit: [2, 6] } ] }
+  - { scac: VRPX, name: Velocity Regional Parcel, mode: PARCEL, countries: [US], tracking_format: vrpx, regions: [GA, TX, NV, CA],
+      services: [ { code: VRG, name: Velocity Regional Ground, transit: [1, 2] } ] }
+  - { scac: CNPC, name: Canada Post, mode: PARCEL, countries: [CA], tracking_format: canadapost,
+      services: [ { code: CEX, name: Expedited Parcel, transit: [1, 4] }, { code: CXP, name: Xpresspost, transit: [1, 2] } ] }
+  - { scac: PURO, name: Purolator, mode: PARCEL, countries: [CA], tracking_format: purolator,
+      services: [ { code: PGR, name: Purolator Ground, transit: [1, 4] }, { code: PEX, name: Purolator Express, transit: [1, 1] } ] }
+  - { scac: ESTF, name: Estafeta, mode: PARCEL, countries: [MX], tracking_format: estafeta,
+      services: [ { code: ETR, name: Estafeta Terrestre, transit: [2, 5] }, { code: EDS, name: Estafeta Día Siguiente, transit: [1, 1] } ] }
+  - { scac: ODFL, name: Old Dominion Freight Line, mode: LTL, countries: [US, CA], tracking_format: pro,
+      services: [ { code: LTL, name: ODFL Standard LTL, transit: [1, 5] } ] }
+  - { scac: MRLF, name: Marlowe Freight Lines, mode: LTL, countries: [US], tracking_format: pro,
+      services: [ { code: LTL, name: Marlowe Standard LTL, transit: [1, 5] } ] }
+  - { scac: EXLA, name: Estes Express Lines, mode: LTL, countries: [US], tracking_format: pro,
+      services: [ { code: LTL, name: Estes Standard LTL, transit: [1, 5] } ] }
+  - { scac: TRMX, name: Transportes Regiomontanos, mode: LTL, countries: [MX], tracking_format: pro,
+      services: [ { code: LTL, name: Consolidado Nacional, transit: [1, 4] } ] }
+
+# 3PL charge codes. Rates are list prices in USD; client contracts apply a tier discount and convert to the billing currency.
+charge_codes:
+  - { code: STOR-PLT, name: "Storage - per pallet per month",      uom: PALLET_MONTH, list_rate: 24.00, gl: "4000" }
+  - { code: STOR-BIN, name: "Storage - per shelf bin per month",   uom: BIN_MONTH,    list_rate: 6.50,  gl: "4000" }
+  - { code: COLD-SUR, name: "Cold storage surcharge per pallet",   uom: PALLET_MONTH, list_rate: 12.00, gl: "4000", cold_only: true }
+  - { code: RCV-PLT,  name: "Receiving - per pallet",              uom: PALLET,       list_rate: 10.00, gl: "4010" }
+  - { code: RCV-CTN,  name: "Receiving - per carton",              uom: CARTON,       list_rate: 1.40,  gl: "4010" }
+  - { code: ORD-B2C,  name: "Order fulfillment - B2C per order",   uom: ORDER,        list_rate: 2.75,  gl: "4010" }
+  - { code: ORD-B2B,  name: "Order fulfillment - B2B per order",   uom: ORDER,        list_rate: 8.50,  gl: "4010" }
+  - { code: PICK-ADD, name: "Additional unit pick",                uom: UNIT,         list_rate: 0.45,  gl: "4010" }
+  - { code: PICK-CTN, name: "Carton pick (B2B)",                   uom: CARTON,       list_rate: 1.25,  gl: "4010" }
+  - { code: PACK-MAT, name: "Packaging materials",                 uom: ORDER,        list_rate: 0.65,  gl: "4020" }
+  - { code: RET-PROC, name: "Returns processing per unit",         uom: UNIT,         list_rate: 3.25,  gl: "4020" }
+  - { code: LBL-ACC,  name: "Labeling / compliance accessorial",   uom: UNIT,         list_rate: 0.35,  gl: "4020" }
+  - { code: KIT-ASM,  name: "Kitting per kit",                     uom: KIT,          list_rate: 1.60,  gl: "4020" }
+  - { code: ACCT-MGT, name: "Account management fee",              uom: MONTH,        list_rate: 950.00, gl: "4020" }
+  - { code: MIN-ADJ,  name: "Monthly minimum adjustment",          uom: MONTH,        list_rate: 0.00,  gl: "4020" }
+  - { code: FRT-RCV,  name: "Freight recovery (pass-through + markup)", uom: SHIPMENT, list_rate: 0.00, gl: "4030", markup_pct: 0.12 }
+
+tier_discounts: { S: 0.00, M: 0.06, L: 0.12, XL: 0.18 }
+monthly_minimums: { S: 1500, M: 4000, L: 9000, XL: 20000 }
+annual_rate_increase_pct: [3.0, 5.0]   # applied on each contract anniversary (Salesforce contract amendment)
+
+payment_terms:
+  - { id: N30, description: "Net 30 days", days: 30 }
+  - { id: N45, description: "Net 45 days", days: 45 }
+  - { id: N60, description: "Net 60 days", days: 60 }
+  - { id: "2N10N30", description: "2% 10 Net 30", days: 30, cash_discount_pct: 2, discount_days: 10 }
+default_payment_term_by_tier: { S: N30, M: N30, L: N45, XL: N60 }
+
+gl_accounts:
+  - { id: "1100", name: Cash - Operating,            type: Asset }
+  - { id: "1200", name: Accounts Receivable - Trade, type: Asset }
+  - { id: "2000", name: Accounts Payable - Trade,    type: Liability }
+  - { id: "2100", name: Accrued Freight,             type: Liability }
+  - { id: "4000", name: Storage Revenue,             type: Revenue }
+  - { id: "4010", name: Handling Revenue,            type: Revenue }
+  - { id: "4020", name: Value-Added Services Revenue, type: Revenue }
+  - { id: "4030", name: Freight Recovery Revenue,    type: Revenue }
+  - { id: "4900", name: Customer Credits & SLA Penalties, type: Revenue }
+  - { id: "5000", name: Direct Labor,                type: Expense }
+  - { id: "5100", name: Outbound Freight Expense,    type: Expense }
+  - { id: "5200", name: Packaging Materials,         type: Expense }
+  - { id: "6000", name: Facility Rent,               type: Expense }
+  - { id: "6100", name: Utilities,                   type: Expense }
+  - { id: "6200", name: Equipment Leases,            type: Expense }
+  - { id: "6300", name: IT & Software,               type: Expense }
+  - { id: "6400", name: Insurance,                   type: Expense }
+  - { id: "7000", name: SG&A Salaries,               type: Expense }
+  - { id: "8000", name: Realized FX Gain/Loss,       type: Expense }
+financial_dimensions: [MainAccount, Site, Department]   # display value e.g. 4010-ATL1-OPS
+departments: [OPS, FIN, SLS, CS, IT, QA, EXEC, HR]
+
+cold_chain:
+  COOLER:  { min_c: 2.0,   max_c: 8.0,   excursion_minutes: 30 }
+  FREEZER: { min_c: -25.0, max_c: -18.0, excursion_minutes: 30 }
+  AMBIENT: { min_c: 10.0,  max_c: 32.0,  excursion_minutes: 240 }
+  humidity_max_pct: 70
+  hold_review_days: [1, 5]            # Quality reviews held lots within this many days
+  release_share: 0.7                  # share of held lots released; the rest destroyed
+
+labor:
+  picks_per_hour: { B2C: 95, B2B: 140 }   # lines per hour for an average picker
+  hourly_wage_usd: { US: 19.5, CA: 21.0, MX: 6.5 }
+
+calendars:
+  holiday_countries: { us01: US, ca01: CA, mx01: MX }
+  peak_season: { start: "11-15", end: "12-24", cyber_week_boost: 1.6 }
+  weekday_shape_b2c: [1.18, 1.08, 1.02, 0.98, 0.95, 0.72, 0.80]   # Mon..Sun
+  weekday_shape_b2b: [1.10, 1.08, 1.06, 1.04, 1.00, 0.12, 0.05]
+
+data_quality:
+  default_rate_denominator: 10000      # 1 bad record in N per category
+  categories:
+    - orphan_fk
+    - duplicate_row
+    - null_required
+    - negative_qty
+    - shipped_gt_ordered
+    - sentinel_date
+    - future_date
+    - invalid_currency
+    - unit_mixup
+    - key_whitespace_case
+    - mojibake
+    - malformed_edi
+    - sensor_spike
+    - sensor_stuck
+    - late_arriving
+    - schema_drift
+    - header_line_mismatch
+    - duplicate_account
+    - dst_duplicate
+
+# The people at Harborline. Personas for the AI chat team are a subset (persona: true).
+people:
+  - { key: daniel.reyes,     name: Daniel Reyes,      title: Chief Executive Officer,             dept: EXEC, persona: true }
+  - { key: rebecca.lindqvist,name: Rebecca Lindqvist, title: Chief Financial Officer,             dept: FIN,  persona: true }
+  - { key: alan.brooks,      name: Alan Brooks,       title: Corporate Controller,                dept: FIN,  persona: true }
+  - { key: luis.moreno,      name: Luis Moreno,       title: VP Operations,                       dept: OPS,  persona: true }
+  - { key: shanice.carter,   name: Shanice Carter,    title: "General Manager, ATL1",             dept: OPS,  persona: true }
+  - { key: beth.kowalczyk,   name: Beth Kowalczyk,    title: Transportation Manager,              dept: OPS,  persona: true }
+  - { key: hannah.price,     name: Hannah Price,      title: Director of Sales Operations,        dept: SLS,  persona: true }
+  - { key: omar.haddad,      name: Omar Haddad,       title: Director of Client Success,          dept: CS,   persona: true }
+  - { key: ayesha.khan,      name: Dr. Ayesha Khan,   title: Quality & Food Safety Manager,       dept: QA,   persona: true }
+  - { key: mei.tanaka,       name: Mei Tanaka,        title: Information Security Manager,        dept: IT,   persona: true }
+  - { key: sam.okafor,       name: Sam Okafor,        title: Director of IT,                      dept: IT,   persona: true }
+  - { key: nadia.petrov,     name: Nadia Petrov,      title: Data Engineering Team Lead,          dept: IT,   persona: true }
+  - { key: marcus.bell,      name: Marcus Bell,       title: WMS Application Administrator,       dept: IT,   persona: true }
+  - { key: priya.raman,      name: Priya Raman,       title: ERP Systems Analyst (AX 2012),       dept: FIN,  persona: true }
+  - { key: dana.whitfield,   name: Dana Whitfield,    title: Salesforce Administrator,            dept: SLS,  persona: true }
+  - { key: tomas.ortega,     name: Tomás Ortega,      title: EDI & Integrations Specialist,       dept: IT,   persona: true }
+  - { key: grace.liu,        name: Grace Liu,         title: Facilities & Controls Engineer,      dept: OPS,  persona: true }
+  - { key: kevin.ohara,      name: Kevin O'Hara,      title: IT Infrastructure Engineer,          dept: IT,   persona: true }
+  # Salesforce users who are not personas (account executives, client success managers)
+  - { key: jordan.ellis,     name: Jordan Ellis,      title: Account Executive,                   dept: SLS }
+  - { key: priscilla.nunez,  name: Priscilla Núñez,   title: Account Executive,                   dept: SLS }
+  - { key: wes.harrington,   name: Wes Harrington,    title: Account Executive,                   dept: SLS }
+  - { key: chloe.martin,     name: Chloé Martin,      title: Account Executive (Canada),          dept: SLS }
+  - { key: diego.salinas,    name: Diego Salinas,     title: Account Executive (Mexico),          dept: SLS }
+  - { key: tara.whitlock,    name: Tara Whitlock,     title: Client Success Manager,              dept: CS }
+  - { key: ben.osei,         name: Ben Osei,          title: Client Success Manager,              dept: CS }
+  - { key: lena.fischer,     name: Lena Fischer,      title: Client Success Manager,              dept: CS }
+  - { key: integration.user, name: Integration User,  title: API integration user,                dept: IT }
+  # Reviews and signs off every dashboard (UAT). In a website chat, with the source extract from the Control Center; the
+  # team/iris-review skill runs her in a coding agent instead. Appended last so earlier people keep their generated ids.
+  - { key: iris.novak,       name: Iris Novak,        title: Business Performance Manager,        dept: EXEC, channel: reviewer }
+  # Site general managers and Finance staff the colleagues mention by name. Not on chat.
+  - { key: travis.boone,     name: Travis Boone,      title: General Manager (DFW1),              dept: OPS }
+  - { key: holly.brennan,    name: Holly Brennan,     title: General Manager (RNO1),              dept: OPS }
+  - { key: dwayne.pruitt,    name: Dwayne Pruitt,     title: General Manager (CHI1),              dept: OPS }
+  - { key: angela.russo,     name: Angela Russo,      title: General Manager (NJ1),               dept: OPS }
+  - { key: victor.ochoa,     name: Victor Ochoa,      title: General Manager (LAX1),              dept: OPS }
+  - { key: natalie.gagnon,   name: Natalie Gagnon,    title: General Manager (TOR1),              dept: OPS }
+  - { key: rodrigo.trevino,  name: Rodrigo Treviño,   title: General Manager (MTY1),              dept: OPS }
+  - { key: joanne.pike,      name: Joanne Pike,       title: Billing Analyst,                     dept: FIN }

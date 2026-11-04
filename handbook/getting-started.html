@@ -1,0 +1,1078 @@
+<!doctype html>
+<html lang="en" data-hb-page="getting-started">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Getting started · Harborline handbook</title>
+<meta name="description" content="One setup file for Windows and one for Mac install and connect everything for the Harborline simulator. Then your first connections, cloud platform and first pull request.">
+<script>try{var t=localStorage.getItem("harborline.theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<link rel="stylesheet" href="../brand/fonts.css">
+<link rel="stylesheet" href="../brand/tokens.css">
+<link rel="stylesheet" href="assets/handbook.css">
+<link rel="icon" href="../brand/logo/favicon.svg" type="image/svg+xml">
+<script src="assets/handbook.js" defer></script>
+</head>
+<body>
+<div class="hb-shell">
+<aside class="hb-side" data-hb-side></aside>
+<main class="hb-sheet" id="main"><div class="hb-page">
+<article class="hb-content">
+
+<h1>Getting started</h1>
+<p class="hb-lead">One setup file gets your machine ready, on Windows or Mac. After that come the parts that are yours:
+trying each source system, choosing a cloud platform and opening your first pull request. Your ticks are saved.</p>
+<p class="hb-meta"><span>About 40 minutes of setup, with the data build running behind it</span><span>Needs admin rights on the machine</span></p>
+<div class="hb-pagehead-progress" data-progress="getting-started"></div>
+
+
+
+
+
+
+
+
+
+
+<section data-section="setup">
+<h2 id="setup-file">Run the setup file</h2>
+<p>One file installs and connects everything. It skips whatever is already there, fixes the problems it knows about,
+and stops only when it needs you. You can run it again at any time: it carries on where it stopped.</p>
+
+<div class="task">
+<label class="task-head"><input type="checkbox" data-track="getting-started:setup.run"><span class="task-title">Run it on your computer</span><span class="task-time">About 40 minutes, then the data build finishes by itself</span></label>
+<div class="task-body">
+<div class="hb-grid-2">
+<div>
+<p><strong>Windows</strong></p>
+<ol>
+<li>Right-click the zip and choose <em>Extract All</em>.</li>
+<li>In the extracted folder, double-click <code>SETUP-WINDOWS.cmd</code>.</li>
+<li>If Windows says it protected your PC, press <em>More info</em>, then <em>Run anyway</em>. If it says Smart App
+Control blocked it, see <a href="known-issues.html#launching">Known issues</a>.</li>
+</ol>
+</div>
+<div>
+<p><strong>Mac</strong></p>
+<ol>
+<li>Double-click the zip to extract it, somewhere outside iCloud such as your home folder.</li>
+<li>Open <em>Terminal</em>, type <code>bash </code> with a space after it, drag <code>SETUP-MAC.command</code> into the
+window and press Return. This avoids the security warning a double-click gets.</li>
+</ol>
+</div>
+</div>
+<p><strong>What it does.</strong> It checks the computer, then installs anything missing: Docker Desktop (and WSL2 on
+Windows), Git, the GitHub CLI, VS Code with its extensions, uv with Python 3.12, pre-commit and DBeaver. It then copies
+the simulator to <code>C:\dev\harborline-lab</code> (Mac: <code>~/dev/harborline-lab</code>), starts it, and begins
+building the data. It creates your repository at <code>C:\dev\harborline-analytics</code> (Mac:
+<code>~/dev/harborline-analytics</code>) and on GitHub, protects <code>main</code>, adds one DBeaver connection per
+source system and sets your Tracker start date. Last, it walks you through one saved chat per colleague on the AI site you choose (ChatGPT, Claude, Gemini or another), and
+leaves <code>harborline-chat.zip</code> in your <code>dev</code> folder. <strong>Always send that zip with a colleague’s prompt</strong>, in the same first message, or they can’t see the company and will guess.</p>
+<p><strong>What it needs from you.</strong> Only what a program can’t do:</p>
+<ul>
+<li>Your name and email, for your commits.</li>
+<li>Clicking <em>Yes</em> when Windows asks for permission (Mac: your password).</li>
+<li>Accepting Docker Desktop’s agreement the first time it opens.</li>
+<li>Signing in to GitHub in your browser, with the one-time code it shows you.</li>
+<li>The Monday you start. Press Enter to accept the suggested one.</li>
+<li>Picking your AI site, signing in, and turning off any memory that works across chats.</li>
+<li>For each colleague: dragging in the zip, pasting, sending, then copying the chat’s address back. A script can’t
+create those chats for you. It takes about a minute each, and you can stop and carry on later.</li>
+<li>A restart, if Windows needs one for WSL2. Setup starts again by itself afterwards.</li>
+</ul>
+<p><strong>Afterwards, close any terminal or VS Code window you already had open</strong> and open a new one. A terminal
+only sees programs that were installed before it opened, so an old window says <em>not recognized</em> or <em>command not
+found</em>. Setup deals with this for its own window, sometimes by carrying on in a fresh one.</p>
+<div class="verify"><p class="verify-title">How to verify</p><p>It finishes with <em>ALL DONE</em>, a list of your
+folders and links, and opens the start page. You can close the window while the data build runs: it keeps going, and
+the Control Center shows its progress.</p></div>
+<div class="callout callout--note">
+<p class="callout-title">If it stops</p>
+<ol>
+<li>It shows the exact error and puts a report on your clipboard.</li>
+<li>Paste that into your chat with <a href="team.html#kevin-ohara">Kevin O’Hara, IT help</a>. Before your team is set up, any
+AI chat will do.</li>
+<li>Do what he says, then run the setup file again. Finished steps are skipped.</li>
+</ol>
+<p>Every error we know of, for every step, is in <a href="known-issues.html">Known issues</a>, with what to do. The
+report and a full log are in <code>%LOCALAPPDATA%\HarborlineLab</code> (Mac: <code>~/Library/Logs/HarborlineLab</code>).</p>
+</div>
+<div class="callout callout--note">
+<p class="callout-title">Tried this before under another name?</p>
+<p>Folders and repositories named <code>harborline-simulator</code>, <code>harborline-3pl-simulator</code> or
+<code>harborline-data-platform</code> are from an earlier attempt. Don’t use them. The setup file doesn’t touch them,
+apart from stopping the old containers so their ports are free. Their data stays on disk until you delete it, and the
+last screen says how.</p>
+</div>
+</div>
+</div>
+</section>
+
+<section data-section="connect">
+<h2 id="connect">Try each source system</h2>
+
+<div class="task">
+<label class="task-head"><input type="checkbox" data-track="getting-started:connect.dbeaver"><span class="task-title">Query two systems in DBeaver</span><span class="task-time">10 min</span></label>
+<div class="task-body">
+<p>The setup file added one connection per system: <em>Harborline WMS</em>, <em>Harborline AX 2012</em>, <em>Harborline
+IoT</em> and <em>Harborline Tracker</em>. If they aren’t there, add them with <strong>Database, New Database Connection,
+PostgreSQL</strong>:</p>
+<dl class="hb-dl">
+<dt>Host</dt><dd><code>localhost</code></dd>
+<dt>Port</dt><dd><code>5432</code> (or your <code>HL_PG_PORT</code>)</dd>
+<dt>Database</dt><dd><code>wms</code>, <code>ax2012</code>, <code>iot</code> or <code>tracker</code></dd>
+<dt>Username</dt><dd><code>etl_reader</code></dd>
+<dt>Password</dt><dd><code>etl-reader-2026</code> (your <code>HL_ETL_PASSWORD</code>)</dd>
+</dl>
+<p>The first time, let DBeaver download its PostgreSQL driver. <code>sim_internal</code> refuses you: it is the
+simulator’s private store and off limits.</p>
+<p>A SQL editor runs against one database, and a query can’t reach another database. Right-click <em>Harborline WMS</em>
+and choose <strong>SQL Editor, New SQL script</strong> (<kbd>Ctrl</kbd> + <kbd>]</kbd>). The editor’s toolbar shows what
+it runs against: a Harborline connection, never <em>DBeaver Sample Database</em>. Paste the first query and run it with
+<kbd>Ctrl</kbd> + <kbd>Enter</kbd>. Then do the same on <em>Harborline AX 2012</em> for the second.</p>
+<pre data-shell="SQL · database wms">SELECT w.warehouse_code, w.time_zone, count(*) AS orders, max(o.received_ts) AS latest_local
+FROM wms.order_header o
+JOIN wms.warehouse w USING (warehouse_id)
+GROUP BY 1, 2
+ORDER BY 1;</pre>
+<pre data-shell="SQL · database ax2012">SELECT c.dataareaid, c.accountnum, p.name, c.currency, c.paymtermid
+FROM dbo.custtable c
+JOIN dbo.dirpartytable p ON p.recid = c.party
+ORDER BY 2, 1
+LIMIT 20;</pre>
+<div class="verify"><p class="verify-title">How to verify</p><p>Both queries return rows; the first lists every
+warehouse in your preset with its time zone.</p></div>
+<details class="errors"><summary>Common problems</summary><div><dl>
+<dt>FATAL: password authentication failed for user "etl_reader"</dt><dd>You changed <code>HL_ETL_PASSWORD</code> after
+the first start. The password is set once, when the database volume is created; use the original value or run
+<code>reset.bat</code>.</dd>
+<dt>Connection refused</dt><dd>The simulator is not running, or another Postgres owns the port. See
+Troubleshooting.</dd>
+<dt>permission denied for database sim_internal</dt><dd>Expected. Salesforce and carrier data come only through
+their APIs.</dd>
+<dt>[SQLITE_ERROR] … no such table: wms.order_header</dt><dd>The editor is on <em>DBeaver Sample Database</em>,
+which DBeaver creates on first launch. Open a new script from the <code>wms</code> database as above, or pick your
+Harborline connection in the toolbar’s connection box (<kbd>Ctrl</kbd> + <kbd>9</kbd>). You can delete the sample
+database.</dd>
+<dt>relation "dbo.custtable" does not exist</dt><dd>You ran the AX query in an editor on <code>wms</code>. Open a
+script from <code>ax2012</code>, or switch the toolbar’s database box (<kbd>Ctrl</kbd> + <kbd>0</kbd>) to
+<code>ax2012</code>.</dd>
+</dl></div></details>
+</div>
+</div>
+
+<div class="task">
+<label class="task-head"><input type="checkbox" data-track="getting-started:connect.salesforce"><span class="task-title">Call the Salesforce API</span><span class="task-time">10 min</span></label>
+<div class="task-body">
+<p>Get a token with the client-credentials flow, then run a SOQL query. <code>Invoke-RestMethod</code> sends a hashtable
+body as a form, which is what the token endpoint expects.</p>
+<pre data-shell="PowerShell">$token = Invoke-RestMethod -Method Post -Uri "http://localhost:8080/sfdc/services/oauth2/token" -Body @{
+  grant_type    = "client_credentials"
+  client_id     = "3MVG9harborline.etl.client"
+  client_secret = "hl-sf-secret-7c41"
+}
+$headers = @{ Authorization = "Bearer $($token.access_token)" }
+$soql = "SELECT Id, Name, WMS_Owner_Code__c, ERP_Account_Number__c FROM Account WHERE Type = 'Customer - Direct' LIMIT 5"
+$result = Invoke-RestMethod -Headers $headers -Uri "$($token.instance_url)/services/data/v67.0/query?q=$([uri]::EscapeDataString($soql))"
+$result.totalSize
+$result.records | Format-Table Id, Name, WMS_Owner_Code__c, ERP_Account_Number__c</pre>
+<p>Check what that cost you against the daily limit:</p>
+<pre data-shell="PowerShell">(Invoke-RestMethod -Headers $headers -Uri "$($token.instance_url)/services/data/v67.0/limits").DailyApiRequests</pre>
+<div class="verify"><p class="verify-title">How to verify</p><p>You see five accounts with 18-character ids starting
+<code>001</code>, and <code>DailyApiRequests</code> shows <code>Max</code> 15000 and the remaining calls.</p></div>
+<details class="errors"><summary>Common problems</summary><div><dl>
+<dt>401 INVALID_SESSION_ID</dt><dd>The token expired or the header is missing <code>Bearer</code>. Request a new
+token.</dd>
+<dt>400 MALFORMED_QUERY</dt><dd>The SOQL was not URL-encoded, or uses syntax outside the supported subset (see Source
+systems).</dd>
+</dl></div></details>
+</div>
+</div>
+
+<div class="task">
+<label class="task-head"><input type="checkbox" data-track="getting-started:connect.carrier"><span class="task-title">Call the carrier tracking API</span><span class="task-time">5 min</span></label>
+<div class="task-body">
+<pre data-shell="PowerShell">$carrier = @{ "X-API-Key" = "hl-carrier-live-5e2a9d" }
+$since = (Get-Date).ToUniversalTime().AddDays(-3).ToString("yyyy-MM-ddTHH:mm:ssZ")
+$page = Invoke-RestMethod -Headers $carrier -Uri "http://localhost:8080/carrier/v1/tracking-events?since=$since&amp;limit=5"
+$page.events | Format-Table
+$page.has_more; $page.next_cursor</pre>
+<p>Events become visible as the simulated clock passes them, so a <code>since</code> of a few days back returns data
+right after a build. Follow <code>next_cursor</code> to page.</p>
+<div class="verify"><p class="verify-title">How to verify</p><p>Five events with tracking numbers in carrier formats
+(UPS <code>1Z…</code>, FedEx 12 digits and so on) and a non-empty <code>next_cursor</code>.</p></div>
+<details class="errors"><summary>Common problems</summary><div><dl>
+<dt>401 or 403</dt><dd>The <code>X-API-Key</code> header is missing or wrong.</dd>
+<dt>429 Too Many Requests</dt><dd>More than 120 calls a minute. Wait the number of seconds in
+<code>Retry-After</code>.</dd>
+<dt>503 Service Unavailable</dt><dd>Happens about once in a hundred calls on purpose. Retry with backoff.</dd>
+</dl></div></details>
+</div>
+</div>
+
+<div class="task">
+<label class="task-head"><input type="checkbox" data-track="getting-started:connect.landing"><span class="task-title">Look at the landing folder</span><span class="task-time">5 min</span></label>
+<div class="task-body">
+<p>EDI files and business files arrive here, on your disk, as the simulation runs.</p>
+<pre data-shell="PowerShell">explorer .\landing
+Get-ChildItem .\landing -Recurse -File | Sort-Object LastWriteTime -Descending |
+  Select-Object -First 20 LastWriteTime, Length, FullName</pre>
+<div class="verify"><p class="verify-title">How to verify</p><p>You can see an <code>edi</code> and a
+<code>files</code> folder with content. Open one EDI file in VS Code and one CSV with Rainbow CSV.</p></div>
+</div>
+</div>
+</section>
+
+<section data-section="cloud">
+<h2 id="cloud">Your cloud platform</h2>
+<p>The brief works on either platform. Databricks Free Edition costs nothing and does not expire; Snowflake’s trial is
+generous but ends after 30 days. Read both, decide with the checklist, and record the decision as your first
+architecture decision record.</p>
+
+<div class="task">
+<label class="task-head"><input type="checkbox" data-track="getting-started:cloud.databricks"><span class="task-title">Sign up for Databricks Free Edition</span><span class="task-time">10 min</span></label>
+<div class="task-body">
+<p>Go to <a href="https://www.databricks.com/learn/free-edition">databricks.com/learn/free-edition</a>, choose
+<strong>Sign up</strong>, and use an email, Google or Microsoft account. No credit card. A workspace is created for you
+with Unity Catalog, serverless compute, SQL, notebooks, jobs, pipelines and AI/BI dashboards.</p>
+<p><strong>Limits that matter for this program</strong> (check the
+<a href="https://docs.databricks.com/aws/en/getting-started/free-edition-limitations">current list</a>):</p>
+<ul>
+<li>Serverless compute only; one SQL warehouse, size 2X-Small.</li>
+<li>One active pipeline per pipeline type; at most 5 concurrent job tasks.</li>
+<li>No custom storage locations; data lives in the workspace’s managed storage.</li>
+<li>Not for commercial use, and inactive accounts can be deleted: keep every artifact in Git.</li>
+</ul>
+<p>Install the Databricks CLI if you go this way:</p>
+<pre data-shell="PowerShell">winget install --id Databricks.DatabricksCLI -e --source winget
+databricks auth login --host https://&lt;your-workspace&gt;.cloud.databricks.com</pre>
+<div class="verify"><p class="verify-title">How to verify</p><p>You can open a SQL editor, run <code>SELECT
+current_user()</code>, and <code>databricks current-user me</code> works from the terminal.</p></div>
+</div>
+</div>
+
+<div class="task">
+<label class="task-head"><input type="checkbox" data-track="getting-started:cloud.snowflake"><span class="task-title">Sign up for a Snowflake trial (if you choose Snowflake)</span><span class="task-time">10 min</span></label>
+<div class="task-body">
+<p>At <a href="https://signup.snowflake.com/">signup.snowflake.com</a> you get 30 days and a credit allowance. Choices
+on the form:</p>
+<ul>
+<li><strong>Edition: Enterprise.</strong> Row access policies and masking policies, which Project 8 needs, are
+Enterprise features.</li>
+<li><strong>Cloud: any.</strong> AWS, Azure and GCP behave the same for this work.</li>
+<li><strong>Region: the closest to you</strong>, for example AWS US East (N. Virginia) or Azure East US 2.</li>
+</ul>
+<p>Before anything else, put a ceiling on spend. In a worksheet, as <code>ACCOUNTADMIN</code>:</p>
+<pre data-shell="Snowflake worksheet">USE ROLE ACCOUNTADMIN;
+
+CREATE RESOURCE MONITOR hl_trial_guard
+  WITH CREDIT_QUOTA = 50
+  FREQUENCY = MONTHLY
+  START_TIMESTAMP = IMMEDIATELY
+  TRIGGERS ON 75 PERCENT DO NOTIFY
+           ON 90 PERCENT DO SUSPEND
+           ON 100 PERCENT DO SUSPEND_IMMEDIATE;
+
+ALTER ACCOUNT SET RESOURCE_MONITOR = hl_trial_guard;
+
+ALTER WAREHOUSE COMPUTE_WH SET
+  WAREHOUSE_SIZE = XSMALL
+  AUTO_SUSPEND = 60
+  AUTO_RESUME = TRUE;</pre>
+<p>When the trial ends the account is suspended unless you add a payment method. If you start on Snowflake, plan
+where Projects 2 to 8 will run after day 30.</p>
+<div class="verify"><p class="verify-title">How to verify</p>
+<pre data-shell="Snowflake worksheet">SHOW RESOURCE MONITORS;
+SHOW WAREHOUSES;</pre>
+<p>The monitor exists and <code>COMPUTE_WH</code> is X-Small with a 60-second auto-suspend.</p></div>
+</div>
+</div>
+
+<h3 id="cloud-decide">Decide, with reasons</h3>
+<p>Answer each question for both platforms, then write the decision down as <code>docs/adr/0001-platform.md</code> in
+your repository (next section).</p>
+<ul class="checklist">
+<li><label><input type="checkbox" data-track="getting-started:cloud.cost"><span>What does each option cost after
+30 days, and after 8 months?</span></label></li>
+<li><label><input type="checkbox" data-track="getting-started:cloud.egress"><span>Nothing on the internet can connect
+to your machine. How will data leave it, and what does each platform offer to receive it?</span></label></li>
+<li><label><input type="checkbox" data-track="getting-started:cloud.freshness"><span>Can it meet Project 6’s
+five-minute freshness inside its free limits?</span></label></li>
+<li><label><input type="checkbox" data-track="getting-started:cloud.security"><span>How would it do Project 8’s
+row-level security and masking?</span></label></li>
+<li><label><input type="checkbox" data-track="getting-started:cloud.dashboards"><span>Where will the dashboards live:
+the platform’s own dashboards, Power BI Desktop or something else?</span></label></li>
+<li><label><input type="checkbox" data-track="getting-started:cloud.orchestration"><span>How will jobs be scheduled
+and monitored, and how will you deploy them from Git?</span></label></li>
+<li><label><input type="checkbox" data-track="getting-started:cloud.adr"><span>Decision written as ADR-0001 with the
+options you rejected and why</span></label></li>
+</ul>
+</section>
+
+<section data-section="repo">
+<h2 id="repo">Your own repository</h2>
+<p>All of your work lives in one repository, <code>harborline-analytics</code>. It is your portfolio, so treat it like a
+team’s production repository from the first commit. The setup file created it with <code>main</code> protected, a PR
+template, an issue template and pre-commit; what goes inside is yours to design.</p>
+
+<div class="task">
+<label class="task-head"><input type="checkbox" data-track="getting-started:repo.firstpr"><span class="task-title">Open your first pull request, linked to DATA-1</span><span class="task-time">15 min</span></label>
+<div class="task-body">
+<p>Commit the templates and pre-commit config through the same flow you will use for every ticket. DATA-1 is the
+Project 1 epic in the Tracker; use it here, and the task’s own key from then on.</p>
+<pre data-shell="PowerShell">git switch -c chore/DATA-1-repo-standards
+git add .
+git commit -m "chore(repo): add PR template, issue template and pre-commit hooks (DATA-1)"
+git push -u origin HEAD
+gh pr create --fill --title "chore(repo): repository standards (DATA-1)"</pre>
+<p>Review your own diff on GitHub as if a colleague wrote it, tick the self-review boxes, then squash-merge:</p>
+<pre data-shell="PowerShell">gh pr merge --squash --delete-branch
+git switch main
+git pull</pre>
+<p>Paste the PR link into DATA-1 in the Tracker.</p>
+<div class="verify"><p class="verify-title">How to verify</p><p><code>main</code> on GitHub contains the files, the PR
+shows as merged, and <code>git log --oneline</code> has one squashed commit with the ticket key.</p></div>
+</div>
+</div>
+</section>
+
+<section data-section="tracker">
+<h2 id="tracker">The Tracker</h2>
+<div class="task">
+<label class="task-head"><input type="checkbox" data-track="getting-started:tracker.backup"><span class="task-title">Make your first Tracker backup</span><span class="task-time">2 min</span></label>
+<div class="task-body">
+<p>The Tracker has a JSON backup and restore. Download a backup now and every Friday;
+<code>reset.bat</code> deletes the Tracker along with everything else. Also export this handbook’s progress with the
+<em>Export</em> button in the sidebar.</p>
+<div class="verify"><p class="verify-title">How to verify</p><p>A backup file sits somewhere outside the simulator
+folder.</p></div>
+</div>
+</div>
+</section>
+
+<section data-section="team">
+<h2 id="team-setup">Your AI chat team</h2>
+<div class="task">
+<label class="task-head"><input type="checkbox" data-track="getting-started:team.first"><span class="task-title">Finish your team chats</span><span class="task-time">About 1 min each</span></label>
+<div class="task-body">
+<p>The setup file walks you through these; run it again for anyone you skipped. The
+<a href="http://localhost:8080/team" data-hb-app="/team">Team page</a> shows who does what and what to ask them.</p>
+<div class="verify"><p class="verify-title">How to verify</p><p>On the Team page, <em>Your chat</em> on Kevin O’Hara and Nadia
+Petrov goes straight back to that conversation.</p></div>
+</div>
+</div>
+
+<div class="task">
+<label class="task-head"><input type="checkbox" data-track="getting-started:team.iris"><span class="task-title">Meet Iris Novak, who signs off your dashboards</span><span class="task-time">15 min</span></label>
+<div class="task-body">
+<p>Iris signs off every dashboard before its audience sees it, and she checks your numbers against the sources
+herself. She works on your AI site too, but she needs her own copy of the data: a <em>source extract</em> that you download
+from the Control Center, plus your submission as a zip. Read <a href="team.html#reviewer">Dashboard sign-off</a> and
+save her prompt. You won’t need her until the end of Project 1; knowing the steps now means the first review isn’t a
+scramble on deadline day. If you later use <a href="https://developers.openai.com/codex">Codex</a> or
+<a href="https://code.claude.com/docs/en/setup">Claude Code</a>, she can also run there as a skill that queries the
+databases directly (same section, <em>Optional</em>).</p>
+<div class="verify"><p class="verify-title">How to verify</p><p>In a new chat with the package zip attached, paste her
+prompt and ask “What do you need from me before you can review P1-D1?”. She lists the submission, the source extract
+and the package, and says she has nothing to review yet.</p></div>
+</div>
+</div>
+</section>
+
+<section data-section="byhand" data-no-progress>
+<h2 id="byhand">Doing it by hand</h2>
+<p>You don’t need this if the setup file finished. It is the same work written out step by step for Windows, with the
+errors people usually hit: useful if you want to know what the setup file did, or if IT help sends you to one step.</p>
+<details class="errors hb-byhand" id="before"><summary>Check the machine</summary><div>
+<p>The simulator runs entirely in Docker. Docker on Windows runs Linux containers inside WSL2, a lightweight virtual
+machine, so the CPU’s virtualization support must be on.</p>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Confirm the Windows version</span><span class="task-time">2 min</span></label>
+<div class="task-body">
+<p>You need Windows 11, or Windows 10 version 22H2 (build 19045) or later. Home, Pro and Enterprise all work.</p>
+<pre data-shell="PowerShell">Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, BuildNumber</pre>
+<div class="verify"><p class="verify-title">How to verify</p>
+<p><code>BuildNumber</code> is 19045 or higher (Windows 10) or 22000 or higher (Windows 11). Older? Run Windows Update
+until the feature update installs.</p></div>
+</div>
+</div>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Check memory, CPU and disk</span><span class="task-time">2 min</span></label>
+<div class="task-body">
+<p>Recommended: 16 GB of RAM or more, 4 or more CPU cores, and free space on an SSD: about 12 GB for Medium, 30 GB for Large (the database, Docker
+images and room for replication logs). With 8 GB of RAM, use the Medium preset later.</p>
+<pre data-shell="PowerShell">$cs = Get-CimInstance Win32_ComputerSystem
+"{0:N1} GB RAM, {1} logical processors" -f ($cs.TotalPhysicalMemory / 1GB), $cs.NumberOfLogicalProcessors
+Get-PSDrive C | Select-Object @{n='FreeGB';e={[math]::Round($_.Free / 1GB, 1)}}</pre>
+<div class="verify"><p class="verify-title">How to verify</p><p>RAM is 15.x GB or more and C: has 40 GB or more free.
+If C: is short, you can move Docker’s disk to another drive later (Docker step).</p></div>
+</div>
+</div>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Make sure hardware virtualization is on</span><span class="task-time">5–15 min</span></label>
+<div class="task-body">
+<p>Open Task Manager (<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Esc</kbd>), go to <strong>Performance</strong> then
+<strong>CPU</strong>, and read <strong>Virtualization</strong> under the graph. Or ask PowerShell:</p>
+<pre data-shell="PowerShell">(Get-CimInstance Win32_ComputerSystem).HypervisorPresent
+(Get-CimInstance Win32_Processor).VirtualizationFirmwareEnabled</pre>
+<p>Either line printing <code>True</code> is good (the second one reads <code>False</code> once a hypervisor is already
+running, which is fine). If Task Manager says <em>Disabled</em>, turn it on in the firmware:</p>
+<ol>
+<li>Settings, System, Recovery, <strong>Advanced startup</strong>, Restart now.</li>
+<li>Troubleshoot, Advanced options, <strong>UEFI Firmware Settings</strong>, Restart.</li>
+<li>Find <em>Intel Virtualization Technology</em> (VT-x) or <em>SVM Mode</em> (AMD), usually under Advanced, CPU
+Configuration or Security. Enable it, save and exit (often <kbd>F10</kbd>).</li>
+</ol>
+<div class="verify"><p class="verify-title">How to verify</p><p>Task Manager shows <strong>Virtualization:
+Enabled</strong>.</p></div>
+<details class="errors"><summary>Common problems</summary><div><dl>
+<dt>No virtualization option in the firmware</dt><dd>Some vendors hide it under “Security” or name it “Intel VT”.
+On a company laptop it may be locked; ask IT.</dd>
+<dt>The option is greyed out</dt><dd>A firmware (BIOS) password or policy is set. Ask whoever manages the machine.</dd>
+</dl></div></details>
+</div>
+</div>
+</div></details>
+<details class="errors hb-byhand" id="terminal"><summary>Terminal and PowerShell 7</summary><div>
+<p><code>winget</code> is Windows’ package manager and installs everything on this page with one command each. It comes
+with the <em>App Installer</em> package from the Microsoft Store.</p>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Confirm winget works</span><span class="task-time">2 min</span></label>
+<div class="task-body">
+<pre data-shell="PowerShell">winget --version</pre>
+<div class="verify"><p class="verify-title">How to verify</p><p>Prints a version such as <code>v1.9.x</code> or later.</p></div>
+<details class="errors"><summary>Common problems</summary><div><dl>
+<dt>winget : The term 'winget' is not recognized</dt><dd>Install or update <strong>App Installer</strong> from the
+Microsoft Store, then open a new terminal.</dd>
+<dt>Failed in attempting to update the source: winget</dt><dd>Run <code>winget source reset --force</code> in an
+administrator terminal, then try again.</dd>
+</dl></div></details>
+</div>
+</div>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Install Windows Terminal and PowerShell 7</span><span class="task-time">5 min</span></label>
+<div class="task-body">
+<p>Windows 11 already has Windows Terminal; the command simply reports it is installed.</p>
+<pre data-shell="PowerShell">winget install --id Microsoft.PowerShell -e --source winget
+winget install --id Microsoft.WindowsTerminal -e --source winget</pre>
+<p>This guide installs everything with <code>winget</code>. If it ever says <em>No package found matching input
+criteria</em>, the package id has changed: run <code>winget search &lt;name&gt;</code> and use the Id it lists.</p>
+<p>Open Windows Terminal, then <strong>Settings</strong> (<kbd>Ctrl</kbd> + <kbd>,</kbd>), <strong>Startup</strong>:
+set <em>Default profile</em> to <strong>PowerShell</strong> (the black icon, version 7, not “Windows PowerShell”) and
+<em>Default terminal application</em> to <strong>Windows Terminal</strong>. Save.</p>
+<div class="verify"><p class="verify-title">How to verify</p>
+<p>Open a new tab and run:</p>
+<pre data-shell="PowerShell">$PSVersionTable.PSVersion</pre>
+<p>Major version is 7.</p></div>
+</div>
+</div>
+</div></details>
+<details class="errors hb-byhand" id="wsl"><summary>WSL2</summary><div>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Install WSL2 and restart</span><span class="task-time">10 min, 1 restart</span></label>
+<div class="task-body">
+<p>One command enables the Windows features, installs the WSL2 kernel and adds Ubuntu.</p>
+<pre data-shell="PowerShell · Administrator">wsl --install</pre>
+<p>Restart Windows when it asks. After the restart an Ubuntu window opens and asks for a new UNIX user name and
+password. These are only for Linux; they do not have to match your Windows account. Then bring WSL up to date:</p>
+<pre data-shell="PowerShell · Administrator">wsl --update
+wsl --set-default-version 2</pre>
+<div class="verify"><p class="verify-title">How to verify</p>
+<pre data-shell="PowerShell">wsl --status
+wsl -l -v</pre>
+<p><code>Default Version: 2</code>, and Ubuntu listed with <code>VERSION 2</code>.</p></div>
+<details class="errors"><summary>Common problems</summary><div><dl>
+<dt>WslRegisterDistribution failed with error: 0x80370102</dt><dd>Virtualization is off in the firmware, or the
+Virtual Machine Platform feature is missing. Fix the firmware setting (previous section), then run
+<code>dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart</code> as administrator and
+restart.</dd>
+<dt>0x8007019e</dt><dd>The WSL feature is not enabled. Run
+<code>dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart</code> as
+administrator and restart.</dd>
+<dt>WSL 2 requires an update to its kernel component</dt><dd>Run <code>wsl --update</code>.</dd>
+<dt>wsl --install only prints the help text</dt><dd>WSL is already installed. Run <code>wsl -l -o</code> to list
+distributions, then <code>wsl --install -d Ubuntu</code>.</dd>
+<dt>The Ubuntu window closes immediately</dt><dd>Run <code>wsl --shutdown</code>, then <code>wsl -d Ubuntu</code> from
+a terminal to see the actual error.</dd>
+</dl></div></details>
+</div>
+</div>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Give WSL enough memory</span><span class="task-time">3 min</span></label>
+<div class="task-body">
+<p>With the WSL2 backend, Docker’s memory and CPU limits come from WSL, not from Docker Desktop’s sliders. Give it
+about two-thirds of your RAM: 10 GB on a 16 GB machine, 16 GB on a 32 GB machine.</p>
+<pre data-shell="PowerShell">@"
+[wsl2]
+memory=10GB
+processors=6
+swap=4GB
+"@ | Set-Content -Path "$env:USERPROFILE\.wslconfig" -Encoding ascii
+wsl --shutdown</pre>
+<div class="verify"><p class="verify-title">How to verify</p>
+<pre data-shell="PowerShell">Get-Content "$env:USERPROFILE\.wslconfig"</pre>
+<p>Shows the three settings. You will confirm Docker sees the memory in the next section.</p></div>
+</div>
+</div>
+</div></details>
+<details class="errors hb-byhand" id="docker"><summary>Docker Desktop</summary><div>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Install Docker Desktop with the WSL2 engine</span><span class="task-time">10 min, 1 sign-out</span></label>
+<div class="task-body">
+<pre data-shell="PowerShell">winget install --id Docker.DockerDesktop -e --source winget</pre>
+<p>In the installer keep <strong>Use WSL 2 instead of Hyper-V</strong> ticked. When it finishes, <strong>sign out of
+Windows and back in</strong>: the installer added you to the <code>docker-users</code> group, and that only applies to
+a new session. Start Docker Desktop from the Start menu. Docker Desktop is free for personal use and learning; accept
+the agreement and skip the sign-in if you like.</p>
+<p>In Docker Desktop, open <strong>Settings</strong>:</p>
+<ul>
+<li><strong>General</strong>: <em>Use the WSL 2 based engine</em> is ticked.</li>
+<li><strong>Resources, Advanced</strong>: memory and CPU are managed by Windows (your <code>.wslconfig</code>). If C: is
+small, change <em>Disk image location</em> to a drive with space now, before anything is downloaded.</li>
+<li><strong>Resources, WSL integration</strong>: optionally enable it for Ubuntu.</li>
+</ul>
+<p>Click <strong>Apply &amp; restart</strong> and wait for <em>Engine running</em> in the bottom-left corner.</p>
+<div class="verify"><p class="verify-title">How to verify</p>
+<pre data-shell="PowerShell">docker version
+docker compose version
+docker run --rm hello-world
+docker info --format "{{.MemTotal}}"</pre>
+<p><code>docker version</code> shows a <strong>Server</strong> section under <strong>Client</strong>; if it shows only
+Client and an error, the engine isn’t running yet (see Common problems). <code>hello-world</code> prints <em>Hello from
+Docker!</em>. <code>MemTotal</code> is in bytes: about
+<code>10400000000</code> for a 10 GB setting. Below <code>8000000000</code>? Revisit the WSL memory step.</p></div>
+<details class="errors"><summary>Common problems</summary><div><dl>
+<dt>failed to connect to the docker API at npipe:////./pipe/docker_engine … The system cannot find the file specified
+(older versions: error during connect … dockerDesktopLinuxEngine)</dt>
+<dd>Docker Desktop is not running or still starting; installing it doesn’t start it. Open <strong>Docker Desktop</strong>
+from the Start menu, accept the agreement, skip the sign-in, and wait for <em>Engine running</em> in the bottom-left
+corner (a minute or two the first time). Then run the checks again. If Docker Desktop shows <em>Engine running</em> and
+the error stays, run <code>docker context use desktop-linux</code>. If Docker Desktop isn’t in the Start menu, only the
+command-line tools are installed: run the <code>winget</code> line above.</dd>
+<dt>Docker Desktop - WSL distro terminated abruptly / Docker Desktop is unable to start</dt><dd>Run
+<code>wsl --shutdown</code>, then <code>wsl --update</code>, then start Docker Desktop again. If it persists, Docker
+Desktop’s <em>Troubleshoot</em> menu has <em>Restart</em> and <em>Clean / Purge data</em>.</dd>
+<dt>Hardware assisted virtualization and data execution protection must be enabled in the BIOS</dt><dd>Go back to
+the virtualization step.</dd>
+<dt>permission denied while trying to connect to the Docker daemon</dt><dd>You are not in <code>docker-users</code> yet.
+Run <code>net localgroup docker-users "$env:USERNAME" /add</code> as administrator, then sign out and in.</dd>
+<dt>no matching manifest for windows/amd64</dt><dd>Docker is in Windows-containers mode. Right-click the whale icon in
+the tray and choose <em>Switch to Linux containers</em>.</dd>
+</dl></div></details>
+</div>
+</div>
+</div></details>
+<details class="errors hb-byhand" id="git"><summary>Git for Windows</summary><div>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Install Git and set your identity</span><span class="task-time">5 min</span></label>
+<div class="task-body">
+<pre data-shell="PowerShell">winget install --id Git.Git -e --source winget</pre>
+<p>Open a <strong>new</strong> terminal so <code>git</code> is on the PATH, then set your identity and defaults. Use the
+email address you will register on GitHub (or GitHub’s private no-reply address, shown under Settings, Emails).</p>
+<pre data-shell="PowerShell">git config --global user.name "Your Name"
+git config --global user.email "you@example.com"
+git config --global init.defaultBranch main
+git config --global core.autocrlf true
+git config --global core.editor "code --wait"
+git config --global pull.ff only
+git config --global fetch.prune true</pre>
+<p><code>core.autocrlf true</code> checks files out with Windows line endings and commits them with Unix ones. Shell
+scripts and SQL that run inside Linux containers must keep LF endings; in your own repository a
+<code>.gitattributes</code> file pins that (for example <code>*.sh text eol=lf</code>).</p>
+<div class="verify"><p class="verify-title">How to verify</p>
+<pre data-shell="PowerShell">git --version
+git config --global --list</pre>
+<p>Your name, email, <code>init.defaultbranch=main</code> and <code>core.autocrlf=true</code> are listed.</p></div>
+</div>
+</div>
+</div></details>
+<details class="errors hb-byhand" id="github"><summary>GitHub account, SSH key and gh</summary><div>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Create a GitHub account with two-factor authentication</span><span class="task-time">10 min</span></label>
+<div class="task-body">
+<p>Sign up at <a href="https://github.com/signup">github.com/signup</a> (the free plan is enough). Then open
+<strong>Settings, Password and authentication</strong> and enable two-factor authentication with an authenticator app.
+Under <strong>Settings, Emails</strong>, consider <em>Keep my email addresses private</em> and use the no-reply address
+in <code>git config user.email</code>.</p>
+<div class="verify"><p class="verify-title">How to verify</p><p>You can sign in with a 2FA code, and your profile
+page shows the username you want on your portfolio.</p></div>
+</div>
+</div>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Create an SSH key and load it into the agent</span><span class="task-time">5 min</span></label>
+<div class="task-body">
+<pre data-shell="PowerShell">ssh-keygen -t ed25519 -C "you@example.com"</pre>
+<p>Accept the default file (<code>C:\Users\you\.ssh\id_ed25519</code>) and choose a passphrase. Windows’ OpenSSH agent
+remembers it so you type it once per login. Start the agent service once, as administrator:</p>
+<pre data-shell="PowerShell · Administrator">Get-Service ssh-agent | Set-Service -StartupType Automatic
+Start-Service ssh-agent</pre>
+<p>Then, in a normal terminal, add the key and tell Git to use Windows’ OpenSSH (Git ships its own copy, which cannot
+see the Windows agent):</p>
+<pre data-shell="PowerShell">ssh-add "$env:USERPROFILE\.ssh\id_ed25519"
+git config --global core.sshCommand "C:/Windows/System32/OpenSSH/ssh.exe"</pre>
+<div class="verify"><p class="verify-title">How to verify</p>
+<pre data-shell="PowerShell">ssh-add -l</pre><p>Lists one ED25519 key.</p></div>
+<details class="errors"><summary>Common problems</summary><div><dl>
+<dt>unable to start ssh-agent service, error :1058</dt><dd>The service is disabled. Run the two administrator
+commands above.</dd>
+<dt>Error connecting to agent: No such file or directory</dt><dd>The agent is not running: <code>Start-Service
+ssh-agent</code> as administrator.</dd>
+</dl></div></details>
+</div>
+</div>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Install the GitHub CLI and sign in</span><span class="task-time">5 min</span></label>
+<div class="task-body">
+<pre data-shell="PowerShell">winget install --id GitHub.cli -e --source winget</pre>
+<p>Open a new terminal, then:</p>
+<pre data-shell="PowerShell">gh auth login</pre>
+<p>Match each question to its answer; the order changes between <code>gh</code> versions. Use the arrow keys and
+Enter.</p>
+<ul>
+<li><em>Where do you use GitHub?</em> <strong>GitHub.com</strong></li>
+<li><em>How would you like to authenticate GitHub CLI?</em> <strong>Login with a web browser</strong>, not
+<em>Paste an authentication token</em>.</li>
+<li><em>What is your preferred protocol for Git operations?</em> <strong>SSH</strong></li>
+<li><em>Upload your SSH public key?</em> <strong>id_ed25519.pub</strong></li>
+<li><em>Title for your SSH key:</em> a name for this computer, such as <strong>home-pc</strong></li>
+</ul>
+<p>It then shows a one-time code. Press Enter, sign in to GitHub in the browser that opens, paste the code and click
+<strong>Authorize</strong>.</p>
+<div class="verify"><p class="verify-title">How to verify</p>
+<pre data-shell="PowerShell">gh auth status
+ssh -T git@github.com</pre>
+<p><code>gh</code> says you are logged in with protocol ssh. SSH answers <em>Hi your-username! You’ve successfully
+authenticated, but GitHub does not provide shell access.</em> (Type <code>yes</code> the first time it asks to trust
+the host.)</p></div>
+<details class="errors"><summary>Common problems</summary><div><dl>
+<dt>error validating token: HTTP 401: Bad credentials</dt><dd>You chose <em>Paste an authentication token</em>, and
+what was pasted isn’t a GitHub token (your password won’t work there). Nothing was saved: run <code>gh auth login</code>
+again and choose <strong>Login with a web browser</strong>.</dd>
+<dt>git@github.com: Permission denied (publickey)</dt><dd>The key is not on GitHub or not in the agent. Check
+<code>gh ssh-key list</code> and <code>ssh-add -l</code>.</dd>
+<dt>Corporate network blocks port 22</dt><dd>Use SSH over HTTPS: add <code>Host github.com</code>,
+<code>Hostname ssh.github.com</code>, <code>Port 443</code> to <code>%USERPROFILE%\.ssh\config</code>.</dd>
+</dl></div></details>
+</div>
+</div>
+</div></details>
+<details class="errors hb-byhand" id="vscode"><summary>VS Code and extensions</summary><div>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Install VS Code</span><span class="task-time">3 min</span></label>
+<div class="task-body">
+<pre data-shell="PowerShell">winget install --id Microsoft.VisualStudioCode -e --source winget</pre>
+<div class="verify"><p class="verify-title">How to verify</p><p>In a new terminal, <code>code --version</code> prints a
+version.</p></div>
+</div>
+</div>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Install the extension set</span><span class="task-time">5 min</span></label>
+<div class="task-body">
+<pre data-shell="PowerShell">$extensions = @(
+  "ms-python.python", "ms-python.vscode-pylance", "charliermarsh.ruff",
+  "ms-azuretools.vscode-containers", "eamodio.gitlens", "EditorConfig.EditorConfig",
+  "redhat.vscode-yaml", "mtxr.sqltools", "mtxr.sqltools-driver-pg",
+  "innoverio.vscode-dbt-power-user", "databricks.databricks", "snowflake.snowflake-vsc",
+  "mechatroner.rainbow-csv", "GrapeCity.gc-excelviewer"
+)
+$extensions | ForEach-Object { code --install-extension $_ }</pre>
+<div class="hb-table-wrap"><table class="hb-table hb-table--dense">
+<thead><tr><th>Extension</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Python, Pylance, Ruff</td><td>Your extractors and tests: language support, types, lint and format</td></tr>
+<tr><td>Container Tools</td><td>See the simulator containers, logs and compose files</td></tr>
+<tr><td>GitLens</td><td>History and blame next to the code; useful for self-review</td></tr>
+<tr><td>EditorConfig</td><td>Same indentation and line endings in every editor</td></tr>
+<tr><td>YAML</td><td>Schema-aware editing for CI workflows, dbt and pre-commit configs</td></tr>
+<tr><td>SQLTools + PostgreSQL driver</td><td>Query the source databases from the editor</td></tr>
+<tr><td>dbt Power User</td><td>Lineage, model previews and compiled SQL if you use dbt</td></tr>
+<tr><td>Databricks / Snowflake</td><td>Run code against your workspace; keep the one you choose</td></tr>
+<tr><td>Rainbow CSV, Excel Viewer</td><td>Read the landing files without leaving the editor</td></tr>
+</tbody></table></div>
+<div class="verify"><p class="verify-title">How to verify</p>
+<pre data-shell="PowerShell">code --list-extensions</pre><p>All fourteen ids are listed.</p></div>
+</div>
+</div>
+</div></details>
+<details class="errors hb-byhand" id="tools"><summary>Python, DBeaver and Power BI</summary><div>
+<p>The simulator itself needs none of these. They are for your own pipelines, exploration and dashboards.</p>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Install uv and Python 3.12</span><span class="task-time">3 min</span></label>
+<div class="task-body">
+<p><code>uv</code> installs Python versions, creates virtual environments and manages dependencies, quickly.</p>
+<pre data-shell="PowerShell">winget install --id astral-sh.uv -e --source winget</pre>
+<p>Open a new terminal, then:</p>
+<pre data-shell="PowerShell">uv python install 3.12
+uv python list --only-installed
+uv tool update-shell</pre>
+<p><code>uv tool update-shell</code> adds the folder where <code>uv tool install</code> puts commands (such as
+<code>pre-commit</code> later) to your PATH. Open a new terminal afterwards.</p>
+<div class="verify"><p class="verify-title">How to verify</p>
+<pre data-shell="PowerShell">uv run --python 3.12 python --version</pre><p>Prints <code>Python 3.12.x</code>.</p></div>
+</div>
+</div>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Install DBeaver Community</span><span class="task-time">3 min</span></label>
+<div class="task-body">
+<pre data-shell="PowerShell">winget install --id DBeaver.DBeaver.Community -e --source winget</pre>
+<div class="verify"><p class="verify-title">How to verify</p><p>DBeaver starts. You will connect it after the simulator
+is running.</p></div>
+</div>
+</div>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Optional: install Power BI Desktop</span><span class="task-time">5 min</span></label>
+<div class="task-body">
+<p>Free, Windows only, and a solid choice for the dashboard deliverables if you do not use your platform’s own
+dashboards. The Microsoft Store version updates itself.</p>
+<pre data-shell="PowerShell">winget install --id 9NTXR16HNW1T --source msstore</pre>
+<p>Publishing to the Power BI service needs a work account and licence; for a portfolio, share the
+<code>.pbix</code>, a PDF export and screenshots. The brand kit includes a Harborline report theme.</p>
+<div class="verify"><p class="verify-title">How to verify</p><p>Power BI Desktop opens to its start screen.</p></div>
+</div>
+</div>
+</div></details>
+<details class="errors hb-byhand" id="simulator"><summary>Unpack and start the simulator</summary><div>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Unzip to C:\dev\harborline-lab</span><span class="task-time">3 min</span></label>
+<div class="task-body">
+<p>Keep it out of OneDrive-synced folders such as Desktop or Documents: sync locks files and the database folder
+grows fast.</p>
+<pre data-shell="PowerShell">New-Item -ItemType Directory -Force C:\dev | Out-Null
+Expand-Archive -Path "$env:USERPROFILE\Downloads\harborline-lab.zip" -DestinationPath C:\dev -Force
+Get-ChildItem -Recurse C:\dev\harborline-lab | Unblock-File
+Set-Location C:\dev\harborline-lab</pre>
+<p>The zip already holds a <code>harborline-lab</code> folder, so extract it into <code>C:\dev</code> itself.
+Windows’ <em>Extract All</em> adds a folder of its own and nests it. If the zip has a different name, adjust the path.
+<code>Unblock-File</code> removes the “downloaded from the internet” mark so Windows does not block the scripts.</p>
+<div class="verify"><p class="verify-title">How to verify</p>
+<pre data-shell="PowerShell">Test-Path C:\dev\harborline-lab\docker-compose.yml</pre>
+<p>Prints <code>True</code>. If it is <code>False</code>, the zip created a nested folder; move its contents up one
+level.</p></div>
+</div>
+</div>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Run the doctor</span><span class="task-time">1 min</span></label>
+<div class="task-body">
+<p><code>doctor.ps1</code> only looks; it never installs or changes anything. It checks Windows, RAM, CPU,
+virtualization, WSL, Docker (running, Linux mode, memory, Compose), free disk, ports 5432 and 8080, Git line endings
+and the package files.</p>
+<pre data-shell="PowerShell">powershell -ExecutionPolicy Bypass -File .\doctor.ps1</pre>
+<div class="verify"><p class="verify-title">How to verify</p><p>No <code>[FAIL]</code> lines. Each
+<code>[WARN]</code> or <code>[FAIL]</code> is followed by a <code>fix:</code> line; do what it says and run the doctor
+again.</p></div>
+</div>
+</div>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Create your .env</span><span class="task-time">3 min</span></label>
+<div class="task-body">
+<p><code>start.bat</code> creates it for you the first time, but look at it before you start so you know what is
+there.</p>
+<pre data-shell="PowerShell">Copy-Item .env.example .env
+code .env</pre>
+<div class="hb-table-wrap"><table class="hb-table hb-table--dense">
+<thead><tr><th>Setting</th><th>Default</th><th>Change it when</th></tr></thead>
+<tbody>
+<tr><td><code>HL_PG_PORT</code></td><td><code>5432</code></td><td>Another Postgres already uses 5432 (try <code>5433</code>)</td></tr>
+<tr><td><code>HL_APP_PORT</code></td><td><code>8080</code></td><td>Something else uses 8080 (then every <code>localhost:8080</code> URL in this handbook changes too)</td></tr>
+<tr><td><code>HL_BIND_ADDR</code></td><td><code>127.0.0.1</code></td><td>Keep it: only this computer can reach the databases and APIs</td></tr>
+<tr><td><code>HL_ETL_PASSWORD</code></td><td><code>etl-reader-2026</code></td><td>Your <code>etl_reader</code> password; takes effect only before the first start</td></tr>
+<tr><td><code>HL_REVIEWER_PASSWORD</code></td><td><code>uat-review-2026</code></td><td>Never; it is Iris Novak’s <code>uat_reviewer</code> login for dashboard reviews, not yours</td></tr>
+<tr><td><code>SF_CLIENT_ID</code>, <code>SF_CLIENT_SECRET</code></td><td>see file</td><td>Never; they are the Salesforce connected-app credentials</td></tr>
+<tr><td><code>CARRIER_API_KEY</code></td><td>see file</td><td>Never; it is the tracking API key</td></tr>
+<tr><td><code>HL_DEFAULT_PRESET</code></td><td><code>large</code></td><td>Your machine has 8 GB of RAM (use <code>medium</code>)</td></tr>
+<tr><td><code>HL_SEED</code></td><td><code>20261031</code></td><td>You want a different but reproducible dataset</td></tr>
+<tr><td><code>HL_OFFLINE</code></td><td><code>0</code></td><td>No internet during a build (uses bundled FX and weather series)</td></tr>
+</tbody></table></div>
+<div class="verify"><p class="verify-title">How to verify</p><p><code>Test-Path .env</code> prints <code>True</code>.
+Treat it like any secrets file: it never goes into a Git repository.</p></div>
+</div>
+</div>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Start it with start.bat</span><span class="task-time">5–10 min the first time</span></label>
+<div class="task-body">
+<p>Double-click <code>start.bat</code> or run it from the terminal. The first run builds the app image (several
+minutes), then waits until the app answers and opens <span data-hb-app-origin>http://localhost:8080</span> in your
+browser.</p>
+<pre data-shell="PowerShell">.\start.bat</pre>
+<p><code>stop.bat</code> stops everything and keeps all data. <code>reset.bat</code> deletes all data, including the
+Tracker, after you type <code>YES</code>.</p>
+<div class="verify"><p class="verify-title">How to verify</p>
+<p><code>docker compose</code> commands only work inside the simulator folder, so change to it first in a new
+terminal.</p>
+<pre data-shell="PowerShell">Set-Location C:\dev\harborline-lab
+docker compose ps
+Invoke-RestMethod http://localhost:8080/api/health</pre>
+<p>Both services are <em>running</em> (Postgres <em>healthy</em>) and the health call returns <code>ok : True</code>.
+The Control Center opens in the browser.</p></div>
+<details class="errors"><summary>Common problems</summary><div><dl>
+<dt>no configuration file provided: not found</dt><dd>You ran <code>docker compose</code> outside the simulator
+folder. Run <code>Set-Location C:\dev\harborline-lab</code> and try again.</dd>
+<dt>[FAIL] docker compose could not start the simulator</dt><dd>Run <code>docker compose logs --tail 100</code>. A port
+conflict shows as <em>bind: address already in use</em>; see Troubleshooting.</dd>
+<dt>The simulator did not answer within 5 minutes</dt><dd><code>docker compose logs --tail 100 app</code> shows why.
+On a slow first build, wait and open the URL by hand.</dd>
+</dl></div></details>
+</div>
+</div>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Run the first build</span><span class="task-time">Medium: about an hour on a laptop</span></label>
+<div class="task-body">
+<p>In the Control Center choose <strong>Build</strong>, pick a preset, keep the seed and confirm. Progress and an ETA
+stream live. A build replaces all source data (never the Tracker).</p>
+<div class="hb-table-wrap"><table class="hb-table hb-table--dense">
+<thead><tr><th>Preset</th><th>History</th><th>Use it for</th></tr></thead>
+<tbody>
+<tr><td>Small</td><td>6 months, 3 sites (ATL1, CHI1, TOR1). About 3 GB, 10 minutes</td><td>A quick try only: several project stories are missing</td></tr>
+<tr><td>Medium</td><td>24 months, all 8 sites. About 12 GB, 1 hour</td><td>The whole program: every story the eight projects need</td></tr>
+<tr><td>Large</td><td>36 months, all 8 sites (about 2.5 million orders). About 30 GB, 3 hours</td><td>The same stories with more volume</td></tr>
+</tbody></table></div>
+<p>Times are rough, for a typical laptop. Tickets quote Large&#39;s volumes; on Medium expect about 40% of them over two years. To stop a running build, press <strong>Cancel build</strong> on the Control Center. A build counts as finished only when the Control Center shows when it was built, a stamp written after every step is done and the data is checked.</p>
+<div class="verify"><p class="verify-title">How to verify</p><p>The status returns to idle, the simulated clock is close
+to today, and every system shows row counts. Run <strong>Generate batch</strong> for one day: the run summary shows
+inserts, updates and deletes per table.</p></div>
+</div>
+</div>
+</div></details>
+<details class="errors hb-byhand" id="repo-byhand"><summary>Your own repository</summary><div>
+<div class="task">
+<label class="task-head"><span class="task-title">Create the repository locally and on GitHub</span><span class="task-time">10 min</span></label>
+<div class="task-body">
+<pre data-shell="PowerShell">New-Item -ItemType Directory -Force C:\dev\harborline-analytics | Out-Null
+Set-Location C:\dev\harborline-analytics
+git init
+gh repo create harborline-analytics --public --source . --remote origin `
+  --description "Data platform and dashboards for Harborline Logistics (practice program)"</pre>
+<p><strong>Public or private?</strong> On a free account, branch protection works on public repositories only (private
+ones need GitHub Pro). A public repository is also what employers can see. That makes the secrets rule absolute.</p>
+<p>A layout that scales to eight projects (adapt it; nothing here is required):</p>
+<pre data-shell="Folder layout" data-nocopy>harborline-analytics/
+  README.md           what this is, how to run it, an architecture picture
+  CHANGELOG.md        one entry per release tag
+  .env.example        the names of your settings, never the values
+  docs/adr/           architecture decision records, 0001-platform.md first
+  docs/metrics/       every metric definition you agreed, with its owner
+  ingestion/          one package per source system
+  transform/          your models (dbt project, SQL or notebooks)
+  orchestration/      job and pipeline definitions
+  infra/              infrastructure as code
+  dashboards/         specs, exported definitions, screenshots
+  tests/              unit and data tests
+  .github/            workflows, PR template, issue templates, CODEOWNERS</pre>
+<p>Start the <code>.gitignore</code> with at least <code>.env</code>, <code>.venv/</code>, <code>__pycache__/</code>,
+local data extracts, and your tool’s build output (for dbt: <code>target/</code>, <code>dbt_packages/</code>,
+<code>logs/</code>).</p>
+<div class="verify"><p class="verify-title">How to verify</p>
+<pre data-shell="PowerShell">git remote -v
+gh repo view --web</pre><p>The remote points to your GitHub repository and the page opens.</p></div>
+</div>
+</div>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Protect main</span><span class="task-time">5 min</span></label>
+<div class="task-body">
+<p>Push one commit first (rules need a branch to target):</p>
+<pre data-shell="PowerShell">"# Harborline data platform" | Set-Content README.md
+git add README.md
+git commit -m "chore: initial commit"
+git push -u origin main</pre>
+<p>Then on GitHub: <strong>Settings, Rules, Rulesets, New branch ruleset</strong>. Name it <em>protect main</em>, set
+<em>Enforcement</em> to <strong>Active</strong>, target the <strong>default branch</strong>, and enable:</p>
+<ul>
+<li>Restrict deletions and Block force pushes.</li>
+<li>Require a pull request before merging (0 required approvals: you cannot approve your own PR, but every change still
+goes through one).</li>
+<li>Require status checks to pass, once your CI workflow has run once and its check name appears.</li>
+<li>Require linear history, if you merge with squash.</li>
+</ul>
+<p>Leave the bypass list empty, including yourself.</p>
+<div class="verify"><p class="verify-title">How to verify</p>
+<pre data-shell="PowerShell">git commit --allow-empty -m "test: direct push" ; git push</pre>
+<p>The push is rejected by the ruleset. Undo the local commit with <code>git reset --hard HEAD~1</code>.</p></div>
+</div>
+</div>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Add a PR template, an issue template and (optionally) CODEOWNERS</span><span class="task-time">15 min</span></label>
+<div class="task-body">
+<p>A pull-request template turns self-review into a habit. A starting point for
+<code>.github/pull_request_template.md</code>:</p>
+<pre data-shell=".github/pull_request_template.md">## Ticket
+DATA-
+
+## What and why
+&lt;!-- What changes, and the business reason. Link the stakeholder conversation if there was one. --&gt;
+
+## How I tested it
+&lt;!-- Commands run, row counts compared, screenshots of dashboards. --&gt;
+
+## Self-review
+- [ ] Branch is named feat|fix|chore/DATA-n-short-slug and commits follow Conventional Commits
+- [ ] CI is green (lint, tests, build)
+- [ ] No secrets, credentials or personal data in the diff
+- [ ] Data impact understood: backfill needed? breaking change for a dashboard?
+- [ ] Docs updated (README, metric definitions, ADR if a decision was made)
+- [ ] CHANGELOG updated under "Unreleased"</pre>
+<p>Add <code>.github/ISSUE_TEMPLATE/bug.md</code> for incidents (what happened, impact, data affected, timeline, root
+cause, fix) and, optionally, <code>.github/CODEOWNERS</code> with <code>* @your-username</code> so GitHub requests your
+review on every PR.</p>
+<div class="verify"><p class="verify-title">How to verify</p><p>Opening a new PR on GitHub pre-fills the body with
+your template.</p></div>
+</div>
+</div>
+
+<div class="task">
+<label class="task-head"><span class="task-title">Install pre-commit with secret scanning and linters</span><span class="task-time">15 min</span></label>
+<div class="task-body">
+<pre data-shell="PowerShell">uv tool install pre-commit
+pre-commit --version</pre>
+<p>A starting <code>.pre-commit-config.yaml</code>. The versions are known-good pins; <code>pre-commit autoupdate</code>
+moves them to the latest.</p>
+<pre data-shell=".pre-commit-config.yaml">repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: detect-private-key
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.3
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+  - repo: https://github.com/sqlfluff/sqlfluff
+    rev: 4.5.0
+    hooks:
+      - id: sqlfluff-lint</pre>
+<p>sqlfluff needs to know your SQL dialect: add a <code>.sqlfluff</code> file with <code>[sqlfluff]</code> and
+<code>dialect = databricks</code> or <code>dialect = snowflake</code> (plus the dbt templater if you use dbt).</p>
+<pre data-shell="PowerShell">pre-commit install
+pre-commit autoupdate
+pre-commit run --all-files</pre>
+<div class="verify"><p class="verify-title">How to verify</p><p>Every hook reports <em>Passed</em> or <em>(no files to
+check) Skipped</em>. Put a fake key such as <code>AKIAIOSFODNN7EXAMPLE</code> in a file and try to commit it: gitleaks
+should block the commit. Delete the file afterwards.</p></div>
+<details class="errors"><summary>Common problems</summary><div><dl>
+<dt>pre-commit : The term 'pre-commit' is not recognized</dt><dd>Either it isn’t installed or uv’s tools folder isn’t
+on your PATH. Run <code>uv tool install pre-commit</code>, then <code>uv tool update-shell</code>, close the terminal,
+open a new one in your repository and run <code>pre-commit --version</code>.</dd>
+</dl></div></details>
+</div>
+</div>
+
+</div></details>
+</section>
+
+<section data-section="troubleshooting" data-no-progress>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<p>Start with the doctor: <code>powershell -ExecutionPolicy Bypass -File .\doctor.ps1</code>. Then find the symptom
+below.</p>
+
+<details class="errors"><summary>Hyper-V, WSL or virtualization errors</summary><div>
+<p>Most WSL and Docker start-up failures trace back to the same few things. In order:</p>
+<ol>
+<li>Virtualization enabled in the firmware (Task Manager, Performance, CPU).</li>
+<li>Windows features on (administrator):
+<code>dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart</code> and
+<code>dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart</code>, then
+restart.</li>
+<li><code>wsl --update</code>, then <code>wsl --shutdown</code>, then start Docker Desktop.</li>
+<li>Another hypervisor product (an old VirtualBox or VMware) can conflict. Update it to a version that supports
+Hyper-V coexistence.</li>
+</ol>
+</div></details>
+
+<details class="errors"><summary>Port 5432 or 8080 already in use</summary><div>
+<p>Find out who owns the port:</p>
+<pre data-shell="PowerShell">Get-NetTCPConnection -LocalPort 5432, 8080 -State Listen -ErrorAction SilentlyContinue |
+  Select-Object LocalPort, OwningProcess, @{n='Process';e={(Get-Process -Id $_.OwningProcess).ProcessName}}</pre>
+<p>A local PostgreSQL install is the usual culprit (<code>Get-Service postgresql*</code>). Either stop that service or
+move Harborline: set <code>HL_PG_PORT=5433</code> (or <code>HL_APP_PORT=8081</code>) in <code>.env</code>, run
+<code>stop.bat</code> then <code>start.bat</code>, and use the new port in DBeaver and in every URL.</p>
+</div></details>
+
+<details class="errors"><summary>A build fails or containers restart: not enough memory</summary><div>
+<p>Symptoms: the build stops part-way, <code>docker compose ps</code> shows a container restarting, or logs mention
+<em>exit code 137</em> or <em>Killed</em>. Give WSL more memory in <code>%UserProfile%\.wslconfig</code>, run
+<code>wsl --shutdown</code>, start Docker Desktop, and check <code>docker info --format "{{.MemTotal}}"</code>. Close
+browsers with many tabs during a build, or use a smaller size.</p>
+</div></details>
+
+<details class="errors"><summary>Disk full</summary><div>
+<p><code>docker system df</code> shows what Docker uses. <code>docker builder prune</code> clears the build cache. A
+replication slot you created and stopped reading keeps write-ahead log on disk (capped at 8 GB); drop slots you no
+longer use. To move Docker’s data off C:, use Docker Desktop, Settings, Resources, Advanced, Disk image location.</p>
+</div></details>
+
+<details class="errors"><summary>Line endings (CRLF) break a script</summary><div>
+<p>Symptoms: <code>$'\r': command not found</code>, or Postgres fails to initialise after you edited a file under
+<code>db/init</code>. A Windows editor saved a Linux script with CRLF endings. In VS Code, click <em>CRLF</em> in the
+status bar, choose <em>LF</em>, save, then run <code>reset.bat</code> (initialisation only runs on an empty
+database). In your own repository, pin endings in <code>.gitattributes</code>.</p>
+</div></details>
+
+<details class="errors"><summary>Antivirus or a corporate proxy gets in the way</summary><div>
+<ul>
+<li>Image downloads fail behind a proxy: set it in Docker Desktop, Settings, Resources, Proxies, then run
+<code>docker pull postgres:17</code> to test.</li>
+<li><code>winget</code> or <code>uv</code> downloads fail: set <code>HTTPS_PROXY</code> for your user, or ask IT for
+the proxy address.</li>
+<li>Real-time antivirus scanning can make WSL and Docker very slow. On a managed laptop, ask IT about exclusions for
+Docker’s data folder rather than turning protection off.</li>
+<li>No internet at all during a build: set <code>HL_OFFLINE=1</code> in <code>.env</code>.</li>
+</ul>
+</div></details>
+
+<details class="errors"><summary>The browser cannot reach localhost:8080</summary><div>
+<pre data-shell="PowerShell">Set-Location C:\dev\harborline-lab
+docker compose ps
+docker compose logs --tail 100 app</pre>
+<p>If the app is restarting, the logs say why. If you changed <code>HL_APP_PORT</code>, use that port. A VPN client
+can hijack <code>localhost</code>; disconnect it and try again.</p>
+</div></details>
+
+<details class="errors"><summary>Start over from scratch</summary><div>
+<p><code>reset.bat</code> deletes the databases (including the Tracker), the landing files and the anomaly log, after
+you type <code>YES</code>. Back up the Tracker and export this handbook’s progress first. Then <code>start.bat</code>
+and run a new build.</p>
+</div></details>
+</section>
+
+<section data-section="summary" data-no-progress>
+<h2 id="summary">Done and still to do</h2>
+<div data-hb-summary></div>
+</section>
+
+</article>
+<aside class="hb-toc" data-hb-toc></aside>
+</div></main>
+</div>
+</body>
+</html>

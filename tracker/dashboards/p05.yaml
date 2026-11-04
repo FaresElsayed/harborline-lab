@@ -1,0 +1,123 @@
+# Dashboard specs - Project 5 (Client 360). Wireframes: brand/wireframes/<id>.svg
+- id: P5-D1
+  name: Sales Pipeline
+  audience: Hannah Price (Sales Ops), Account Executives, Daniel Reyes; read-only for Client Success leadership
+  owner: hannah.price
+  questions:
+    - How much open pipeline do we have by close quarter, and how much of it is likely to close?
+    - Is next quarter's pipeline enough to hit the new-business target?
+    - Where are deals stalling, and which deals keep slipping their close date?
+    - What is our win rate by vertical, region, lead source and AE?
+    - How much of the pipeline is expansion of existing clients vs new logos?
+  kpis:
+    - name: Open pipeline (USD)
+      definition: Sum of Opportunity Amount for open opportunities (IsClosed = false) on surviving accounts, converted to USD with the Finance FX rules, by CloseDate quarter.
+      owner_definition_conflict: Hannah counts every open stage. Rebecca Lindqvist (CFO) only counts Commit + Best Case forecast categories when she talks about pipeline. Decide which one the headline tile shows and label the other.
+    - name: Weighted pipeline (USD)
+      definition: Sum of Amount × Probability for open opportunities, in USD.
+    - name: Pipeline coverage
+      definition: Open pipeline closing next quarter ÷ the remaining new-business target for that quarter (target kept as versioned seed data agreed with Hannah).
+    - name: Win rate
+      definition: Closed Won ÷ (Closed Won + Closed Lost) for opportunities closed in the period.
+      owner_definition_conflict: Hannah measures it by count of deals. Daniel wants it by amount. Show one as the headline and the other in the tooltip, as agreed.
+    - name: Average sales cycle (days)
+      definition: Mean days from CreatedDate to CloseDate for Closed Won opportunities closed in the period.
+    - name: Slip rate
+      definition: Share of opportunities whose CloseDate was pushed later at least once during the quarter (from Opportunity history).
+    - name: Expansion share
+      definition: Share of open pipeline amount where Type is Existing Business - Expansion or Renewal.
+      owner_definition_conflict: Hannah counts renewals as expansion. Omar says a renewal is retention, not growth. Agree the grouping.
+  filters:
+    - Close quarter (default current + next)
+    - Region (Account Region__c)
+    - Vertical
+    - Account Executive (Opportunity owner)
+    - Opportunity type
+    - Lead source
+    - Warehouses requested
+    - Currency display (USD / native)
+  visuals:
+    - { title: KPI row, type: kpi_tiles, notes: "Open pipeline, weighted pipeline, coverage, win rate, sales cycle, slip rate; each with delta vs last quarter" }
+    - { title: Pipeline by stage, type: horizontal_bar, notes: "Amount and count per StageName, ordered by the sales process" }
+    - { title: Weighted pipeline by close month, type: stacked_bar, notes: "Stacked by ForecastCategoryName, next 6 months" }
+    - { title: Stage velocity, type: bar, notes: "Median days spent in each stage for deals closed in the last 4 quarters" }
+    - { title: Win rate by vertical, type: bar, notes: "Count-based and amount-based, as agreed" }
+    - { title: Slipped deals, type: table, notes: "Opportunity, account, AE, amount, original vs current close date, number of slips; sortable" }
+    - { title: AE summary, type: table, notes: "Per AE: open pipeline, weighted, won this quarter, win rate; hidden for AE role (they see only their row)" }
+  refresh_sla: Daily, complete by 07:00 America/New_York (before Hannah's Monday 09:00 pipeline call); data as-of timestamp in the footer.
+  access: Sales Ops and executives see all opportunities. AEs see only opportunities they own. Client Success leadership has read-only access. No Contact personal data on this dashboard.
+  layout: |
+    1920×1080, Harborline light dashboard background with the Sales department accent.
+    Header band: Harborline lockup left, title "Sales Pipeline", as-of timestamp right.
+    Left filter rail (240 px): quarter, region, vertical, AE, type, lead source, warehouses, currency toggle.
+    Row 1: six KPI tiles across the full width.
+    Row 2: "Pipeline by stage" (left, 50%) and "Weighted pipeline by close month" (right, 50%).
+    Row 3: "Stage velocity" (left, 33%), "Win rate by vertical" (middle, 33%), "AE summary" table (right, 33%).
+    Row 4: "Slipped deals" table, full width, 8 visible rows.
+    Footer: data freshness, source "Salesforce via Harborline data platform", KPI definitions link.
+
+- id: P5-D2
+  name: Client Health 360
+  audience: Omar Haddad and the Client Success Managers, Hannah Price and AEs, Daniel Reyes
+  owner: omar.haddad
+  questions:
+    - Which clients are at risk this week, and why?
+    - How has a client's health moved over the last 6 months, and what drove the change?
+    - Is a client's order volume growing or shrinking compared with last quarter?
+    - Which cases does a client raise, and which orders, warehouses and carriers do they point to?
+    - Are we meeting the client's contract SLA, and are they paying on time?
+    - Which EDI orders from this client are unreconciled?
+    - Which renewals are coming up in the next 120 days, and how healthy are those clients?
+  kpis:
+    - name: Health score (0–100)
+      definition: The weekly client health score as defined in the metric catalog (owner Omar); the same value written to Account.Health_Score__c.
+      owner_definition_conflict: Omar wants a pure retention signal. Hannah wants growth reflected too. The catalog definition records what was agreed.
+    - name: Churn risk band
+      definition: Low / Medium / High from the agreed score thresholds; the same value written to Account.Churn_Risk__c.
+    - name: Active clients
+      definition: Clients that are active per the client master's agreed definition, at period end.
+      owner_definition_conflict: Sales counts an activated contract. Operations counts WMS owner status ACTIVE. Finance counts invoiced in the last 60 days. Show the agreed one and footnote the others.
+    - name: Order trend (13 weeks)
+      definition: Orders shipped in the last 13 weeks ÷ the prior 13 weeks − 1, per client.
+    - name: Case rate per 1,000 orders
+      definition: Cases opened in the period (spam, duplicates and merged excluded) ÷ orders shipped in the period × 1,000.
+      owner_definition_conflict: Omar counts every case. Luis Moreno wants cases with root cause Client Data excluded, because they aren't warehouse failures. Agree what the headline counts.
+    - name: Ship-on-time vs contract SLA
+      definition: Share of orders shipped within the client's contract SLA_Ship_Hours__c, compared against SLA_Target_Pct__c.
+      owner_definition_conflict: Ops measures from release to the floor. The contract clock starts when the WMS receives the order. Use the metric catalog entry from Warehouse Performance.
+    - name: DSO (days)
+      definition: Days sales outstanding per client, as defined in Billing Assurance & AR.
+    - name: Open escalations
+      definition: Cases currently open with IsEscalated = true.
+    - name: Unreconciled EDI orders
+      definition: Inbound 940s older than 24 h with no matching WMS order and not cancelled or resent.
+  filters:
+    - CSM (book)
+    - AE
+    - Vertical
+    - Tier
+    - Warehouse
+    - Region
+    - Churn risk band
+    - Period (default last 26 weeks)
+    - Client (drill page)
+  visuals:
+    - { title: KPI row, type: kpi_tiles, notes: "Active clients, clients at High risk, median health, open escalations, unreconciled EDI orders" }
+    - { title: Portfolio map, type: scatter, notes: "x = trailing-12-month revenue (USD), y = health score, color = risk band, size = order volume; click to drill" }
+    - { title: At-risk clients, type: table, notes: "Client, CSM, score, change vs 4 weeks ago, top 2 drivers, renewal date; sorted by score" }
+    - { title: Renewals next 120 days, type: timeline, notes: "Contract end dates colored by risk band" }
+    - { title: Client drill - score trend, type: line, notes: "Weekly score with risk band thresholds shaded, driver annotations" }
+    - { title: Client drill - orders vs cases, type: combo, notes: "Weekly orders shipped (bars) and case rate per 1,000 orders (line)" }
+    - { title: Client drill - linked cases, type: table, notes: "Case number, reason, status, linked order / tracking number, warehouse, carrier, credit" }
+    - { title: Client drill - service and money, type: kpi_tiles, notes: "SLA attainment vs target, DSO, open AR by aging bucket, unreconciled EDI orders" }
+  refresh_sla: Daily, complete by 07:00 America/New_York, after the nightly score build and Salesforce write-back (06:30 ET); as-of timestamp in the footer.
+  access: Client Success and Sales leadership and executives see all clients. CSMs see their book. AEs see accounts they own. Case SuppliedName and SuppliedEmail and all consignee PII are never shown.
+  layout: |
+    Two pages, 1920×1080, Harborline light dashboard background with the Client Success department accent.
+    Page 1 "Portfolio". Header band: lockup, title, as-of timestamp. Left filter rail (240 px).
+    Row 1: five KPI tiles. Row 2: "Portfolio map" scatter (left, 60%) and "At-risk clients" table (right, 40%).
+    Row 3: "Renewals next 120 days" timeline, full width.
+    Page 2 "Client". Header shows the client name, tier, CSM, AE and the current score badge colored by risk band.
+    Row 1: service and money KPI tiles. Row 2: "Score trend" (left, 50%) and "Orders vs cases" (right, 50%).
+    Row 3: "Linked cases" table, full width.
+    Footer on both pages: data freshness, sources (WMS, AX, Salesforce, EDI), KPI definitions link.

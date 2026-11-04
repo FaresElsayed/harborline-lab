@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content="Harborline 3PL Simulator: Control Center and Harborline Tracker." />
+    <link rel="icon" type="image/svg+xml" href="%BASE_URL%brand/logo/favicon.svg" />
+    <title>Harborline</title>
+    <script>
+      /* Apply the saved theme before first paint so there is no flash. */
+      try {
+        var t = localStorage.getItem('harborline.theme');
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>Harborline needs JavaScript. Open the handbook at %BASE_URL%handbook/ for the written guides.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

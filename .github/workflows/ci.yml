@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  simulator:
+    runs-on: ubuntu-latest
+    env:
+      HL_TEST_PG_PORT: 55434
+      HL_TEST_PG_PASSWORD: harborline-admin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # Not a service container: those can't take the settings logical replication needs.
+      - name: Start a throwaway Postgres
+        run: |
+          docker run -d --name hl-test-pg -e POSTGRES_PASSWORD=$HL_TEST_PG_PASSWORD -p $HL_TEST_PG_PORT:5432 \
+            postgres:17 -c wal_level=logical -c max_replication_slots=10 -c max_wal_senders=10
+          until docker exec hl-test-pg pg_isready -U postgres; do sleep 2; done
+      - name: Install
+        working-directory: simulator
+        run: pip install -e ".[dev]"
+      - name: Test
+        working-directory: simulator
+        run: python -m pytest -q
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npx tsc -b
+      - run: npm run build
+
+  setup-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: The setup file survives a checkout and parses on PowerShell 5.1
+        shell: powershell
+        run: |
+          "PowerShell $($PSVersionTable.PSVersion)"
+          $bytes = [IO.File]::ReadAllBytes('SETUP-WINDOWS.cmd')
+          $text = [IO.File]::ReadAllText('SETUP-WINDOWS.cmd')
+          if (($text -replace "`r`n", '') -match "`n") { throw 'SETUP-WINDOWS.cmd lost its CRLF line endings' }
+          if ($bytes | Where-Object { $_ -gt 127 } | Select-Object -First 1) { throw 'SETUP-WINDOWS.cmd is not ASCII' }
+          $null = [ScriptBlock]::Create($text)
+      - name: A click can't pause the setup window
+        shell: powershell
+        run: |
+          $text = [IO.File]::ReadAllText('SETUP-WINDOWS.cmd')
+          $guard = [regex]::Match($text, "(?s)\`$Script:ClickGuard = @'\r?\n(.*?)\r?\n'@").Groups[1].Value
+          if (-not $guard) { throw 'Could not find the click guard' }
+          $probe = @"
+          $guard
+          function Read-Mode { [uint32]`$m = 0; `$h = [HarborlineLab.ConsoleMode]::GetStdHandle(-10); [void][HarborlineLab.ConsoleMode]::GetConsoleMode(`$h, [ref]`$m); `$m }
+          Set-ClickSelects `$true; `$on = Read-Mode
+          Set-ClickSelects `$false; `$off = Read-Mode
+          "on=`$on off=`$off" | Set-Content -LiteralPath "$env:RUNNER_TEMP\click.txt"
+          "@
+          $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($probe))
+          # A new console of its own, like the window a person double-clicks open.
+          Start-Process powershell.exe -Wait -WindowStyle Hidden -ArgumentList @('-NoProfile', '-EncodedCommand', $encoded)
+          $result = Get-Content -LiteralPath "$env:RUNNER_TEMP\click.txt" -Raw
+          "Console modes: $result"
+          if ($result -notmatch 'on=(\d+) off=(\d+)') { throw "No result: $result" }
+          if (-not ([int]$Matches[1] -band 0x40)) { throw 'Clicks should select while setup waits for an answer' }
+          if ([int]$Matches[2] -band 0x40) { throw 'A click can still pause the window' }

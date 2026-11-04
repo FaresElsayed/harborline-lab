@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en" data-hb-page="answer-key">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Answer key · Harborline handbook</title>
+<meta name="description" content="What is planted in the Harborline data for each project, the data-quality categories, and how to score your data-quality findings.">
+<script>try{var t=localStorage.getItem("harborline.theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<link rel="stylesheet" href="../brand/fonts.css">
+<link rel="stylesheet" href="../brand/tokens.css">
+<link rel="stylesheet" href="assets/handbook.css">
+<link rel="icon" href="../brand/logo/favicon.svg" type="image/svg+xml">
+<script src="assets/handbook.js" defer></script>
+</head>
+<body>
+<div class="hb-shell">
+<aside class="hb-side" data-hb-side></aside>
+<main class="hb-sheet" id="main"><div class="hb-page">
+<article class="hb-content">
+
+<h1>Answer key</h1>
+<p class="hb-lead">Every project has something real to find in the data: a business story the simulator planted on
+purpose. This page explains each one, behind a spoiler gate. Open a project only after you have shipped its
+dashboards; finding the story yourself is the exercise.</p>
+
+<div class="callout callout--warn">
+<p class="callout-title">Honor system</p>
+<p>The gates only ask; they do not lock. The source of truth for the stories is
+<code>answer_key/planted_stories.yaml</code>, and every injected data defect is logged in
+<code>answer_key/anomalies.csv</code>. Both are spoilers in raw form.</p>
+</div>
+
+<p>“Month −10” below means ten months before the end of the history you built (the build date). The stories scale with
+your preset: with Small or Medium, stories older than your history may not appear.</p>
+
+<section data-section="scoring" data-no-progress>
+<h2 id="scoring">Score your data-quality findings</h2>
+<p>This part is not a spoiler. Throughout the program you will find bad records: orphans, duplicates, impossible
+quantities, mojibake. Collect them in a CSV and the simulator tells you how many were real defects (precision) and how
+many of the injected defects you found (recall), per category.</p>
+<p>The CSV needs a header and the columns <code>system</code>, <code>object</code>, <code>record_key</code>, and
+optionally <code>category</code>. <code>system</code> is one of <code>wms</code>, <code>ax2012</code>, <code>iot</code>,
+<code>salesforce</code>, <code>carrier</code>, <code>edi</code>, <code>files</code>; <code>object</code> is the table,
+Salesforce object or file name; <code>record_key</code> is the primary key value.</p>
+<pre data-shell="landing\my_findings.csv">system,object,record_key,category
+wms,order_line,"4100023117,3",shipped_gt_ordered
+wms,inventory,88213901,negative_qty
+salesforce,Account,001Hb000004XyzAIAS,duplicate_account
+iot,sensor_reading,771200345,sensor_spike</pre>
+<p>Save it in the simulator’s <code>landing</code> folder (the container sees it as <code>/data/landing</code>) and run,
+from the simulator folder:</p>
+<pre data-shell="PowerShell">docker compose exec app python -m harborline.tools.score_dq /data/landing/my_findings.csv</pre>
+<div class="hb-table-wrap"><table class="hb-table hb-table--dense">
+<thead><tr><th>Option</th><th>Use</th></tr></thead>
+<tbody>
+<tr><td><code>--until 2026-10-15</code></td><td>Only count defects injected up to a simulated date, to match the data you
+actually loaded</td></tr>
+<tr><td><code>--system wms</code></td><td>Score one system</td></tr>
+<tr><td><code>--show 20</code></td><td>Print more examples of misses and false positives (default 10)</td></tr>
+<tr><td><code>--anomalies /data/answer_key/anomalies.csv</code></td><td>Score against the mirror file instead of the
+database</td></tr>
+</tbody></table></div>
+<p>The defect rate is set in the Control Center (1 in 10,000 eligible records per category by default, from 1 in 100 to
+1 in 100,000) and each category can be switched off. Turn the rate up while you build your checks, down to see whether
+they still find needles.</p>
+</section>
+
+<section data-section="categories" data-no-progress>
+<h2 id="categories">Data-quality categories</h2>
+<details data-spoiler="dq-categories" data-spoiler-label="the data-quality categories">
+<summary><span><span class="spoiler-title">The nineteen defect categories</span><span class="spoiler-sub">What each
+looks like in the data. A mild spoiler: try writing your checks first.</span></span></summary>
+<div class="spoiler-body">
+<div class="hb-table-wrap"><table class="hb-table hb-table--dense">
+<thead><tr><th>Category</th><th>What you see</th></tr></thead>
+<tbody>
+<tr><td><code>orphan_fk</code></td><td>A child row whose parent does not exist (a line without its order, an item for an unknown owner)</td></tr>
+<tr><td><code>duplicate_row</code></td><td>The same business record twice under different surrogate keys</td></tr>
+<tr><td><code>null_required</code></td><td>A value the business always needs is missing</td></tr>
+<tr><td><code>negative_qty</code></td><td>A quantity below zero where that is impossible</td></tr>
+<tr><td><code>shipped_gt_ordered</code></td><td>More units shipped than ordered on a line</td></tr>
+<tr><td><code>sentinel_date</code></td><td>Placeholder dates such as 1900-01-01 or 9999-12-31 where a real date belongs (AX’s own 1900-01-01 “empty” is normal, not a defect)</td></tr>
+<tr><td><code>future_date</code></td><td>An event dated after the simulated clock</td></tr>
+<tr><td><code>invalid_currency</code></td><td>A currency code that is not ISO 4217 or not the client’s</td></tr>
+<tr><td><code>unit_mixup</code></td><td>Pounds recorded as kilograms or the reverse; centimetres as inches</td></tr>
+<tr><td><code>key_whitespace_case</code></td><td>A join key with stray spaces or the wrong case</td></tr>
+<tr><td><code>mojibake</code></td><td>Text decoded with the wrong encoding (Ã© instead of é)</td></tr>
+<tr><td><code>malformed_edi</code></td><td>An X12 file with wrong counts or broken envelopes</td></tr>
+<tr><td><code>sensor_spike</code></td><td>A physically impossible reading</td></tr>
+<tr><td><code>sensor_stuck</code></td><td>A sensor repeating the exact same value</td></tr>
+<tr><td><code>late_arriving</code></td><td>A record that shows up long after the event it describes</td></tr>
+<tr><td><code>schema_drift</code></td><td>A column, field or file column that appears or changes</td></tr>
+<tr><td><code>header_line_mismatch</code></td><td>Header totals that disagree with the sum of the lines</td></tr>
+<tr><td><code>duplicate_account</code></td><td>The same client twice in Salesforce</td></tr>
+<tr><td><code>dst_duplicate</code></td><td>Two records in the repeated autumn daylight-saving hour that are really one</td></tr>
+</tbody></table></div>
+<p>Not defects, and never logged: the systematic quirks every source has on purpose, such as local time in the WMS, mixed
+units by site, AX enums and empty dates, blank crosswalk codes, hard deletes and late gateway flushes. Handling those
+is engineering, not data quality.</p>
+</div>
+</details>
+</section>
+
+<section data-section="spoilers" data-no-progress>
+<h2 id="stories">Planted stories by project</h2>
+
+<details data-spoiler="p1" data-spoiler-label="Project 1" id="p1">
+<summary><span><span class="spoiler-title">Project 1 · Data Platform Foundation</span><span class="spoiler-sub">1 story: the
+client crosswalk</span></span></summary>
+<div class="spoiler-body">
+<h3>Salesforce cannot be joined to the WMS for seven clients</h3>
+<p><code>Account.WMS_Owner_Code__c</code> is blank for four active clients and mistyped for three: one in lower case, one
+with a trailing space, one with the letter O where the WMS code has a zero. Account executives type the code by hand at
+go-live, and nothing validates it.</p>
+<p><strong>Where it shows:</strong> a join from Salesforce accounts to <code>wms.owner</code> on the code drops seven
+active clients, and every later project that relies on it (revenue by client, the health score, the portal) silently
+loses them.</p>
+<p><strong>What good looks like:</strong> your Data Platform Health dashboard reports crosswalk coverage (clients
+matched in all three systems), the three typo cases are matched by a normalised key, the four blanks are listed for
+Dana to fix, and no downstream model drops a client without saying so.</p>
+</div>
+</details>
+
+<details data-spoiler="p2" data-spoiler-label="Project 2" id="p2">
+<summary><span><span class="spoiler-title">Project 2 · Warehouse Performance</span><span class="spoiler-sub">4 stories:
+a picker outlier, NJ1 receiving, snow days, the LAX1 ramp</span></span></summary>
+<div class="spoiler-body">
+<h3>The ATL1 superstar is a data artefact</h3>
+<p>One ATL1 picker on shift B posts about 2.3 times the median picks per hour. The scans are batch-confirmed at the end
+of each tote, so all of a tote’s pick tasks complete within seconds of each other. It is not real productivity.</p>
+<p><strong>Where it shows:</strong> <code>wms.task</code> for that user has clusters of PICK completions a few seconds
+apart. A picks-per-hour metric built from completion times rewards it; one built from time between tote starts, or that
+flags implausible inter-pick gaps, does not. Shanice believes the number; Marcus knows the RF app allows it.</p>
+<h3>NJ1 dock-to-stock doubled six months ago</h3>
+<p>From month −6, NJ1’s dock-to-stock time roughly doubles, after a receiving position was cut on shift A to hit the
+budget. Luis mentions the cut if asked; he has not connected it to the metric.</p>
+<p><strong>Where it shows:</strong> trailer arrival (<code>receipt_header.arrived_ts</code>) to put-away
+(<code>PUTAWAY</code> tasks or ledger rows) at NJ1, by shift. A site-level monthly trend shows the step; splitting by
+shift shows where.</p>
+<h3>Snow days at CHI1 and NJ1</h3>
+<p>Snow days (from the real Open-Meteo archive when the build was online, synthetic otherwise) slow throughput and push
+shipments late at CHI1 and NJ1.</p>
+<p><strong>Where it shows:</strong> join daily weather for each site to on-time and throughput. The late days line up
+with snowfall, which is the context a scorecard needs before anyone blames a GM.</p>
+<h3>LAX1’s first eight weeks</h3>
+<p>LAX1 opened at month −17. For about eight weeks accuracy is poor and cycle times are long: a new-site ramp.</p>
+<p><strong>Where it shows:</strong> LAX1 cycle-count accuracy and order cycle time by week since opening. A good
+scorecard shows the ramp and lets the viewer exclude it from year-on-year comparisons.</p>
+<h3>The three definitions of on-time</h3>
+<p>Not planted in the data but in the people. Luis counts shipped by the requested ship date after the cutoff rule, in
+local time; Omar counts delivered by the date the client promised; Alan counts shipped within the contract’s SLA hours
+from receipt. The right outcome is all three, each named and owned, with one chosen as the headline.</p>
+</div>
+</details>
+
+<details data-spoiler="p3" data-spoiler-label="Project 3" id="p3">
+<summary><span><span class="spoiler-title">Project 3 · Billing Assurance and AR</span><span class="spoiler-sub">4 stories
+and the payment behaviour of eleven clients</span></span></summary>
+<div class="spoiler-body">
+<h3>Glow Theory’s increase never reached billing</h3>
+<p>At month −10, Glow Theory (<code>GLOWTH</code>) reached its contract anniversary. The 4.5% increase was activated in
+Salesforce but never keyed into the WMS. From then on the WMS bills the old rates and AX invoices under-bill.</p>
+<p><strong>Where it shows:</strong> <code>Rate_Card_Line__c</code> rates on the active rate card against
+<code>wms.billing_rate</code> (and the rate on each <code>billing_record</code>) for GLOWTH. The gap is about 4.5% of
+every rated charge since month −10. Alan’s process explains it: no email, no change.</p>
+<h3>Lumen’s returns rate is a typo</h3>
+<p>From month −14, the RET-PROC (returns processing) rate for Lumen Activewear (<code>LUMEN</code>) is 0.33 instead of
+3.30 in the WMS. Apparel returns are heavy, so the leak is large.</p>
+<p><strong>Where it shows:</strong> contract rate against WMS rate per charge code; a ratio of exactly 0.1 is the
+signature of a keying error.</p>
+<h3>PureForm Labs never paid its minimum</h3>
+<p>PureForm Labs (<code>PUREFRM</code>) stayed under its monthly minimum, but the minimum adjustment (MIN-ADJ) was never
+invoiced.</p>
+<p><strong>Where it shows:</strong> monthly billed total per client against the contract’s monthly minimum; MIN-ADJ lines
+are absent for PUREFRM in months where it was due.</p>
+<h3>AX month-end FX rates lag the ECB</h3>
+<p>Alan keys the month-end EUR/USD and GBP/USD rates by hand on the first business day. They differ from the ECB
+reference rate by 0.5 to 2.5%.</p>
+<p><strong>Where it shows:</strong> <code>dbo.exchangerate</code> (stored ×100) against Frankfurter’s ECB series for the
+same dates. The effect is on the EUR and GBP clients’ USD revenue and on realised FX gains and losses.</p>
+<h3>How clients pay</h3>
+<div class="hb-table-wrap"><table class="hb-table hb-table--dense">
+<thead><tr><th>Behaviour</th><th>Clients</th><th>Signature</th></tr></thead>
+<tbody>
+<tr><td>Very slow</td><td>Oakline Furniture (<code>OAKLINE</code>), UrbanLoom (<code>URBLOOM</code>, before churning)</td><td>30 to 75 days past due. Oakline’s DSO creeps from about 48 to about 95 days over the last nine months.</td></tr>
+<tr><td>Slow</td><td>Orbit Smart Home, Atelier Brune, Momentum Sports Nutrition</td><td>10 to 25 days past due</td></tr>
+<tr><td>Disputer</td><td>Cobalt Denim Co. (<code>COBALT</code>)</td><td>Short-pays or disputes about 8% of invoices</td></tr>
+<tr><td>Early</td><td>Apex Autoparts, Beacon Hardware</td><td>Pays before the due date</td></tr>
+<tr><td>On time</td><td>Everyone else</td><td>Around the due date</td></tr>
+</tbody></table></div>
+</div>
+</details>
+
+<details data-spoiler="p4" data-spoiler-label="Project 4" id="p4">
+<summary><span><span class="spoiler-title">Project 4 · Freight Audit and Carrier Performance</span><span class="spoiler-sub">2
+stories: a regional carrier overbills, a fuel surcharge lags</span></span></summary>
+<div class="spoiler-body">
+<h3>Velocity Regional Parcel overbills about 3% of shipments</h3>
+<p>On roughly 3% of its shipments, Velocity (<code>VRPX</code>) bills more than it should, in three ways: a billed
+weight above the package’s dimensional weight, duplicate lines for the same tracking number, and a residential
+surcharge on commercial addresses. Beth’s hunch is right.</p>
+<p><strong>Where it shows:</strong> parse the tracking number, weight and zone out of <code>vendinvoicetrans.name</code>
+on VRPX bills; join to <code>wms.shipment</code> and its cartons (actual weight and dimensions, residential flag on the
+order); price each line from the rate card. The three error types are separately countable and add up to a recoverable
+amount Beth can claim.</p>
+<h3>Marlowe applies fuel surcharges one week late</h3>
+<p>When the weekly diesel price moves, Marlowe (<code>MRLF</code>) applies the new surcharge percentage a week late.</p>
+<p><strong>Where it shows:</strong> the surcharge percentage implied by each Marlowe bill against the rate card’s fuel
+table applied to the EIA weekly diesel price. The billed percentage matches the previous week’s price, consistently.
+In a falling market that overcharges; in a rising one it undercharges.</p>
+</div>
+</details>
+
+<details data-spoiler="p5" data-spoiler-label="Project 5" id="p5">
+<summary><span><span class="spoiler-title">Project 5 · Client 360</span><span class="spoiler-sub">EDI orders that vanish,
+and three churn stories</span></span></summary>
+<div class="spoiler-body">
+<h3>Some EDI orders never become WMS orders</h3>
+<p>About 0.4% of Apex Autoparts’ and Beacon Hardware’s 940s are rejected silently by the translator: no WMS order is
+created, yet the 997 still says accepted. Tomás believes the partner when the 997 is green.</p>
+<p><strong>Where it shows:</strong> reconcile 940 transactions (by the PO in W05) to <code>wms.order_header.client_order_ref</code>
+for EDI clients. The missing ones have an accepted 997 and no order. Resends that do arrive must not be counted twice.</p>
+<h3>Churn leaves a trail</h3>
+<div class="hb-table-wrap"><table class="hb-table hb-table--dense">
+<thead><tr><th>Client</th><th>From</th><th>Case volume</th><th>Order volume</th><th>Outcome</th></tr></thead>
+<tbody>
+<tr><td>UrbanLoom (<code>URBLOOM</code>)</td><td>month −11</td><td>×3.5</td><td>−45%</td><td>Churned at month −5, paying very slowly</td></tr>
+<tr><td>Bloom Bath Co. (<code>BLOOMBT</code>)</td><td>month −7</td><td>×2.8</td><td>−35%</td><td>Churned at month −2</td></tr>
+<tr><td>Solstice Swim (<code>SOLSWIM</code>)</td><td>month −5</td><td>×3.0</td><td>−20%</td><td>Still a client: the live churn risk</td></tr>
+</tbody></table></div>
+<p><strong>What good looks like:</strong> a health score that, back-tested, would have flagged UrbanLoom and Bloom Bath
+months before they left, and flags Solstice Swim now. Omar’s hunch about Solstice is right; your score proves it and
+puts it in Salesforce.</p>
+</div>
+</details>
+
+<details data-spoiler="p6" data-spoiler-label="Project 6" id="p6">
+<summary><span><span class="spoiler-title">Project 6 · Real-Time Operations</span><span class="spoiler-sub">No single story:
+the traps a correct CDC pipeline survives</span></span></summary>
+<div class="spoiler-body">
+<p>Nothing is planted for Project 6. The test is whether the live board stays right while the WMS behaves like the
+operational system it is:</p>
+<ul>
+<li><strong>Hard deletes.</strong> Cancelled lines, zero-quantity inventory, voided cartons and corrected billing records
+disappear. Only change capture (or snapshot diffs) sees them.</li>
+<li><strong><code>order_line</code> has no audit column.</strong> Updates to allocated, picked and shipped quantities
+are invisible to timestamp-based extraction.</li>
+<li><strong>The 180-day task purge.</strong> Thousands of deletes every night that are housekeeping, not cancellations.
+A live board that treats them as business events is wrong.</li>
+<li><strong>Label reprints</strong> change a shipment’s tracking number in place.</li>
+<li><strong>The repeated autumn hour</strong> in local timestamps, and site time zones in general.</li>
+<li><strong>Schema drift</strong> from the schema-drift scenario: a WMS release adds a column mid-stream.</li>
+<li><strong>Scenarios</strong> in the Control Center (peak surge, carrier outage, storm, late-data dump) should move the
+board the way the floor would see it, and the freshness alert should fire when the pipeline falls behind.</li>
+<li><strong>Replication slots.</strong> A stopped consumer grows WAL until the 8 GB cap invalidates the slot; your
+alerting should catch it first.</li>
+</ul>
+</div>
+</details>
+
+<details data-spoiler="p7" data-spoiler-label="Project 7" id="p7">
+<summary><span><span class="spoiler-title">Project 7 · Cold Chain and Lot Traceability</span><span class="spoiler-sub">3
+stories: summer excursions, a stuck sensor, a recall</span></span></summary>
+<div class="spoiler-body">
+<h3>Dock door 14 and hot afternoons</h3>
+<p>The CHI1 cooler zone goes out of range on hot summer afternoons when dock door 14 is left open for more than 20
+minutes. Lots stored in the zone go on HOLD. Ayesha suspects open doors; this is the proof.</p>
+<p><strong>Where it shows:</strong> <code>telemetry.dock_door_event</code> open intervals for door 14 at CHI1, cooler
+readings in <code>sensor_reading</code> and the outdoor temperature from Open-Meteo, lined up in time; then the HOLD
+transactions on lots in that zone.</p>
+<h3>CHI1-CLR-03-T is stuck</h3>
+<p>For nine days sensor <code>CHI1-CLR-03-T</code> reports exactly 4.0 °C while the real temperature drifted. No
+excursion is detected, which is the hidden risk.</p>
+<p><strong>Where it shows:</strong> zero variance over a long window, against neighbouring probes in the same zone that
+move. A sensor-health view flags it; a pure threshold rule never will.</p>
+<h3>The Copper Kettle recall</h3>
+<p>Copper Kettle Foods (<code>CPRKTL</code>) recalls one lot. The trace must find every order and every ship-to that
+received it.</p>
+<p><strong>Where it shows:</strong> lot from <code>receipt_line</code> through <code>inventory</code> and
+<code>inventory_txn</code> to the PICK and SHIP transactions, orders and ship-to addresses. Watch for lots split across
+license plates and locations, and for returns of the same lot.</p>
+</div>
+</details>
+
+<details data-spoiler="p8" data-spoiler-label="Project 8" id="p8">
+<summary><span><span class="spoiler-title">Project 8 · Client Portal and Executive Scorecard</span><span class="spoiler-sub">No
+new story: what the final scorecard and portal must get right</span></span></summary>
+<div class="spoiler-body">
+<p>Project 8 brings everything together. A correct result:</p>
+<ul>
+<li><strong>Executive scorecard:</strong> shows the churned clients and the Solstice risk, Oakline’s DSO, the revenue
+recovered from the billing and freight findings, LAX1 after its ramp, and on-time with its definition stated.</li>
+<li><strong>Client portal:</strong> each client sees only its own rows. Test it with the crosswalk cases from Project 1:
+a client whose Salesforce code was mistyped must neither lose its data nor see another client’s.</li>
+<li><strong>Personal data:</strong> ship-to names, addresses, phones and emails are masked for every role that does not
+need them, and access is audited.</li>
+</ul>
+</div>
+</details>
+</section>
+
+</article>
+<aside class="hb-toc" data-hb-toc></aside>
+</div></main>
+</div>
+</body>
+</html>

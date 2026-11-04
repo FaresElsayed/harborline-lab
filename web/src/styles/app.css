@@ -1,0 +1,463 @@
+@import 'tailwindcss';
+
+/* Dark utilities follow the brand's theme switch: [data-theme="dark"] or the OS setting unless stamped light. */
+@custom-variant dark {
+  &:where([data-theme='dark'], [data-theme='dark'] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme='light']), :root:not([data-theme='light']) *) {
+      @slot;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ app roles on top of the brand tokens
+   Shell: the "framed sheet". Sidebar and top bar share the Fog frame; the work sits on a white sheet with a
+   1px edge and no shadow. Card edges are a lighter step of Rope so they never outweigh the sheet. */
+:root {
+  --frame: var(--hl-bg);
+  --sheet: var(--hl-surface);
+  --raised: color-mix(in oklab, var(--hl-surface-2) 42%, var(--hl-surface));
+  --active: var(--hl-surface-2);
+  --hover: color-mix(in oklab, var(--hl-surface-2) 60%, var(--hl-surface));
+  --line: color-mix(in oklab, var(--hl-border) 58%, var(--hl-surface));
+  --rule: color-mix(in oklab, var(--hl-border) 36%, var(--hl-surface));
+  --control: var(--hl-border);
+  --ink: var(--hl-text);
+  --muted: var(--hl-text-muted);
+  --faint: color-mix(in oklab, var(--hl-text-muted) 90%, var(--hl-surface));
+  --accent-tint: color-mix(in oklab, var(--hl-accent) 11%, var(--hl-surface));
+  --signal-text: #c9501c;
+  --app-shadow-float: 0 12px 32px -8px rgb(15 35 56 / 0.22), 0 2px 8px -2px rgb(15 35 56 / 0.12);
+  --app-shadow-drag: 0 18px 36px -10px rgb(15 35 56 / 0.3), 0 3px 10px -3px rgb(15 35 56 / 0.18);
+}
+:root[data-theme='dark'] {
+  --line: color-mix(in oklab, var(--hl-border) 78%, var(--hl-surface));
+  --rule: color-mix(in oklab, var(--hl-border) 55%, var(--hl-surface));
+  --raised: color-mix(in oklab, var(--hl-surface-2) 55%, var(--hl-surface));
+  --hover: color-mix(in oklab, var(--hl-surface-2) 70%, var(--hl-surface));
+  --signal-text: #ff8a4c;
+  --app-shadow-float: 0 16px 40px -8px rgb(0 0 0 / 0.55), 0 2px 8px -2px rgb(0 0 0 / 0.4);
+  --app-shadow-drag: 0 20px 44px -10px rgb(0 0 0 / 0.65), 0 3px 10px -3px rgb(0 0 0 / 0.45);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --line: color-mix(in oklab, var(--hl-border) 78%, var(--hl-surface));
+    --rule: color-mix(in oklab, var(--hl-border) 55%, var(--hl-surface));
+    --raised: color-mix(in oklab, var(--hl-surface-2) 55%, var(--hl-surface));
+    --hover: color-mix(in oklab, var(--hl-surface-2) 70%, var(--hl-surface));
+    --signal-text: #ff8a4c;
+    --app-shadow-float: 0 16px 40px -8px rgb(0 0 0 / 0.55), 0 2px 8px -2px rgb(0 0 0 / 0.4);
+    --app-shadow-drag: 0 20px 44px -10px rgb(0 0 0 / 0.65), 0 3px 10px -3px rgb(0 0 0 / 0.45);
+  }
+}
+
+@theme {
+  --color-*: initial;
+  --color-white: #fff;
+  --color-black: #000;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  --font-*: initial;
+  --font-sans: var(--hl-font-sans);
+  --font-display: var(--hl-font-display);
+  --font-mono: var(--hl-font-mono);
+
+  /* App type scale: 12 / 13 / 14 / 16 / 18 / 20 / 24 / 30 */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.125rem;
+  --text-base: 0.875rem;
+  --text-base--line-height: 1.25rem;
+  --text-md: 1rem;
+  --text-md--line-height: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.5rem;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.625rem;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 1.875rem;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 2.25rem;
+
+  --radius-s: var(--hl-radius-s, 4px);
+  --radius-m: var(--hl-radius-m, 8px);
+  --radius-l: var(--hl-radius-l, 12px);
+  --radius-sheet: 14px;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --animate-pulse-dot: pulse-dot 2.4s var(--ease-in-out) infinite;
+  @keyframes pulse-dot {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.45;
+    }
+  }
+}
+
+@theme inline {
+  --color-frame: var(--frame);
+  --color-sheet: var(--sheet);
+  --color-raised: var(--raised);
+  --color-active: var(--active);
+  --color-hover: var(--hover);
+  --color-line: var(--line);
+  --color-rule: var(--rule);
+  --color-control: var(--control);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-navy: var(--hl-navy);
+  --color-signal: var(--hl-signal);
+  --color-signal-text: var(--signal-text);
+  --color-accent: var(--hl-accent);
+  --color-accent-strong: var(--hl-accent-strong);
+  --color-accent-tint: var(--accent-tint);
+  --color-on-accent: var(--hl-accent-contrast);
+  --color-focus: var(--hl-focus);
+  --color-good: var(--hl-good);
+  --color-good-bg: var(--hl-good-bg);
+  --color-warn: var(--hl-warn);
+  --color-warn-bg: var(--hl-warn-bg);
+  --color-bad: var(--hl-bad);
+  --color-bad-bg: var(--hl-bad-bg);
+  --color-info: var(--hl-info);
+  --color-info-bg: var(--hl-info-bg);
+  --color-viz-1: var(--hl-viz-1);
+  --color-viz-2: var(--hl-viz-2);
+  --color-viz-3: var(--hl-viz-3);
+  --color-viz-4: var(--hl-viz-4);
+  --color-viz-5: var(--hl-viz-5);
+  --color-viz-6: var(--hl-viz-6);
+  --color-viz-7: var(--hl-viz-7);
+  --color-viz-8: var(--hl-viz-8);
+  --color-grid: var(--hl-grid);
+  --color-axis: var(--hl-axis);
+  --shadow-float: var(--app-shadow-float);
+  --shadow-drag: var(--app-shadow-drag);
+}
+
+/* ------------------------------------------------------------------ base */
+@layer base {
+  html {
+    background: var(--frame);
+    color: var(--ink);
+    font-family: var(--hl-font-sans);
+    font-size: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: 'cv11';
+    scrollbar-color: var(--control) transparent;
+  }
+  body {
+    background: var(--frame);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+    min-height: 100dvh;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--hl-accent) 26%, transparent);
+    color: inherit;
+  }
+  input,
+  textarea {
+    caret-color: var(--hl-accent);
+  }
+  :focus-visible {
+    outline: 2px solid var(--hl-focus);
+    outline-offset: 2px;
+  }
+  /* Inputs carry their own ring inside the border. */
+  :where(input, textarea, select, [role='combobox']):focus-visible {
+    outline-offset: 0;
+  }
+  ::placeholder {
+    color: var(--faint);
+    opacity: 1;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in oklab, var(--control) 80%, transparent);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--faint);
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+/* JetBrains Mono ships ligatures (!= becomes ≠); code and keys must show what you type. */
+.font-mono,
+code,
+kbd,
+pre {
+  font-variant-ligatures: none;
+  font-feature-settings: 'liga' 0, 'calt' 0;
+}
+
+/* ------------------------------------------------------------------ utilities */
+@utility num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+@utility figure {
+  font-family: var(--hl-font-display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+@utility press {
+  transition: transform 140ms var(--ease-out);
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+}
+@utility scroll-thin {
+  scrollbar-width: thin;
+}
+
+/* Logo variants follow the active theme. */
+.logo-dark {
+  display: none;
+}
+:root[data-theme='dark'] .logo-light {
+  display: none;
+}
+:root[data-theme='dark'] .logo-dark {
+  display: block;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .logo-light {
+    display: none;
+  }
+  :root:not([data-theme='light']) .logo-dark {
+    display: block;
+  }
+}
+
+/* Markdown rendered in issue descriptions and comments. */
+.prose-issue {
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--ink);
+  max-width: 72ch;
+}
+.prose-issue > * + * {
+  margin-top: 0.7em;
+}
+.prose-issue h1,
+.prose-issue h2,
+.prose-issue h3 {
+  font-weight: 600;
+  font-size: var(--text-md);
+  margin-top: 1.2em;
+}
+.prose-issue ul {
+  list-style: disc;
+  padding-left: 1.25em;
+}
+.prose-issue ol {
+  list-style: decimal;
+  padding-left: 1.25em;
+}
+.prose-issue li + li {
+  margin-top: 0.25em;
+}
+.prose-issue strong {
+  font-weight: 600;
+}
+.prose-issue a {
+  color: var(--hl-accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prose-issue code {
+  font-family: var(--hl-font-mono);
+  font-size: 0.86em;
+  background: var(--raised);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 0.05em 0.35em;
+}
+.prose-issue pre {
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.8em 1em;
+  overflow-x: auto;
+}
+.prose-issue pre code {
+  background: none;
+  border: 0;
+  padding: 0;
+}
+.prose-issue blockquote {
+  border-left: 3px solid var(--line);
+  padding-left: 0.9em;
+  color: var(--muted);
+}
+.prose-issue table {
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+.prose-issue th,
+.prose-issue td {
+  border-bottom: 1px solid var(--rule);
+  padding: 0.35em 0.75em 0.35em 0;
+  text-align: left;
+}
+
+/* Radix popper content scales from its trigger. */
+.pop {
+  transform-origin: var(--radix-popper-transform-origin, var(--radix-dropdown-menu-content-transform-origin, top));
+  animation: pop-in 160ms var(--ease-out);
+}
+.pop[data-state='closed'] {
+  animation: pop-out 110ms var(--ease-out) forwards;
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+@keyframes pop-out {
+  to {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+.fade-in {
+  animation: fade-in 180ms var(--ease-out);
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pop,
+  .pop[data-state='closed'] {
+    animation-name: fade-in;
+    animation-duration: 120ms;
+  }
+  .pop[data-state='closed'] {
+    animation-direction: reverse;
+  }
+  .press:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* People: a stable pale tint per person (identity, never data). */
+.avatar {
+  background: oklch(0.92 0.05 var(--h));
+  color: oklch(0.36 0.09 var(--h));
+}
+:root[data-theme='dark'] .avatar {
+  background: oklch(0.36 0.06 var(--h));
+  color: oklch(0.92 0.05 var(--h));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .avatar {
+    background: oklch(0.36 0.06 var(--h));
+    color: oklch(0.92 0.05 var(--h));
+  }
+}
+
+/* Dialogs stay centred and grow from 97%. */
+.dialog[data-state='open'] {
+  animation: dialog-in 200ms var(--ease-out);
+}
+.dialog[data-state='closed'] {
+  animation: dialog-out 130ms var(--ease-out) forwards;
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+@keyframes dialog-out {
+  to {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+/* Tooltips: a short delay on the first, instant after that. */
+.tip {
+  transform-origin: var(--radix-tooltip-content-transform-origin);
+}
+.tip[data-state='delayed-open'] {
+  animation: pop-in 125ms var(--ease-out);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dialog[data-state='open'],
+  .dialog[data-state='closed'],
+  .tip[data-state='delayed-open'] {
+    animation-name: fade-in;
+  }
+  .dialog[data-state='closed'] {
+    animation-direction: reverse;
+  }
+}
+
+/* Navigation drawer on narrow screens. */
+.drawer[data-state='open'] {
+  animation: drawer-in 260ms var(--ease-drawer);
+}
+.drawer[data-state='closed'] {
+  animation: drawer-in 180ms var(--ease-out) reverse forwards;
+}
+@keyframes drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drawer[data-state='open'],
+  .drawer[data-state='closed'] {
+    animation-name: fade-in;
+  }
+}
+
+/* A card picked up from the board tilts slightly so it reads as lifted. */
+.lift {
+  transform: rotate(1.5deg) scale(1.02);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lift {
+    transform: none;
+  }
+}

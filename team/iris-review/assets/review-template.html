@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UAT review · Harborline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<!--
+  Iris Novak's UAT review report. The iris-review skill copies this file to uat/<DASHBOARD-ID>/round-<n>/review.html
+  and replaces only the JSON in <script id="review-data">. Opened as-is, it shows example data.
+  "Fixed" checkboxes are saved in this browser (localStorage), per dashboard and round.
+-->
+<style>
+  :root {
+    --navy: #0E2A47; --orange: #F2662B;
+    --bg: #F3F5F7; --surface: #FFFFFF; --surface-2: #E9EEF2; --border: #D2DAE2;
+    --text: #0F2338; --muted: #4F6175; --accent: #0E7C7B; --accent-strong: #09605F;
+    --good: #1A763F; --good-bg: #E3F2E8; --warn: #9B5F02; --warn-bg: #FBF0DC; --bad: #C22826; --bad-bg: #FBE5E3;
+    --info: #2A4A6C; --info-bg: #E4ECF5;
+    --sans: "Hanken Grotesk", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+    --display: "Archivo Narrow", "Arial Narrow", "Roboto Condensed", "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", "Cascadia Mono", Consolas, ui-monospace, Menlo, monospace;
+    --radius: 10px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #08131F; --surface: #0F1E2E; --surface-2: #16293D; --border: #26394E;
+      --text: #E6EDF3; --muted: #9BAEC1; --accent: #33B5AE; --accent-strong: #74D3CC;
+      --good: #5BCC80; --good-bg: #12321F; --warn: #F3B94C; --warn-bg: #382A10; --bad: #F66D67; --bad-bg: #3D1A1A;
+      --info: #9CBBDD; --info-bg: #16293D;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text); font: 400 15px/1.55 var(--sans);
+    font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  .topbar { background: var(--navy); color: #fff; }
+  .topbar .wrap { display: flex; align-items: center; gap: 12px; height: 52px; }
+  .topbar svg { width: 28px; height: 28px; flex: none; }
+  .topbar b { font: 600 15px/1 var(--display); letter-spacing: .02em; }
+  .topbar span { color: #B9C7D6; font-size: 13px; }
+  .topbar .right { margin-left: auto; font: 500 12px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: #B9C7D6; }
+  .example { background: var(--warn-bg); color: var(--warn); border-bottom: 1px solid var(--border); font-size: 14px; }
+  .example .wrap { padding-top: 10px; padding-bottom: 10px; }
+  header.hero { padding: 36px 0 8px; }
+  .hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 28px; align-items: start; }
+  .eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  h1 { font: 600 40px/1.08 var(--display); letter-spacing: -.01em; margin: 0 0 10px; text-wrap: balance; }
+  .meta { color: var(--muted); margin: 0; }
+  .verdict { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 18px 16px; border-top: 4px solid var(--v, var(--muted)); }
+  .verdict .label { font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .verdict .value { font: 600 26px/1.1 var(--display); color: var(--v, var(--text)); margin: 8px 0 14px; }
+  .counts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 0 0 14px; padding: 0; list-style: none; }
+  .counts li { background: var(--surface-2); border-radius: 8px; padding: 8px 6px; text-align: center; }
+  .counts b { display: block; font: 600 20px/1.1 var(--display); }
+  .counts span { font-size: 12px; color: var(--muted); }
+  .meter { height: 6px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+  .meter i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .25s cubic-bezier(.2, .8, .2, 1); }
+  .meter-text { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  section { margin: 28px 0; }
+  h2 { font: 600 22px/1.2 var(--display); margin: 0 0 14px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+  .note { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; }
+  .avatar { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: #2A4A6C; color: #fff; font-weight: 600; }
+  .note p { margin: 0; }
+  .note .who { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-top: 14px; }
+  .facts div { background: var(--surface); padding: 12px 14px; min-width: 0; }
+  .facts dt { font-size: 12px; color: var(--muted); }
+  .facts dd { margin: 2px 0 0; font-weight: 500; overflow-wrap: anywhere; }
+  .facts div:nth-child(5) { grid-column: 1 / -1; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .two h3 { font: 600 16px/1.3 var(--sans); margin: 0 0 8px; }
+  ul.plain { margin: 0; padding-left: 18px; }
+  ul.plain li { margin: 4px 0; }
+  .praise li::marker { color: var(--good); }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+  .chip-btn { font: 500 13px/1 var(--sans); color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 99px; padding: 8px 12px; cursor: pointer; transition: background-color .15s, border-color .15s, transform .1s; }
+  .chip-btn:hover { border-color: var(--muted); }
+  .chip-btn:active { transform: scale(.97); }
+  .chip-btn[aria-pressed="true"] { background: var(--text); color: var(--surface); border-color: var(--text); }
+  .finding { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--sev, var(--border)); border-radius: var(--radius); padding: 16px 20px; margin: 0 0 12px; transition: opacity .2s; }
+  .finding.is-fixed { opacity: .62; }
+  .f-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .fid { font: 500 13px/1 var(--mono); color: var(--muted); }
+  .sev, .area, .status { font: 600 11px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; border-radius: 99px; padding: 5px 8px; }
+  .sev { color: var(--sev); background: var(--sev-bg); }
+  .area, .status { color: var(--muted); background: var(--surface-2); }
+  .f-title { font: 600 17px/1.35 var(--sans); margin: 10px 0 4px; }
+  .where { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
+  .vals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin: 0 0 12px; }
+  .vals div { padding: 10px 12px; min-width: 0; }
+  .vals div + div { border-left: 1px solid var(--border); }
+  .vals dt { font-size: 12px; color: var(--muted); }
+  .vals dd { margin: 2px 0 0; font: 600 18px/1.2 var(--display); overflow-wrap: anywhere; }
+  .vals .diff dd { color: var(--sev, var(--text)); }
+  .detail { margin: 0 0 10px; }
+  .samples { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 10px; font-size: 13px; color: var(--muted); }
+  .samples code { font: 400 12.5px/1 var(--mono); color: var(--text); background: var(--surface-2); border-radius: 6px; padding: 5px 7px; }
+  .ask { background: var(--surface-2); border-radius: 8px; padding: 10px 12px; margin: 0 0 12px; }
+  .ask b { font-weight: 600; }
+  .fix { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 500; user-select: none; }
+  .fix input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow-x: auto; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font: 600 12px/1.2 var(--sans); color: var(--muted); background: var(--surface-2); white-space: nowrap; }
+  tr:last-child td { border-bottom: 0; }
+  td.num { text-align: right; }
+  .res { font: 600 11px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 4px 7px; border-radius: 99px; white-space: nowrap; }
+  .res.pass { color: var(--good); background: var(--good-bg); }
+  .res.fail { color: var(--bad); background: var(--bad-bg); }
+  .res.info { color: var(--info); background: var(--info-bg); }
+  .signoff { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; align-items: end; }
+  .sig { font: 600 24px/1 var(--display); }
+  footer { color: var(--muted); font-size: 13px; padding: 24px 0 48px; border-top: 1px solid var(--border); margin-top: 36px; }
+  .empty { color: var(--muted); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (max-width: 860px) {
+    .hero-grid, .two { grid-template-columns: minmax(0, 1fr); }
+    .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    h1 { font-size: 32px; }
+  }
+  @media (max-width: 560px) {
+    .wrap { padding: 0 16px; }
+    .vals { grid-template-columns: minmax(0, 1fr); }
+    .vals div + div { border-left: 0; border-top: 1px solid var(--border); }
+    .topbar span { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  @media print {
+    :root { --bg: #fff; color-scheme: light; }
+    .topbar { background: #fff; color: var(--navy); border-bottom: 2px solid var(--navy); }
+    .toolbar, .example { display: none; }
+    .finding, .card, .table-wrap { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="topbar"><div class="wrap">
+  <svg viewBox="0 0 32 32" aria-hidden="true"><clipPath id="m"><rect width="32" height="32" rx="7"/></clipPath><rect width="32" height="32" rx="7" fill="#0E2A47" stroke="#26394E"/><path d="M8 6.5h3.6v19h-3.6zM20.4 6.5h3.6v19h-3.6z" fill="#fff"/><g clip-path="url(#m)" fill="none"><path d="M-2 16.4q3-3.4 6 0t6 0t6 0t6 0t6 0t6 0" stroke="#0E2A47" stroke-width="5"/><path d="M-2 16.4q3-3.4 6 0t6 0t6 0t6 0t6 0t6 0" stroke="#F2662B" stroke-width="2.6"/></g></svg>
+  <b>Harborline</b><span>Business Performance</span>
+  <div class="right">UAT review</div>
+</div></div>
+<div id="example-banner" class="example" hidden><div class="wrap">This is the report template with example data. Iris replaces it with her own findings for each round.</div></div>
+<main class="wrap" id="app"><p class="empty" style="padding:40px 0">Loading the review…</p></main>
+
+<script type="application/json" id="review-data">
+{
+  "example": true,
+  "dashboard": {"id": "P2-D1", "name": "Warehouse Ops Scorecard", "project": "Project 2 · Warehouse Performance Scorecard"},
+  "round": 1,
+  "reviewed_at": "2027-01-14 15:20 America/New_York",
+  "verdict": "not_signed_off",
+  "summary": "The layout follows the spec and the volumes tie to the WMS exactly, which is most of the battle. Two things stop me signing it off: on-time ship doesn't follow the catalog definition for orders that arrive after cutoff, and the dock-to-stock tile has no target or comparison. Fix those and send round 2.",
+  "context": {"data_as_of": "2027-01-13 23:59 America/New_York", "sim_clock": "2027-01-14 05:00 UTC", "platform": "Databricks AI/BI", "submission": "uat/P2-D1/round-1/", "source": "Source systems, read-only login uat_reviewer"},
+  "intake": [],
+  "scope": {
+    "checked": ["Spec coverage: 7 KPI tiles, 7 visuals, 6 filters", "All KPI tiles for 2027-W02 (network), ATL1 and 2026-W41", "Orders and units shipped through the bridge, 5 records traced each way", "Site comparison totals", "Brand and number formats"],
+    "not_checked": ["Peak readiness: needs last year's peak weeks, which the export doesn't include (asked for it)", "Access rules: no evidence in the submission"]
+  },
+  "praise": ["Orders and units shipped tie to the WMS exactly for every site, and the bridge is clean."],
+  "findings": [
+    {"id": "P2D1-R1-01", "severity": "blocker", "area": "numbers", "title": "On-time ship for the network is 1.3 pp higher than the catalog definition gives", "where": "KPI row › On-time ship · Network · 2027-W02", "dashboard_value": "96.4%", "source_value": "95.1%", "difference": "+1.3 pp", "detail": "The numerators agree; the denominator on the dashboard is 538 orders smaller. Those orders all arrived after the site's parcel cutoff on a Friday. The catalog says the clock starts the next working day; they appear to be excluded instead.", "samples": ["HL2041000001", "HL2041000002"], "ask": "On-time ship within 0.1 pp of my figure for this week and for ATL1, or a catalog change signed off by Luis Moreno.", "status": "open"},
+    {"id": "P2D1-R1-02", "severity": "major", "area": "presentation", "title": "Dock-to-stock tile has no target or comparison", "where": "KPI row › Dock-to-stock", "dashboard_value": "6.2 h", "source_value": "not re-performed", "difference": "", "detail": "Every tile needs context. The spec lists a target for this KPI.", "samples": [], "ask": "Target or prior-week comparison on the tile.", "status": "open"}
+  ],
+  "tieout": [
+    {"check": "Orders shipped", "cut": "Network · 2027-W02", "dashboard": "41,190", "source": "41,190", "difference": "0", "result": "pass", "finding": ""},
+    {"check": "On-time ship", "cut": "Network · 2027-W02", "dashboard": "96.4%", "source": "95.1%", "difference": "+1.3 pp", "result": "fail", "finding": "P2D1-R1-01"},
+    {"check": "Peak readiness", "cut": "All sites", "dashboard": "shown", "source": "not checked", "difference": "", "result": "info", "finding": ""}
+  ],
+  "previous": [],
+  "conditions": []
+}
+</script>
+
+<script>
+(function () {
+  var VERDICTS = {
+    signed_off: { text: "Signed off", color: "var(--good)" },
+    signed_off_with_conditions: { text: "Signed off with conditions", color: "var(--warn)" },
+    not_signed_off: { text: "Not signed off", color: "var(--bad)" },
+    not_ready: { text: "Not ready for review", color: "var(--muted)" }
+  };
+  var SEVERITY = {
+    blocker: { text: "Blocker", color: "var(--bad)", bg: "var(--bad-bg)", rank: 0 },
+    major: { text: "Major", color: "var(--warn)", bg: "var(--warn-bg)", rank: 1 },
+    minor: { text: "Minor", color: "var(--info)", bg: "var(--info-bg)", rank: 2 },
+    polish: { text: "Polish", color: "var(--muted)", bg: "var(--surface-2)", rank: 3 }
+  };
+  var STATUS = { open: "Open", resolved: "Resolved", still_open: "Still open", wont_fix: "Won't fix (agreed)", superseded: "Superseded" };
+
+  function esc(v) {
+    return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function list(items, cls) {
+    items = items || [];
+    if (!items.length) return '<p class="empty">None.</p>';
+    return '<ul class="plain ' + (cls || "") + '">' + items.map(function (i) { return "<li>" + esc(i) + "</li>"; }).join("") + "</ul>";
+  }
+
+  var data;
+  try { data = JSON.parse(document.getElementById("review-data").textContent); }
+  catch (e) {
+    document.getElementById("app").innerHTML = '<p class="empty" style="padding:40px 0">The review data in this file is not valid JSON: ' + esc(e.message) + "</p>";
+    return;
+  }
+  var dash = data.dashboard || {};
+  var findings = (data.findings || []).slice().sort(function (a, b) {
+    return (SEVERITY[a.severity] || SEVERITY.polish).rank - (SEVERITY[b.severity] || SEVERITY.polish).rank;
+  });
+  var storeKey = "harborline.uat." + (dash.id || "dashboard") + ".r" + (data.round || 1);
+  var fixed = {};
+  try { fixed = JSON.parse(localStorage.getItem(storeKey) || "{}") || {}; } catch (e) { fixed = {}; }
+  function save() { try { localStorage.setItem(storeKey, JSON.stringify(fixed)); } catch (e) { /* private mode: progress is not kept */ } }
+
+  document.title = "UAT · " + (dash.id || "") + " " + (dash.name || "") + " · round " + (data.round || 1);
+  if (data.example) document.getElementById("example-banner").hidden = false;
+
+  var v = VERDICTS[data.verdict] || VERDICTS.not_ready;
+  var counts = { blocker: 0, major: 0, minor: 0, polish: 0 };
+  findings.forEach(function (f) { if (counts[f.severity] != null) counts[f.severity]++; });
+  var ctx = data.context || {};
+
+  function findingHtml(f) {
+    var s = SEVERITY[f.severity] || SEVERITY.polish;
+    var vals = (f.dashboard_value || f.source_value || f.difference)
+      ? '<dl class="vals"><div><dt>Dashboard</dt><dd>' + esc(f.dashboard_value || "–") + '</dd></div><div><dt>Source (my figure)</dt><dd>' +
+        esc(f.source_value || "–") + '</dd></div><div class="diff"><dt>Difference</dt><dd>' + esc(f.difference || "–") + "</dd></div></dl>"
+      : "";
+    var samples = (f.samples && f.samples.length)
+      ? '<div class="samples">Samples ' + f.samples.map(function (k) { return "<code>" + esc(k) + "</code>"; }).join("") + "</div>" : "";
+    var status = f.status && f.status !== "open" ? '<span class="status">' + esc(STATUS[f.status] || f.status) + "</span>" : "";
+    return '<article class="finding' + (fixed[f.id] ? " is-fixed" : "") + '" data-sev="' + esc(f.severity) + '" data-id="' + esc(f.id) +
+      '" style="--sev:' + s.color + ";--sev-bg:" + s.bg + '">' +
+      '<div class="f-head"><span class="fid">' + esc(f.id) + '</span><span class="sev">' + s.text + '</span><span class="area">' + esc(f.area) + "</span>" + status + "</div>" +
+      '<h3 class="f-title">' + esc(f.title) + "</h3>" +
+      (f.where ? '<p class="where">' + esc(f.where) + "</p>" : "") + vals +
+      (f.detail ? '<p class="detail">' + esc(f.detail) + "</p>" : "") + samples +
+      (f.ask ? '<p class="ask"><b>To sign this off:</b> ' + esc(f.ask) + "</p>" : "") +
+      '<label class="fix"><input type="checkbox" data-fix="' + esc(f.id) + '"' + (fixed[f.id] ? " checked" : "") + "> Fixed, ready for re-check</label></article>";
+  }
+
+  var tieRows = (data.tieout || []).map(function (t) {
+    var r = t.result === "pass" ? "pass" : t.result === "fail" ? "fail" : "info";
+    return '<tr data-result="' + r + '"><td>' + esc(t.check) + "</td><td>" + esc(t.cut) + '</td><td class="num">' + esc(t.dashboard) +
+      '</td><td class="num">' + esc(t.source) + '</td><td class="num">' + esc(t.difference) + '</td><td><span class="res ' + r + '">' +
+      { pass: "Ties", fail: "Differs", info: "Note" }[r] + "</span></td><td>" + esc(t.finding) + "</td></tr>";
+  }).join("");
+  var prevRows = (data.previous || []).map(function (p) {
+    return "<tr><td><code>" + esc(p.id) + "</code></td><td>" + esc(p.title) + "</td><td>" + esc(STATUS[p.status] || p.status) + "</td><td>" + esc(p.note) + "</td></tr>";
+  }).join("");
+
+  document.getElementById("app").innerHTML =
+    '<header class="hero"><div class="hero-grid"><div>' +
+      '<p class="eyebrow">' + esc(dash.id) + " · Round " + esc(data.round || 1) + "</p>" +
+      "<h1>" + esc(dash.name || "Dashboard review") + "</h1>" +
+      '<p class="meta">' + esc(dash.project) + (dash.project ? " · " : "") + "Reviewed " + esc(data.reviewed_at) + " by Iris Novak</p>" +
+    "</div>" +
+    '<aside class="verdict" style="--v:' + v.color + '" aria-label="Verdict"><div class="label">Verdict</div><div class="value">' + v.text + "</div>" +
+      '<ul class="counts">' + ["blocker", "major", "minor", "polish"].map(function (k) {
+        return "<li><b>" + counts[k] + "</b><span>" + SEVERITY[k].text + "</span></li>";
+      }).join("") + "</ul>" +
+      '<div class="meter" role="progressbar" aria-label="Findings marked fixed" aria-valuemin="0" aria-valuemax="' + findings.length + '"><i></i></div><div class="meter-text"></div>' +
+    "</aside></div></header>" +
+
+    '<section><div class="card note"><div class="avatar" aria-hidden="true">IN</div><div><p>' + esc(data.summary) + '</p><p class="who">Iris Novak, Business Performance Manager</p></div></div>' +
+    '<dl class="facts"><div><dt>Data as of</dt><dd>' + esc(ctx.data_as_of || "–") + "</dd></div><div><dt>Sim clock at refresh</dt><dd>" + esc(ctx.sim_clock || "–") +
+      "</dd></div><div><dt>Platform</dt><dd>" + esc(ctx.platform || "–") + "</dd></div><div><dt>Submission</dt><dd>" + esc(ctx.submission || "–") + "</dd></div>" +
+      (ctx.source ? "<div><dt>Checked against</dt><dd>" + esc(ctx.source) + "</dd></div>" : "") + "</dl></section>" +
+
+    ((data.intake || []).length ? '<section><h2>Missing from the submission</h2><div class="card">' + list(data.intake) +
+      '<p class="meta" style="margin-top:10px">Add these and resubmit as the next round. Nothing else was reviewed.</p></div></section>' : "") +
+
+    '<section><h2>Scope</h2><div class="two"><div class="card"><h3>What I checked</h3>' + list((data.scope || {}).checked) +
+      '</div><div class="card"><h3>What I did not check</h3>' + list((data.scope || {}).not_checked) + "</div></div>" +
+      ((data.praise || []).length ? '<div class="card" style="margin-top:16px"><h3 style="font:600 16px/1.3 var(--sans);margin:0 0 8px">What is right</h3>' + list(data.praise, "praise") + "</div>" : "") +
+    "</section>" +
+
+    (prevRows ? '<section><h2>Findings from the last round</h2><div class="table-wrap"><table><thead><tr><th>Id</th><th>Finding</th><th>Status</th><th>Note</th></tr></thead><tbody>' + prevRows + "</tbody></table></div></section>" : "") +
+
+    '<section><h2>Findings</h2>' +
+      (findings.length
+        ? '<div class="toolbar" role="group" aria-label="Filter findings">' +
+            '<button class="chip-btn" data-filter="all" aria-pressed="true">All</button>' +
+            '<button class="chip-btn" data-filter="open" aria-pressed="false">Not marked fixed</button>' +
+            ["blocker", "major", "minor", "polish"].filter(function (k) { return counts[k]; }).map(function (k) {
+              return '<button class="chip-btn" data-filter="' + k + '" aria-pressed="false">' + SEVERITY[k].text + "s</button>";
+            }).join("") + "</div>" + '<div id="findings">' + findings.map(findingHtml).join("") + "</div>"
+        : '<div class="card"><p class="empty" style="margin:0">No findings.</p></div>') +
+    "</section>" +
+
+    '<section><h2>Tie-out log</h2>' +
+      (tieRows
+        ? '<div class="toolbar"><button class="chip-btn" id="fails-only" aria-pressed="false">Differences only</button></div>' +
+          '<div class="table-wrap"><table><thead><tr><th>Check</th><th>Cut</th><th>Dashboard</th><th>Source</th><th>Difference</th><th>Result</th><th>Finding</th></tr></thead><tbody id="tie">' + tieRows + "</tbody></table></div>"
+        : '<div class="card"><p class="empty" style="margin:0">No figures were checked in this round.</p></div>') +
+    "</section>" +
+
+    ((data.conditions || []).length ? '<section><h2>Conditions of sign-off</h2><div class="card">' + list(data.conditions) + "</div></section>" : "") +
+
+    '<section><div class="card signoff"><div><div class="eyebrow" style="margin-bottom:8px">Sign-off</div><div class="sig">Iris Novak</div>' +
+      '<div class="meta">Business Performance Manager · ' + esc(data.reviewed_at) + '</div></div><div class="verdict" style="--v:' + v.color + ';padding:12px 16px"><div class="value" style="margin:0;font-size:20px">' + v.text + "</div></div></div></section>";
+
+  var main = document.getElementById("app");
+  main.insertAdjacentHTML("afterend", '<footer class="wrap">Written by Iris Novak, Business Performance Manager. Ticking “Fixed” only records it in this browser; Iris re-checks every finding in the next round.</footer>');
+
+  function refreshMeter() {
+    var done = findings.filter(function (f) { return fixed[f.id]; }).length;
+    var bar = main.querySelector(".meter");
+    bar.setAttribute("aria-valuenow", String(done));
+    bar.firstChild.style.width = findings.length ? (100 * done / findings.length) + "%" : "100%";
+    main.querySelector(".meter-text").textContent = findings.length
+      ? done + " of " + findings.length + " findings marked fixed"
+      : data.verdict === "not_ready" ? "Resubmit with the missing items" : "Nothing to fix";
+  }
+  refreshMeter();
+
+  main.addEventListener("change", function (e) {
+    var id = e.target.getAttribute && e.target.getAttribute("data-fix");
+    if (!id) return;
+    if (e.target.checked) fixed[id] = new Date().toISOString(); else delete fixed[id];
+    save();
+    e.target.closest(".finding").classList.toggle("is-fixed", e.target.checked);
+    refreshMeter();
+    applyFilter();
+  });
+
+  var current = "all";
+  function applyFilter() {
+    main.querySelectorAll(".finding").forEach(function (el) {
+      var id = el.getAttribute("data-id"), sev = el.getAttribute("data-sev");
+      el.hidden = current === "all" ? false : current === "open" ? !!fixed[id] : sev !== current;
+    });
+  }
+  main.querySelectorAll("[data-filter]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      current = btn.getAttribute("data-filter");
+      main.querySelectorAll("[data-filter]").forEach(function (b) { b.setAttribute("aria-pressed", String(b === btn)); });
+      applyFilter();
+    });
+  });
+  var fo = document.getElementById("fails-only");
+  if (fo) fo.addEventListener("click", function () {
+    var on = fo.getAttribute("aria-pressed") !== "true";
+    fo.setAttribute("aria-pressed", String(on));
+    document.querySelectorAll("#tie tr").forEach(function (tr) { tr.hidden = on && tr.getAttribute("data-result") !== "fail"; });
+  });
+})();
+</script>
+</body>
+</html>

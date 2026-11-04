@@ -1,0 +1,214 @@
+Harborline data-viz palette validation
+Validator: dataviz skill scripts/validate_palette.js (OKLab dE x100, Machado 2009 CVD simulation)
+Surfaces: light chart surface #FFFFFF (--hl-surface), light page #F3F5F7 (--hl-bg), dark chart surface #0F1E2E (--hl-surface)
+Generated: 2026-10-31T00:05Z
+
+## 1. Categorical (8 slots), adjacent pairs (bars, stacks, lines)
+$ node validate_palette.js #2973D0,#F2672D,#069B8D,#E6A313,#DB6397,#288420,#6B4EC7,#8C4A11 --mode light --surface #FFFFFF
+
+Palette (light, surface #FFFFFF, categorical): 8 slots
+  [PASS] Lightness band         all 8 inside L 0.43–0.77
+  [PASS] Chroma floor           all 8 >= 0.1
+  [PASS] CVD separation         worst adjacent #069B8D↔#F2672D ΔE 12.0 (protan) · tritan 9.1
+  [PASS] Normal-vision floor    worst adjacent #DB6397↔#E6A313 ΔE 23.1 (normal)
+  [WARN] Contrast vs surface    below 3:1 — relief required (visible labels or table view): [["#E6A313",2.18]]
+
+  → ALL CHECKS PASS  (CVD in the 6–8 floor band is legal ONLY with secondary encoding: direct labels, gaps, or texture)
+
+
+$ node validate_palette.js #2973D0,#F2672D,#069B8D,#E6A313,#DB6397,#288420,#6B4EC7,#8C4A11 --mode light --surface #F3F5F7
+
+Palette (light, surface #F3F5F7, categorical): 8 slots
+  [PASS] Lightness band         all 8 inside L 0.43–0.77
+  [PASS] Chroma floor           all 8 >= 0.1
+  [PASS] CVD separation         worst adjacent #069B8D↔#F2672D ΔE 12.0 (protan) · tritan 9.1
+  [PASS] Normal-vision floor    worst adjacent #DB6397↔#E6A313 ΔE 23.1 (normal)
+  [WARN] Contrast vs surface    below 3:1 — relief required (visible labels or table view): [["#F2672D",2.85],["#E6A313",2]]
+
+  → ALL CHECKS PASS  (CVD in the 6–8 floor band is legal ONLY with secondary encoding: direct labels, gaps, or texture)
+
+
+$ node validate_palette.js #3983E1,#E05E27,#08A799,#BF8608,#D0598E,#33862C,#8C79E0,#9B5824 --mode dark --surface #0F1E2E
+
+Palette (dark, surface #0F1E2E, categorical): 8 slots
+  [PASS] Lightness band         all 8 inside L 0.48–0.67
+  [PASS] Chroma floor           all 8 >= 0.1
+  [PASS] CVD separation         worst adjacent #33862C↔#D0598E ΔE 11.9 (deutan) · tritan 7.6
+  [PASS] Normal-vision floor    worst adjacent #D0598E↔#BF8608 ΔE 20.0 (normal)
+  [PASS] Contrast vs surface    all 8 >= 3:1
+
+  → ALL CHECKS PASS  (CVD in the 6–8 floor band is legal ONLY with secondary encoding: direct labels, gaps, or texture)
+
+
+## 2. Categorical first three slots, all pairs (scatter, bubble, map, small multiples)
+$ node validate_palette.js #2973D0,#F2672D,#069B8D --mode light --surface #FFFFFF --pairs all
+
+Palette (light, surface #FFFFFF, categorical): 3 slots
+  [PASS] Lightness band         all 3 inside L 0.43–0.77
+  [PASS] Chroma floor           all 3 >= 0.1
+  [PASS] CVD separation         worst all-pairs #069B8D↔#F2672D ΔE 12.0 (protan) · tritan 6.6
+  [PASS] Normal-vision floor    worst all-pairs #069B8D↔#2973D0 ΔE 17.5 (normal)
+  [PASS] Contrast vs surface    all 3 >= 3:1
+
+  → ALL CHECKS PASS  (CVD in the 6–8 floor band is legal ONLY with secondary encoding: direct labels, gaps, or texture)
+
+
+$ node validate_palette.js #3983E1,#E05E27,#08A799 --mode dark --surface #0F1E2E --pairs all
+
+Palette (dark, surface #0F1E2E, categorical): 3 slots
+  [PASS] Lightness band         all 3 inside L 0.48–0.67
+  [PASS] Chroma floor           all 3 >= 0.1
+  [PASS] CVD separation         worst all-pairs #08A799↔#E05E27 ΔE 14.3 (deutan) · tritan 5.6
+  [PASS] Normal-vision floor    worst all-pairs #08A799↔#3983E1 ΔE 17.1 (normal)
+  [PASS] Contrast vs surface    all 3 >= 3:1
+
+  → ALL CHECKS PASS  (CVD in the 6–8 floor band is legal ONLY with secondary encoding: direct labels, gaps, or texture)
+
+
+## 3. Sequential as an ordinal ramp (steps 3-7; steps 1-2 recede on purpose for heatmaps)
+$ node validate_palette.js #8AB7F4,#5A97E7,#3077D0,#1A57A1,#103A6D --mode light --surface #FFFFFF --ordinal
+
+Palette (light, surface #FFFFFF, ordinal ramp): 5 slots
+  [PASS] Lightness monotone     steps read light→dark
+  [PASS] Adjacent ΔL            all gaps >= 0.06
+  [PASS] Light-end contrast     #8AB7F4 at 2.07:1 vs surface
+  [PASS] Single hue             hue spread 1°
+
+  → ALL CHECKS PASS  (ordinal: one hue, monotone L, visible step gaps, light end clears surface)
+
+$ node validate_palette.js #215AA2,#3377CD,#5D97E4,#8AB7F4,#BBD7FC --mode dark --surface #0F1E2E --ordinal
+
+Palette (dark, surface #0F1E2E, ordinal ramp): 5 slots
+  [PASS] Lightness monotone     steps read light→dark
+  [PASS] Adjacent ΔL            all gaps >= 0.06
+  [PASS] Light-end contrast     #215AA2 at 2.45:1 vs surface
+  [PASS] Single hue             hue spread 1°
+
+  → ALL CHECKS PASS  (ordinal: one hue, monotone L, visible step gaps, light end clears surface)
+
+   Full 7-step ramps (expected: light-end contrast FAIL by design - the low end recedes toward the surface):
+$ node validate_palette.js #DFECFE,#B8D3F9,#8AB7F4,#5A97E7,#3077D0,#1A57A1,#103A6D --mode light --surface #FFFFFF --ordinal
+
+Palette (light, surface #FFFFFF, ordinal ramp): 7 slots
+  [PASS] Lightness monotone     steps read light→dark
+  [PASS] Adjacent ΔL            all gaps >= 0.06
+  [FAIL] Light-end contrast     #DFECFE at 1.20:1 vs surface — below 2:1 floor
+  [PASS] Single hue             hue spread 1°
+
+  → FAILED — fix the marked checks  (ordinal: one hue, monotone L, visible step gaps, light end clears surface)
+
+$ node validate_palette.js #142E50,#194276,#215AA2,#3377CD,#5D97E4,#8AB7F4,#BBD7FC --mode dark --surface #0F1E2E --ordinal
+
+Palette (dark, surface #0F1E2E, ordinal ramp): 7 slots
+  [PASS] Lightness monotone     steps read light→dark
+  [PASS] Adjacent ΔL            all gaps >= 0.06
+  [FAIL] Light-end contrast     #142E50 at 1.23:1 vs surface — below 2:1 floor
+  [PASS] Single hue             hue spread 1°
+
+  → FAILED — fix the marked checks  (ordinal: one hue, monotone L, visible step gaps, light end clears surface)
+
+## 4. Diverging arms (each arm must be one hue and monotone; step 5 is neutral gray)
+   Expected: in light mode the inner steps 4 and 6 sit next to the neutral midpoint at ~1.6:1 and FAIL the light-end
+   check by design (heatmap/map fills only). Diverging bars use the outer steps, validated after the arms.
+$ node validate_palette.js #1253A1,#367AD1,#76A7E9,#B5D0F5 --mode light --surface #FFFFFF --ordinal
+
+Palette (light, surface #FFFFFF, ordinal ramp): 4 slots
+  [PASS] Lightness monotone     steps read light→dark
+  [PASS] Adjacent ΔL            all gaps >= 0.06
+  [FAIL] Light-end contrast     #B5D0F5 at 1.58:1 vs surface — below 2:1 floor
+  [PASS] Single hue             hue spread 0°
+
+  → FAILED — fix the marked checks  (ordinal: one hue, monotone L, visible step gaps, light end clears surface)
+
+$ node validate_palette.js #F6C0A8,#E28B63,#C4530F,#8C3701 --mode light --surface #FFFFFF --ordinal
+
+Palette (light, surface #FFFFFF, ordinal ramp): 4 slots
+  [PASS] Lightness monotone     steps read light→dark
+  [PASS] Adjacent ΔL            all gaps >= 0.06
+  [FAIL] Light-end contrast     #F6C0A8 at 1.61:1 vs surface — below 2:1 floor
+  [PASS] Single hue             hue spread 0°
+
+  → FAILED — fix the marked checks  (ordinal: one hue, monotone L, visible step gaps, light end clears surface)
+
+$ node validate_palette.js #A2C7F8,#66A0EE,#367AD1,#215AA2 --mode dark --surface #0F1E2E --ordinal
+
+Palette (dark, surface #0F1E2E, ordinal ramp): 4 slots
+  [PASS] Lightness monotone     steps read light→dark
+  [PASS] Adjacent ΔL            all gaps >= 0.06
+  [PASS] Light-end contrast     #215AA2 at 2.45:1 vs surface
+  [PASS] Single hue             hue spread 1°
+
+  → ALL CHECKS PASS  (ordinal: one hue, monotone L, visible step gaps, light end clears surface)
+
+$ node validate_palette.js #933D08,#C4530F,#E97C48,#F6B294 --mode dark --surface #0F1E2E --ordinal
+
+Palette (dark, surface #0F1E2E, ordinal ramp): 4 slots
+  [PASS] Lightness monotone     steps read light→dark
+  [PASS] Adjacent ΔL            all gaps >= 0.06
+  [PASS] Light-end contrast     #933D08 at 2.34:1 vs surface
+  [PASS] Single hue             hue spread 0°
+
+  → ALL CHECKS PASS  (ordinal: one hue, monotone L, visible step gaps, light end clears surface)
+
+   Outer steps used for diverging bars (1-3 and 7-9):
+$ node validate_palette.js #1253A1,#367AD1,#76A7E9 --mode light --surface #FFFFFF --ordinal
+
+Palette (light, surface #FFFFFF, ordinal ramp): 3 slots
+  [PASS] Lightness monotone     steps read light→dark
+  [PASS] Adjacent ΔL            all gaps >= 0.06
+  [PASS] Light-end contrast     #76A7E9 at 2.48:1 vs surface
+  [PASS] Single hue             hue spread 0°
+
+  → ALL CHECKS PASS  (ordinal: one hue, monotone L, visible step gaps, light end clears surface)
+
+$ node validate_palette.js #E28B63,#C4530F,#8C3701 --mode light --surface #FFFFFF --ordinal
+
+Palette (light, surface #FFFFFF, ordinal ramp): 3 slots
+  [PASS] Lightness monotone     steps read light→dark
+  [PASS] Adjacent ΔL            all gaps >= 0.06
+  [PASS] Light-end contrast     #E28B63 at 2.59:1 vs surface
+  [PASS] Single hue             hue spread 0°
+
+  → ALL CHECKS PASS  (ordinal: one hue, monotone L, visible step gaps, light end clears surface)
+
+## 5. Status and text contrast (WCAG 2 ratio, APCA Lc)
+  light  hl-text                      #0F2338   15.94:1 on surface         14.58:1 on bg      APCA 103
+  light  hl-text-muted                #4F6175   6.37:1 on surface          5.82:1 on bg       APCA 82
+  light  hl-accent                    #0E7C7B   5.01:1 on surface          4.59:1 on bg       APCA 74
+  light  hl-accent-strong             #09605F   7.37:1 on surface          6.74:1 on bg       APCA 85
+  light  hl-good                      #1A763F   5.66:1 on surface          5.18:1 on bg       APCA 78
+  light  hl-warn                      #9B5F02   5.21:1 on surface          4.77:1 on bg       APCA 75
+  light  hl-bad                       #C22826   5.79:1 on surface          5.30:1 on bg       APCA 77
+  light  hl-info                      #1D5C9B   6.87:1 on surface          6.29:1 on bg       APCA 83
+  light  hl-good on hl-good-bg        #1A763F   4.89:1                                        
+  light  hl-warn on hl-warn-bg        #9B5F02   4.61:1                                        
+  light  hl-bad on hl-bad-bg          #C22826   4.80:1                                        
+  light  hl-info on hl-info-bg        #1D5C9B   5.79:1                                        
+  light  hl-dept-it                   #4759B7   6.21:1 white text on it                       
+  light  hl-dept-ops                  #0E7C7B   5.01:1 white text on it                       
+  light  hl-dept-fin                  #7D5D1C   6.08:1 white text on it                       
+  light  hl-dept-transport            #C74C09   4.70:1 white text on it                       
+  light  hl-dept-sales                #BC2C4F   5.81:1 white text on it                       
+  light  hl-dept-cs                   #853692   7.14:1 white text on it                       
+  light  hl-dept-qa                   #3A6D12   6.22:1 white text on it                       
+  light  hl-dept-exec                 #2A4A6C   9.15:1 white text on it                       
+  dark   hl-text                      #E6EDF3   14.27:1 on surface         15.82:1 on bg      APCA -94
+  dark   hl-text-muted                #9BAEC1   7.40:1 on surface          8.21:1 on bg       APCA -55
+  dark   hl-accent                    #33B5AE   6.71:1 on surface          7.44:1 on bg       APCA -51
+  dark   hl-accent-strong             #74D3CC   9.58:1 on surface          10.62:1 on bg      APCA -69
+  dark   hl-good                      #5BCC80   8.35:1 on surface          9.25:1 on bg       APCA -62
+  dark   hl-warn                      #F3B94C   9.52:1 on surface          10.55:1 on bg      APCA -69
+  dark   hl-bad                       #F66D67   5.86:1 on surface          6.50:1 on bg       APCA -46
+  dark   hl-info                      #7FB6EE   7.89:1 on surface          8.75:1 on bg       APCA -59
+  dark   hl-good on hl-good-bg        #5BCC80   6.92:1                                        
+  dark   hl-warn on hl-warn-bg        #F3B94C   7.87:1                                        
+  dark   hl-bad on hl-bad-bg          #F66D67   5.36:1                                        
+  dark   hl-info on hl-info-bg        #7FB6EE   6.65:1                                        
+  dark   hl-dept-it                   #889EF6   6.64:1 on surface                             
+  dark   hl-dept-ops                  #39BAB4   7.11:1 on surface                             
+  dark   hl-dept-fin                  #DAB060   8.32:1 on surface                             
+  dark   hl-dept-transport            #F78955   6.96:1 on surface                             
+  dark   hl-dept-sales                #F3798B   6.36:1 on surface                             
+  dark   hl-dept-cs                   #CA88D5   6.42:1 on surface                             
+  dark   hl-dept-qa                   #89C06A   7.88:1 on surface                             
+  dark   hl-dept-exec                 #9CBBDD   8.48:1 on surface                             

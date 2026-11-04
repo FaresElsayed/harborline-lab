@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="en" data-hb-page="project-brief">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project brief · Harborline handbook</title>
+<meta name="description" content="Harborline Logistics, your role, the people, the systems, the rules of engagement, the eight projects, engineering standards, the Tracker and how the work is judged.">
+<script>try{var t=localStorage.getItem("harborline.theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<link rel="stylesheet" href="../brand/fonts.css">
+<link rel="stylesheet" href="../brand/tokens.css">
+<link rel="stylesheet" href="assets/handbook.css">
+<link rel="icon" href="../brand/logo/favicon.svg" type="image/svg+xml">
+<script src="assets/handbook.js" defer></script>
+<style>
+  .org-top { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin: 20px 0 14px; }
+  .org-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .org-group { padding: 14px 16px 12px; border-radius: var(--r-m); background: var(--c-surface-2); }
+  .org-dept { display: flex; align-items: center; gap: 8px; font-size: 0.8125rem; color: var(--c-muted); margin: 0 0 8px !important; }
+  .org-dept::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--d, var(--c-accent)); }
+  .org-person { display: block; text-decoration: none; color: var(--c-text); line-height: 1.3; padding: 4px 0; }
+  .org-person b { display: block; font-weight: 600; font-size: 0.9375rem; }
+  .org-person span { font-size: 0.8125rem; color: var(--c-muted); }
+  a.org-person:hover b { color: var(--c-link); text-decoration: underline; }
+  .org-lead { padding-bottom: 8px; margin-bottom: 6px; border-bottom: 1px solid var(--c-border); }
+  .org-top .org-person { text-align: center; padding: 10px 22px; border-radius: var(--r-m); background: var(--c-surface-2); }
+  .org-you { margin-top: 4px; padding: 6px 8px !important; margin-left: -8px; border-radius: 6px; background: var(--c-tint-accent); }
+  .org-more { font-size: 0.8125rem; color: var(--c-muted); margin: 4px 0 0 !important; }
+  .proj { margin: 34px 0 10px; padding-top: 26px; border-top: 1px solid var(--c-rule); }
+  .proj:first-of-type { border-top: 0; padding-top: 0; }
+  .proj h3 { margin-top: 0 !important; }
+  .proj-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.9rem; color: var(--c-muted); margin: -2px 0 12px; }
+  .proj-stories { columns: 2; column-gap: 28px; font-size: 0.9375rem; padding-left: 1.1rem !important; }
+  .proj-stories li { break-inside: avoid; }
+  .rubric td:first-child { font-weight: 600; white-space: nowrap; }
+  @media (max-width: 900px) { .org-groups { grid-template-columns: minmax(0, 1fr); } .proj-stories { columns: 1; } }
+</style>
+</head>
+<body>
+<div class="hb-shell">
+<aside class="hb-side" data-hb-side></aside>
+<main class="hb-sheet" id="main"><div class="hb-page">
+<article class="hb-content">
+
+<h1>Project brief</h1>
+<p class="hb-lead">You are Harborline Logistics’ first data engineer. Over eight projects and about 32 weeks you
+build the company’s data platform and, on top of it, the dashboards each department has been asking for. This page is
+the brief you would get on day one.</p>
+<div class="hb-pagehead-progress" data-progress="project-brief"></div>
+
+<section data-section="company" data-no-progress>
+<h2 id="company">Harborline Logistics</h2>
+<p>Harborline is a third-party logistics company: about sixty brands pay it to store their inventory, pick and pack
+their orders, ship them through the right carrier, and handle their returns. It grew from one Atlanta warehouse into
+eight sites in the United States, Canada and Mexico, three legal entities and four currencies.</p>
+<p>The systems grew with it, one at a time. Operations runs a legacy on-prem WMS. Finance closes the books in
+Microsoft Dynamics AX 2012. Sales and Client Success live in Salesforce. Carriers, sensors and B2B partners each talk to
+Harborline in their own format. Every department builds its own Excel reports, and the numbers rarely agree. Nobody
+owns data. That is why you are here.</p>
+<div class="hb-table-wrap">
+<table class="hb-table hb-table--dense">
+<thead><tr><th>Site</th><th>Location</th><th>Profile</th><th>Time zone</th><th>Entity</th><th class="num">Sq ft</th><th class="num">Dock doors</th></tr></thead>
+<tbody>
+<tr><td>ATL1</td><td>McDonough, GA</td><td>E-commerce</td><td>America/New_York</td><td>us01</td><td class="num">612,000</td><td class="num">64</td></tr>
+<tr><td>DFW1</td><td>Lancaster, TX</td><td>Mixed</td><td>America/Chicago</td><td>us01</td><td class="num">455,000</td><td class="num">48</td></tr>
+<tr><td>RNO1</td><td>Sparks, NV</td><td>E-commerce</td><td>America/Los_Angeles</td><td>us01</td><td class="num">388,000</td><td class="num">40</td></tr>
+<tr><td>CHI1</td><td>Joliet, IL</td><td>Cold chain</td><td>America/Chicago</td><td>us01</td><td class="num">298,000</td><td class="num">36</td></tr>
+<tr><td>NJ1</td><td>Cranbury, NJ</td><td>B2B retail</td><td>America/New_York</td><td>us01</td><td class="num">520,000</td><td class="num">72</td></tr>
+<tr><td>LAX1</td><td>Ontario, CA</td><td>E-commerce, opened about 17 months ago</td><td>America/Los_Angeles</td><td>us01</td><td class="num">410,000</td><td class="num">52</td></tr>
+<tr><td>TOR1</td><td>Mississauga, ON</td><td>Mixed, billed in CAD</td><td>America/Toronto</td><td>ca01</td><td class="num">265,000</td><td class="num">30</td></tr>
+<tr><td>MTY1</td><td>Apodaca, NL</td><td>B2B retail, billed in MXN</td><td>America/Monterrey</td><td>mx01</td><td class="num">240,000</td><td class="num">28</td></tr>
+</tbody>
+</table>
+</div>
+<p>Clients span apparel, electronics, food and beverage, health and beauty, home goods, auto parts, pet, supplements and
+general B2B. Most are billed in USD; Canadian and Mexican clients in CAD and MXN; a few European brands in EUR or GBP.
+Parcels go out with UPS, FedEx, USPS, DHL eCommerce, a regional carrier, Canada Post, Purolator and Estafeta; pallets
+with four LTL carriers.</p>
+</section>
+
+<section data-section="role" data-no-progress>
+<h2 id="role">Your role</h2>
+<p>You report to <a href="team.html#nadia-petrov">Nadia Petrov</a>, the data engineering team lead, who sets priorities
+with you and reviews your designs and pull requests. She reports to <a href="team.html#sam-okafor">Sam Okafor</a>,
+Director of IT, who sponsors the program and approves access and spend. Each project has a requester in the business
+who owns its outcomes and its metric definitions. You own the platform, the pipelines, the models and the dashboards.
+Nadia will challenge your thinking but won’t build them for you; everyone else can tell you what they need and how
+their systems behave.</p>
+<ul>
+<li>Eight projects of about four weeks each at 40 hours a week, two two-week sprints per project.</li>
+<li>Every ticket is already written in the Tracker, with acceptance criteria and a due date counted from your start
+date.</li>
+<li>Every project ends in dashboards, a sign-off from Iris Novak, a release tag and a short readout to the requester.</li>
+<li>The source systems keep changing while you work: new orders every simulated minute, updates, deletes, schema
+releases, late data and the odd incident.</li>
+</ul>
+</section>
+
+<section data-section="people" data-no-progress>
+<h2 id="people">Who’s who</h2>
+<p>Everyone with a link is on your <a href="team.html">AI chat team</a>, including Iris Novak, who reviews your
+dashboards against a source extract from the Control Center. The account executives and client success managers are
+not on chat; go through Hannah or Omar.</p>
+<div class="org" role="list">
+<div class="org-top"><a class="org-person" href="team.html#daniel-reyes"><b>Daniel Reyes</b><span>Chief Executive Officer</span></a>
+<a class="org-person" href="team.html#iris-novak"><b>Iris Novak</b><span>Business Performance Manager · signs off dashboards</span></a></div>
+<div class="org-groups">
+<div class="org-group" style="--d: var(--hl-dept-fin, #7D5D1C)" role="listitem">
+<p class="org-dept">Finance</p>
+<a class="org-person org-lead" href="team.html#rebecca-lindqvist"><b>Rebecca Lindqvist</b><span>Chief Financial Officer</span></a>
+<a class="org-person" href="team.html#alan-brooks"><b>Alan Brooks</b><span>Corporate Controller</span></a>
+<a class="org-person" href="team.html#priya-raman"><b>Priya Raman</b><span>ERP Systems Analyst (AX 2012)</span></a>
+</div>
+<div class="org-group" style="--d: var(--hl-dept-ops, #0E7C7B)" role="listitem">
+<p class="org-dept">Operations</p>
+<a class="org-person org-lead" href="team.html#luis-moreno"><b>Luis Moreno</b><span>VP Operations</span></a>
+<a class="org-person" href="team.html#shanice-carter"><b>Shanice Carter</b><span>General Manager, ATL1</span></a>
+<a class="org-person" href="team.html#beth-kowalczyk"><b>Beth Kowalczyk</b><span>Transportation Manager</span></a>
+<a class="org-person" href="team.html#grace-liu"><b>Grace Liu</b><span>Facilities &amp; Controls Engineer</span></a>
+<p class="org-more">Site GMs, not on chat: Travis Boone (DFW1), Holly Brennan (RNO1), Dwayne Pruitt (CHI1), Angela Russo (NJ1), Victor Ochoa (LAX1), Natalie Gagnon (TOR1), Rodrigo Treviño (MTY1)</p>
+</div>
+<div class="org-group" style="--d: var(--hl-dept-qa, #3A6D12)" role="listitem">
+<p class="org-dept">Quality</p>
+<a class="org-person org-lead" href="team.html#ayesha-khan"><b>Dr. Ayesha Khan</b><span>Quality &amp; Food Safety Manager</span></a>
+</div>
+<div class="org-group" style="--d: var(--hl-dept-sales, #BC2C4F)" role="listitem">
+<p class="org-dept">Sales Operations</p>
+<a class="org-person org-lead" href="team.html#hannah-price"><b>Hannah Price</b><span>Director of Sales Operations</span></a>
+<a class="org-person" href="team.html#dana-whitfield"><b>Dana Whitfield</b><span>Salesforce Administrator</span></a>
+<p class="org-more">Account executives: Jordan Ellis, Priscilla Núñez, Wes Harrington, Chloé Martin (Canada), Diego Salinas (Mexico)</p>
+</div>
+<div class="org-group" style="--d: var(--hl-dept-cs, #853692)" role="listitem">
+<p class="org-dept">Client Success</p>
+<a class="org-person org-lead" href="team.html#omar-haddad"><b>Omar Haddad</b><span>Director of Client Success</span></a>
+<p class="org-more">Client success managers: Tara Whitlock, Ben Osei, Lena Fischer</p>
+</div>
+<div class="org-group" style="--d: var(--hl-dept-it, #4759B7)" role="listitem">
+<p class="org-dept">IT</p>
+<a class="org-person org-lead" href="team.html#sam-okafor"><b>Sam Okafor</b><span>Director of IT</span></a>
+<a class="org-person" href="team.html#nadia-petrov"><b>Nadia Petrov</b><span>Data Engineering Team Lead, your manager</span></a>
+<a class="org-person" href="team.html#marcus-bell"><b>Marcus Bell</b><span>WMS Application Administrator</span></a>
+<a class="org-person" href="team.html#tomas-ortega"><b>Tomás Ortega</b><span>EDI &amp; Integrations Specialist</span></a>
+<a class="org-person" href="team.html#kevin-ohara"><b>Kevin O’Hara</b><span>IT Infrastructure Engineer</span></a>
+<a class="org-person" href="team.html#mei-tanaka"><b>Mei Tanaka</b><span>Information Security Manager</span></a>
+<div class="org-person org-you"><b>You</b><span>Data Engineer</span></div>
+</div>
+</div>
+</div>
+</section>
+
+<section data-section="stakeholders" data-no-progress>
+<h2 id="stakeholders">Stakeholder map</h2>
+<div class="hb-table-wrap">
+<table class="hb-table">
+<thead><tr><th>Department</th><th>People</th><th>What they need from data</th><th>Projects</th></tr></thead>
+<tbody>
+<tr><td>Executive</td><td>Daniel Reyes</td><td>One page the board trusts: growth, margin, retention, service</td><td>8</td></tr>
+<tr><td>IT</td><td>Sam Okafor, Nadia Petrov, Kevin O’Hara, Mei Tanaka</td><td>A cheap, reliable, secure platform; proof it is healthy</td><td>1, 6, 8</td></tr>
+<tr><td>Operations</td><td>Luis Moreno, Shanice Carter, the GMs</td><td>Daily scorecard, then a live floor view</td><td>2, 6</td></tr>
+<tr><td>Finance</td><td>Rebecca Lindqvist, Alan Brooks</td><td>Billing that matches contracts, AR and DSO, P&amp;L against budget</td><td>3</td></tr>
+<tr><td>Transportation</td><td>Beth Kowalczyk</td><td>Audit carrier bills, rank carriers on facts</td><td>4</td></tr>
+<tr><td>Sales and Client Success</td><td>Hannah Price, Omar Haddad, Dana Whitfield</td><td>Pipeline, a health score per client inside Salesforce</td><td>5, 8</td></tr>
+<tr><td>Quality</td><td>Dr. Ayesha Khan, Grace Liu</td><td>Proof every lot stayed cold; a recall trace in minutes</td><td>7</td></tr>
+<tr><td>System owners</td><td>Marcus Bell, Priya Raman, Dana Whitfield, Tomás Ortega, Grace Liu</td><td>Nothing; they know how their systems behave and expect you not to break them</td><td>all</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section data-section="landscape" data-no-progress>
+<h2 id="landscape">Systems landscape</h2>
+<figure class="hb-figure">
+<svg viewBox="0 0 760 486" role="img" aria-labelledby="land-title land-desc" xmlns="http://www.w3.org/2000/svg">
+<title id="land-title">Harborline systems landscape</title>
+<desc id="land-desc">Seven source systems on your machine feed ingestion you build, into Databricks or Snowflake, which also takes public APIs and feeds the dashboards. The client health score is written back to Salesforce.</desc>
+<defs>
+<marker id="land-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-arrow" d="M0 0L10 5L0 10z"/></marker>
+<marker id="land-arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-arrow dg-arrow--accent" d="M0 0L10 5L0 10z"/></marker>
+</defs>
+<text class="dg-small" x="20" y="48">Source systems, on your machine</text>
+<text class="dg-small" x="372" y="48">You build</text>
+<text class="dg-small" x="552" y="48">Your platform and outputs</text>
+<path class="dg-line dg-line--accent dg-line--dash" d="M552 206H538V20H290V58" marker-end="url(#land-arrow-accent)"/>
+<rect class="dg-label-bg" x="302" y="11" width="224" height="18" rx="4"/>
+<text class="dg-small" x="414" y="24" text-anchor="middle">Health score written back (Project 5)</text>
+<g>
+<rect class="dg-box" x="20" y="60" width="300" height="46" rx="8"/><text class="dg-title" x="34" y="80">Salesforce</text><text class="dg-small" x="34" y="97">REST API · /sfdc · Dana Whitfield</text>
+<rect class="dg-box" x="20" y="116" width="300" height="46" rx="8"/><text class="dg-title" x="34" y="136">EDI translator</text><text class="dg-small" x="34" y="153">X12 files · landing/edi · Tomás Ortega</text>
+<rect class="dg-box" x="20" y="172" width="300" height="46" rx="8"/><text class="dg-title" x="34" y="192">WMS</text><text class="dg-small" x="34" y="209">Postgres wms · Marcus Bell</text>
+<rect class="dg-box" x="20" y="228" width="300" height="46" rx="8"/><text class="dg-title" x="34" y="248">AX 2012</text><text class="dg-small" x="34" y="265">Postgres ax2012 · Priya Raman</text>
+<rect class="dg-box" x="20" y="284" width="300" height="46" rx="8"/><text class="dg-title" x="34" y="304">Carrier tracking</text><text class="dg-small" x="34" y="321">REST API · /carrier/v1 · Tomás Ortega</text>
+<rect class="dg-box" x="20" y="340" width="300" height="46" rx="8"/><text class="dg-title" x="34" y="360">IoT sensor gateway</text><text class="dg-small" x="34" y="377">Postgres iot · Grace Liu</text>
+<rect class="dg-box" x="20" y="396" width="300" height="46" rx="8"/><text class="dg-title" x="34" y="416">Business files</text><text class="dg-small" x="34" y="433">Excel and CSV · landing/files</text>
+</g>
+<g>
+<path class="dg-line" d="M320 83H372" marker-end="url(#land-arrow)"/>
+<path class="dg-line" d="M320 139H372" marker-end="url(#land-arrow)"/>
+<path class="dg-line" d="M320 195H372" marker-end="url(#land-arrow)"/>
+<path class="dg-line" d="M320 251H372" marker-end="url(#land-arrow)"/>
+<path class="dg-line" d="M320 307H372" marker-end="url(#land-arrow)"/>
+<path class="dg-line" d="M320 363H372" marker-end="url(#land-arrow)"/>
+<path class="dg-line" d="M320 419H372" marker-end="url(#land-arrow)"/>
+</g>
+<rect class="dg-box dg-box--accent dg-line--dash" x="374" y="60" width="150" height="382" rx="10"/>
+<text class="dg-title" x="449" y="230" text-anchor="middle">Ingestion</text>
+<text class="dg-small" x="449" y="250" text-anchor="middle">batch, API, CDC,</text>
+<text class="dg-small" x="449" y="266" text-anchor="middle">files</text>
+<path class="dg-line" d="M524 251H552" marker-end="url(#land-arrow)"/>
+<rect class="dg-box dg-box--tint" x="552" y="60" width="188" height="62" rx="8"/>
+<text class="dg-title" x="566" y="84">Public APIs</text>
+<text class="dg-small" x="566" y="104">FX, holidays, weather, diesel</text>
+<path class="dg-line" d="M646 122V154" marker-end="url(#land-arrow)"/>
+<rect class="dg-box" x="552" y="156" width="188" height="190" rx="8"/>
+<text class="dg-title" x="566" y="180">Databricks or Snowflake</text>
+<rect class="dg-box dg-box--tint" x="566" y="194" width="160" height="40" rx="6"/><text class="dg-text" x="580" y="219">Raw, as landed</text>
+<rect class="dg-box dg-box--tint" x="566" y="242" width="160" height="40" rx="6"/><text class="dg-text" x="580" y="267">Cleaned and conformed</text>
+<rect class="dg-box dg-box--tint" x="566" y="290" width="160" height="40" rx="6"/><text class="dg-text" x="580" y="315">Marts and metrics</text>
+<path class="dg-line" d="M646 346V378" marker-end="url(#land-arrow)"/>
+<rect class="dg-box dg-box--accent" x="552" y="380" width="188" height="62" rx="8"/>
+<text class="dg-title" x="566" y="404">Dashboards</text>
+<text class="dg-small" x="566" y="424">15 across 8 projects</text>
+<text class="dg-small" x="20" y="472">Nothing on the internet can reach your machine: the arrows from left to right are yours to design.</text>
+</svg>
+<figcaption>The landscape. Between the sources, operations already move data: 940 orders become WMS orders, WMS billing
+becomes AX invoices at month end, contract rates in Salesforce are keyed into the WMS by hand, carrier bills are entered
+in AX weekly. <a href="source-systems.html#keys">How the systems join</a>.</figcaption>
+</figure>
+</section>
+
+<section data-section="rules">
+<h2 id="rules">Rules of engagement</h2>
+<p>These make the exercise realistic. Breaking them makes it easier and teaches less.</p>
+<ul>
+<li><strong>Salesforce and carrier tracking are SaaS.</strong> Use their APIs with the credentials you were given, and
+respect their limits. There is no database to read.</li>
+<li><strong>Never read <code>sim_internal</code>.</strong> Your login cannot, and the admin password in
+<code>.env</code> is not yours to use. Treat the simulator’s code and configuration (<code>simulator/</code>,
+<code>config/</code>) as a vendor’s black box: learn the business from the data, this handbook and your colleagues.</li>
+<li><strong>Read-only on every source.</strong> The one write you are allowed is the client health score and churn risk
+pushed to Salesforce in Project 5.</li>
+<li><strong>The answer key waits.</strong> Open a project’s spoilers only after you have shipped that project’s
+dashboards. Score your data-quality findings whenever you like.</li>
+<li><strong>Iris signs off before anyone else sees a dashboard.</strong> Submit each dashboard to Iris Novak
+(<a href="team.html#reviewer">how</a>) and fix what she finds before the readout. Argue a finding with evidence, not
+opinion, and don’t read her working: checking your own work is your job.</li>
+<li><strong>Definitions belong to the business.</strong> When two people define a metric differently, you do not pick
+one. You bring the conflict to the owners, get a decision and write it down.</li>
+<li><strong>Every change goes through a pull request that names a ticket.</strong> No direct pushes to
+<code>main</code>, no changes made by hand in production.</li>
+<li><strong>No secrets or consumer personal data in Git, screenshots or demos.</strong> Mask ship-to names and
+addresses in anything you publish.</li>
+<li><strong>Spend nothing without a written case.</strong> Free tiers first; any cost goes to Sam as a short ADR.</li>
+<li><strong>Incidents are part of the job.</strong> When a scenario breaks your pipeline, fix it forward and write a
+short postmortem; do not reset the simulator to make it go away.</li>
+</ul>
+<ul class="checklist">
+<li><label><input type="checkbox" data-track="project-brief:rules.accepted"><span>I have read the rules of engagement
+and will work within them</span></label></li>
+</ul>
+</section>
+
+<section data-section="projects">
+<h2 id="projects">The eight projects</h2>
+<p>Each project is one epic in the Tracker with six stories. The last story always delivers the dashboards, built to
+the specs on <a href="dashboards.html">Dashboard specs</a> with the <a href="brand.html">brand kit</a>. Tick the
+deliverables as you ship them.</p>
+
+<div class="proj" id="p1">
+<h3>Project 1 · Data Platform Foundation</h3>
+<p class="proj-meta"><span>Weeks 1–4</span><span>Requester: Sam Okafor, Director of IT</span><span>Epic DATA-1</span></p>
+<p>A platform cheap and boring enough to carry the next seven projects: environments, ingestion from the WMS with
+incremental loads and hard-delete handling, a layered model with data-quality checks, orchestration, CI/CD, and a way
+to see that all of it is healthy.</p>
+<ul class="proj-stories">
+<li>Workstation, repository and engineering standards</li>
+<li>Cloud platform and environments</li>
+<li>WMS batch ingestion with incremental loads and hard-delete handling</li>
+<li>Bronze/silver framework and data-quality framework</li>
+<li>Orchestration and CI/CD</li>
+<li>Data Platform Health dashboard</li>
+</ul>
+<ul class="checklist">
+<li><label><input type="checkbox" data-track="project-brief:projects.p1-d1"><span>Data Platform Health dashboard
+shipped: freshness, volumes, data quality and cost</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p1-adr"><span>ADR-0001 (platform) and the
+ingestion design recorded</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p1-release"><span>Release v0.1.0 tagged with its
+CHANGELOG entry</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p1-signoff"><span>P1-D1 signed off by Iris Novak</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p1-readout"><span>Readout to Sam done</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p1-key"><span>Answer key checked for Project 1</span></label></li>
+</ul>
+</div>
+
+<div class="proj" id="p2">
+<h3>Project 2 · Warehouse Performance</h3>
+<p class="proj-meta"><span>Weeks 5–8</span><span>Requester: Luis Moreno, VP Operations</span><span>Epic DATA-52</span></p>
+<p>One set of operations numbers every general manager trusts: OTIF, cycle time, dock-to-stock, pick productivity,
+inventory accuracy and space, per site and shift, in local time.</p>
+<ul class="proj-stories">
+<li>Reference enrichment: site master, holidays, weather, business days</li>
+<li>Order and shipment models with milestone timestamps</li>
+<li>Inventory: daily snapshot, ledger reconciliation, accuracy, dock-to-stock</li>
+<li>Labor productivity: tasks, picks per hour and shifts</li>
+<li>Metric definitions and semantic layer: what on-time means</li>
+<li>Warehouse Ops Scorecard dashboards</li>
+</ul>
+<ul class="checklist">
+<li><label><input type="checkbox" data-track="project-brief:projects.p2-d1"><span>Warehouse Ops Scorecard shipped</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p2-d2"><span>Site Operations Detail shipped</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p2-defs"><span>“On-time” resolved with Luis,
+Omar and Alan, each definition documented</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p2-release"><span>Release v0.2.0 tagged with its CHANGELOG entry</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p2-signoff"><span>P2-D1 and P2-D2 signed off by Iris Novak</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p2-readout"><span>Readout to Luis done</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p2-key"><span>Answer key checked for Project 2</span></label></li>
+</ul>
+</div>
+
+<div class="proj" id="p3">
+<h3>Project 3 · Billing Assurance and AR</h3>
+<p class="proj-meta"><span>Weeks 9–12</span><span>Requester: Rebecca Lindqvist, CFO, with Alan Brooks</span><span>Epic DATA-100</span></p>
+<p>Every dollar from contract to cash, explained: what the contract says, what the WMS accrued, what AX invoiced, what
+the client paid, and how each warehouse did against budget.</p>
+<ul class="proj-stories">
+<li>AX 2012 ingestion: companies, enums, date-effective addresses</li>
+<li>Salesforce API ingestion: contracts and rate cards</li>
+<li>FX: ECB reference rates against AX month-end rates</li>
+<li>Billing assurance model: contract vs accrual vs invoice</li>
+<li>AR aging, DSO and budget vs actual</li>
+<li>Finance dashboards</li>
+</ul>
+<ul class="checklist">
+<li><label><input type="checkbox" data-track="project-brief:projects.p3-d1"><span>Revenue Assurance shipped</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p3-d2"><span>AR &amp; Cash shipped</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p3-d3"><span>Warehouse P&amp;L vs Budget shipped</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p3-release"><span>Release v0.3.0 tagged with its CHANGELOG entry</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p3-signoff"><span>P3-D1, P3-D2 and P3-D3 signed off by Iris Novak</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p3-readout"><span>Readout to Rebecca and Alan done</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p3-key"><span>Answer key checked for Project 3</span></label></li>
+</ul>
+</div>
+
+<div class="proj" id="p4">
+<h3>Project 4 · Freight Audit and Carrier Performance</h3>
+<p class="proj-meta"><span>Weeks 13–16</span><span>Requester: Beth Kowalczyk, Transportation Manager</span><span>Epic DATA-150</span></p>
+<p>Stop paying carrier bills on trust: check every bill line against the shipment and the rate card, and rank carriers
+on delivered performance by lane.</p>
+<ul class="proj-stories">
+<li>Carrier tracking API ingestion: cursor, rate limits, late events, history backfill</li>
+<li>EDI 940/945 parsing: envelopes, control numbers, duplicates</li>
+<li>Carrier rate cards and diesel price for fuel surcharge</li>
+<li>Freight audit model: bill lines vs shipments vs rate cards</li>
+<li>Carrier performance: on-time delivery and exceptions by lane</li>
+<li>Freight Audit and Carrier Scorecard dashboards</li>
+</ul>
+<ul class="checklist">
+<li><label><input type="checkbox" data-track="project-brief:projects.p4-d1"><span>Freight Audit shipped</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p4-d2"><span>Carrier Scorecard shipped</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p4-release"><span>Release v0.4.0 tagged with its CHANGELOG entry</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p4-signoff"><span>P4-D1 and P4-D2 signed off by Iris Novak</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p4-readout"><span>Readout to Beth done</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p4-key"><span>Answer key checked for Project 4</span></label></li>
+</ul>
+</div>
+
+<div class="proj" id="p5">
+<h3>Project 5 · Client 360</h3>
+<p class="proj-meta"><span>Weeks 17–20</span><span>Requesters: Hannah Price (Sales Ops) and Omar Haddad (Client Success)</span><span>Epic DATA-200</span></p>
+<p>One trusted view of every client from pipeline to health, with a nightly health score and churn risk written back
+into Salesforce where the account team works.</p>
+<ul class="proj-stories">
+<li>Salesforce at scale: full history, hard deletes, merges, schema drift</li>
+<li>Client master and crosswalk across WMS, AX and Salesforce</li>
+<li>Link cases to the orders and shipments they are about</li>
+<li>Client health score, written back to Salesforce nightly</li>
+<li>EDI order reconciliation and item-master onboarding checks</li>
+<li>Sales Pipeline and Client Health 360 dashboards</li>
+</ul>
+<ul class="checklist">
+<li><label><input type="checkbox" data-track="project-brief:projects.p5-d1"><span>Sales Pipeline shipped</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p5-d2"><span>Client Health 360 shipped</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p5-writeback"><span>Health score written back
+to Salesforce every night, within API limits</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p5-release"><span>Release v0.5.0 tagged with its CHANGELOG entry</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p5-signoff"><span>P5-D1 and P5-D2 signed off by Iris Novak</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p5-readout"><span>Readout to Hannah and Omar done</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p5-key"><span>Answer key checked for Project 5</span></label></li>
+</ul>
+</div>
+
+<div class="proj" id="p6">
+<h3>Project 6 · Real-Time Operations</h3>
+<p class="proj-meta"><span>Weeks 21–24</span><span>Requester: Luis Moreno, with Kevin O’Hara on the architecture</span><span>Epic DATA-248</span></p>
+<p>A live picture of every building, never more than five minutes behind the WMS: change data capture with inserts,
+updates and hard deletes, late and out-of-order data, replay, and alerts when freshness slips.</p>
+<ul class="proj-stories">
+<li>Decide the CDC architecture (ADR)</li>
+<li>CDC pipeline for the WMS: inserts, updates, hard deletes</li>
+<li>Streaming models: live order status, backlog, inventory</li>
+<li>Late and out-of-order data, exactly-once, backfill and replay</li>
+<li>Alerting and SLAs: freshness and replication-slot health</li>
+<li>Live Operations Board</li>
+</ul>
+<ul class="checklist">
+<li><label><input type="checkbox" data-track="project-brief:projects.p6-d1"><span>Live Operations Board shipped,
+P95 freshness of five minutes or less measured end to end</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p6-adr"><span>CDC architecture ADR approved by
+Kevin</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p6-release"><span>Release v0.6.0 tagged with its CHANGELOG entry</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p6-signoff"><span>P6-D1 signed off by Iris Novak</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p6-readout"><span>Readout to Luis done</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p6-key"><span>Answer key checked for Project 6</span></label></li>
+</ul>
+</div>
+
+<div class="proj" id="p7">
+<h3>Project 7 · Cold Chain and Lot Traceability</h3>
+<p class="proj-meta"><span>Weeks 25–28</span><span>Requester: Dr. Ayesha Khan, Quality &amp; Food Safety, with Grace Liu</span><span>Epic DATA-297</span></p>
+<p>Prove every lot stayed in range, find excursions the way Quality’s procedure defines them, trust the sensors only as
+far as they deserve, and trace a recalled lot to every order and ship-to in minutes.</p>
+<ul class="proj-stories">
+<li>IoT ingestion: late flushes, duplicates, device clocks</li>
+<li>Excursion detection to Quality’s procedure, exposure per lot</li>
+<li>Lot genealogy from receipt to every shipment</li>
+<li>Recall trace</li>
+<li>Sensor health: stuck readings, spikes, dropouts, calibration</li>
+<li>Cold Chain Monitor and Recall Trace dashboards</li>
+</ul>
+<ul class="checklist">
+<li><label><input type="checkbox" data-track="project-brief:projects.p7-d1"><span>Cold Chain Monitor shipped</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p7-d2"><span>Recall Trace shipped</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p7-release"><span>Release v0.7.0 tagged with its CHANGELOG entry</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p7-signoff"><span>P7-D1 and P7-D2 signed off by Iris Novak</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p7-readout"><span>Readout to Ayesha done</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p7-key"><span>Answer key checked for Project 7</span></label></li>
+</ul>
+</div>
+
+<div class="proj" id="p8">
+<h3>Project 8 · Client Portal and Executive Scorecard</h3>
+<p class="proj-meta"><span>Weeks 29–32</span><span>Requester: Daniel Reyes, CEO, with Omar Haddad and Mei Tanaka</span><span>Epic DATA-346</span></p>
+<p>Share data safely with clients, each seeing only their own with consumer data masked, and run the company on one
+page. Ends with the final readout to the executive team.</p>
+<ul class="proj-stories">
+<li>Governance: PII classification, masking, roles, audit</li>
+<li>Row-level security per client</li>
+<li>Data sharing to clients</li>
+<li>Executive scorecard model on the semantic layer</li>
+<li>Performance and cost optimization</li>
+<li>Client Portal, Executive Scorecard and final readout</li>
+</ul>
+<ul class="checklist">
+<li><label><input type="checkbox" data-track="project-brief:projects.p8-d1"><span>Client Portal shipped and
+signed off by Mei</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p8-d2"><span>Executive Scorecard shipped</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p8-release"><span>Release v1.0.0 tagged with its CHANGELOG entry</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p8-signoff"><span>P8-D1 and P8-D2 signed off by Iris Novak</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p8-readout"><span>Final executive readout done</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:projects.p8-key"><span>Answer key checked for Project 8</span></label></li>
+</ul>
+</div>
+</section>
+
+<section data-section="engineering">
+<h2 id="engineering">Git and engineering standards</h2>
+<p>These are part of the Definition of Done on every ticket. They are what a reviewer looks at first in a portfolio
+repository.</p>
+
+<h3 id="eng-flow">GitHub flow</h3>
+<ul>
+<li><code>main</code> is always releasable and protected. Nobody pushes to it, including you.</li>
+<li>One short-lived branch per ticket, cut from the latest <code>main</code>, merged within a few days.</li>
+<li>Every change lands through a pull request with green CI, then a squash merge and the branch deleted.</li>
+</ul>
+
+<h3 id="eng-branches">Branch names</h3>
+<p><code>&lt;type&gt;/DATA-&lt;n&gt;-&lt;short-slug&gt;</code>, lower case, hyphens, the ticket key exactly as the
+Tracker shows it (its <em>Copy branch name</em> button does this for you).</p>
+<pre data-shell="Examples" data-nocopy>feat/DATA-24-wms-orders-incremental
+fix/DATA-61-dst-duplicate-hour
+chore/DATA-38-ci-dbt-build
+docs/DATA-87-on-time-definition
+spike/DATA-12-platform-comparison</pre>
+
+<h3 id="eng-commits">Commit messages</h3>
+<p><a href="https://www.conventionalcommits.org/">Conventional Commits</a> with the ticket key at the end of the
+subject. Types: <code>feat</code>, <code>fix</code>, <code>refactor</code>, <code>perf</code>, <code>test</code>,
+<code>docs</code>, <code>build</code>, <code>ci</code>, <code>chore</code>. A <code>!</code> after the type, or a
+<code>BREAKING CHANGE:</code> footer, marks a change that breaks a downstream consumer (a renamed column in a mart, a
+changed metric).</p>
+<pre data-shell="Examples" data-nocopy>feat(wms): land order_line with hard-delete detection (DATA-24)
+fix(silver): de-duplicate the repeated DST hour in task events (DATA-61)
+feat(marts)!: rename on_time_flag to shipped_on_time (DATA-87)
+
+BREAKING CHANGE: Warehouse Ops Scorecard must switch to the new column.</pre>
+
+<h3 id="eng-pr">Pull requests and self-review</h3>
+<ul>
+<li>The PR title follows the commit convention; the body follows your template: ticket, what and why, how you tested,
+self-review checklist.</li>
+<li>Review your own diff on GitHub, not in the editor, after a break. Comment on your own PR where a reviewer would ask
+“why”.</li>
+<li>Move the ticket to <em>In Review</em> when the PR opens and to <em>Done</em> when it merges. Paste the PR link into
+the ticket.</li>
+</ul>
+
+<h3 id="eng-ci">CI on every pull request</h3>
+<ul>
+<li>Lint and format (Python and SQL), unit tests, secret scan.</li>
+<li>Build and test the changed models against a development target, so a broken model never reaches
+<code>main</code>.</li>
+<li>CI credentials live in GitHub Actions secrets or environments, scoped to development.</li>
+</ul>
+
+<h3 id="eng-secrets">Secrets and personal data</h3>
+<ul>
+<li>Secrets live in <code>.env</code> (ignored) and in your platform’s secret store; <code>.env.example</code> lists the
+names only.</li>
+<li>pre-commit runs gitleaks on every commit. Turn on GitHub’s secret scanning and push protection for the repository
+too.</li>
+<li>A secret that reaches GitHub is leaked: rotate it first, then clean history.</li>
+</ul>
+
+<h3 id="eng-envs">Environments and infrastructure</h3>
+<ul>
+<li>Separate development and production (catalogs, schemas or databases). Production is changed only by a deploy from
+<code>main</code>.</li>
+<li>Infrastructure as code for everything you create in the platform: warehouses or compute, catalogs and schemas,
+roles and grants, jobs. No click-ops that cannot be recreated.</li>
+</ul>
+
+<h3 id="eng-release">Releases, CHANGELOG and ADRs</h3>
+<ul>
+<li>Each project ends with a release: tag <code>v&lt;project&gt;.0.0</code> (v1.0.0 after Project 1), patch tags for
+fixes. Create a GitHub release whose notes come from the CHANGELOG.</li>
+<li><code>CHANGELOG.md</code> in <a href="https://keepachangelog.com/">Keep a Changelog</a> style: an
+<em>Unreleased</em> section you add to in every PR, moved under the version at release.</li>
+<li>Architecture decision records in <code>docs/adr/NNNN-title.md</code>: context, options considered, decision,
+consequences. Accepted ADRs are not edited; a new ADR supersedes them.</li>
+</ul>
+<pre data-shell="PowerShell">git tag -a v1.0.0 -m "Project 1: data platform foundation"
+git push origin v1.0.0
+gh release create v1.0.0 --title "v1.0.0 · Data Platform Foundation" --notes-file release-notes.md</pre>
+<ul class="checklist">
+<li><label><input type="checkbox" data-track="project-brief:engineering.read"><span>Standards read; repository
+set up to enforce them (see Getting started)</span></label></li>
+</ul>
+</section>
+
+<section data-section="tracker">
+<h2 id="tracker">Working in the Tracker</h2>
+<p>The Tracker at <a href="http://localhost:8080/tracker" data-hb-app="/tracker">localhost:8080/tracker</a> works like
+Jira, the tool most data teams plan in. If Jira is new to you, this is what the words mean.</p>
+<dl class="hb-dl">
+<dt>Project</dt><dd>All your work lives in project <strong>DATA</strong>; every ticket has a key such as DATA-24.</dd>
+<dt>Epic</dt><dd>A large body of work with one outcome. Each of the eight projects is one epic.</dd>
+<dt>Story</dt><dd>A milestone that delivers something a stakeholder can see, inside an epic. Stories carry story
+points.</dd>
+<dt>Task, Bug, Spike</dt><dd>The work items inside a story, each with an hour estimate. A bug is a pre-written incident
+or stakeholder complaint that arrives on its date; a spike is a time-boxed investigation that ends in a decision. (In a
+Jira export they become sub-tasks.)</dd>
+<dt>Sprint</dt><dd>A two-week time box. Each project is two sprints. You start a sprint from the backlog, work the board,
+then complete it; unfinished tickets move to the next sprint.</dd>
+<dt>Backlog</dt><dd>Every ticket not yet in a sprint, in priority order.</dd>
+<dt>Board</dt><dd>The current sprint’s tickets in columns: To Do, In Progress, In Review (your PR is open), Done
+(merged and verified). Drag cards across as you work.</dd>
+<dt>Timeline</dt><dd>The eight epics laid out over 32 weeks.</dd>
+<dt>Story points vs hours</dt><dd>Points size a story relative to other stories (an 8 is about twice a 3); they are for
+planning how much fits in a sprint. Hours estimate individual tasks. Your velocity is the points you complete per
+sprint; compare it with the plan.</dd>
+<dt>Due date</dt><dd>Counted in working days from the start date you set. An overdue badge is the Tracker telling
+you to re-plan, not a failure.</dd>
+<dt>Work log and comments</dt><dd>Log the hours you spend on each ticket and use comments as your engineering notes:
+decisions, dead ends, links. They become your case-study material.</dd>
+</dl>
+<h3 id="tracker-jql">Searching with JQL</h3>
+<p>JQL is Jira’s query language: <code>field operator value</code>, joined with <code>AND</code> or <code>OR</code>, then
+<code>ORDER BY</code>. Fields include project, type, status, priority, assignee, reporter, sprint, epic, labels,
+component, duedate, created and text; operators <code>= != ~ &lt; &gt; &lt;= &gt;= IN</code>; functions
+<code>now()</code>, <code>startOfWeek()</code>, <code>endOfWeek()</code>.</p>
+<pre data-shell="JQL" data-nocopy>status != Done AND duedate &lt;= endOfWeek() ORDER BY duedate
+type = Bug AND status != Done ORDER BY priority
+text ~ "on-time" AND status != Done
+labels IN (cdc, streaming) AND status = "In Progress"</pre>
+<h3 id="tracker-day">A normal day</h3>
+<ol>
+<li>Open the board. Pick the next ticket by due date and priority and move it to In Progress.</li>
+<li>Copy its branch name, create the branch, work, commit with the key.</li>
+<li>Open the PR, move the ticket to In Review, self-review, merge when CI is green, move it to Done.</li>
+<li>Log your hours and leave a comment with what you decided and why.</li>
+</ol>
+<p>Shortcuts as in Jira: <kbd>c</kbd> creates a ticket, <kbd>/</kbd> searches, <kbd>j</kbd> and <kbd>k</kbd> move
+between issues. The Tracker can also export everything as a Jira CSV if you want to continue in a free Jira Cloud
+site.</p>
+<ul class="checklist">
+<li><label><input type="checkbox" data-track="project-brief:tracker.read"><span>Start date set, Sprint 1 started, and
+I know what each column means</span></label></li>
+</ul>
+</section>
+
+<section data-section="evaluation" data-no-progress>
+<h2 id="evaluation">How the work is judged</h2>
+<p>Use this at the end of every project, honestly, and write the result into the release notes. A hiring manager will
+judge the same things.</p>
+<div class="hb-table-wrap">
+<table class="hb-table rubric">
+<thead><tr><th>Dimension</th><th>Needs work</th><th>Solid</th><th>Excellent</th></tr></thead>
+<tbody>
+<tr><td>Business outcome</td><td>Dashboards show data but answer no stated question</td><td>Every question in the
+spec is answered; definitions agreed with the owner</td><td>The dashboard surfaced something the business did not know,
+and someone acted on it</td></tr>
+<tr><td>Correctness</td><td>Numbers not reconciled to the source; Iris finds Blockers</td><td>Reconciled to source
+totals; tests on keys and relationships; signed off by Iris within two rounds</td><td>Signed off in the first round;
+reconciliation automated; DQ findings scored with high precision and recall</td></tr>
+<tr><td>Change handling</td><td>Full reloads; deletes missed</td><td>Incremental loads; deletes and late data
+handled</td><td>CDC, replay and backfill proven; schema drift handled without an outage</td></tr>
+<tr><td>Engineering practice</td><td>Commits to main; no tests</td><td>Every change through a PR with green CI;
+CHANGELOG kept</td><td>IaC for everything, dev/prod parity, ADRs a stranger can follow</td></tr>
+<tr><td>Cost and operations</td><td>Unknown cost; failures found by stakeholders</td><td>Cost tracked; alerts on
+freshness and failures</td><td>Cost per dashboard known and optimized; postmortems written</td></tr>
+<tr><td>Communication</td><td>Asked vague questions; no readout</td><td>Right person asked the right question;
+readout done</td><td>Conflicting definitions resolved in writing; three-minute demo per project</td></tr>
+<tr><td>Delivery</td><td>Most tickets late without re-planning</td><td>On time, or re-planned early with
+reasons</td><td>Velocity stable; scope traded explicitly with the requester</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section data-section="portfolio">
+<h2 id="portfolio">Portfolio checklist</h2>
+<p>What to have in the repository, and ready to show, by the end of Project 8.</p>
+<ul class="checklist">
+<li><label><input type="checkbox" data-track="project-brief:portfolio.readme"><span>README with an architecture
+diagram, the stack, how to run it and links to every dashboard</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:portfolio.case-studies"><span>A one-page case study per
+project: problem, approach, result in numbers, what you would do differently</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:portfolio.demos"><span>A three-minute demo video per
+project</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:portfolio.screens"><span>Dashboard screenshots with
+consumer data masked</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:portfolio.adrs"><span>ADRs and the metric glossary
+readable by a stranger</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:portfolio.history"><span>Eight tagged releases, a
+CHANGELOG and a clean, ticket-linked commit history</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:portfolio.secrets"><span>gitleaks run over the full
+history with no findings</span></label></li>
+<li><label><input type="checkbox" data-track="project-brief:portfolio.cv"><span>CV and LinkedIn bullets written
+from the case studies, with numbers</span></label></li>
+</ul>
+</section>
+
+<section data-section="stretch" data-no-progress>
+<h2 id="stretch">More ideas</h2>
+<p>Stretch goals once a project is done and you have time left. Each one makes a strong portfolio piece on its
+own.</p>
+<ul>
+<li>A semantic layer that resolves the metric conflicts once, for every tool (dbt Semantic Layer, Databricks metric
+views or Snowflake semantic views).</li>
+<li>Natural-language questions over your gold layer with Genie or Cortex Analyst.</li>
+<li>Demand and labor forecasting per site and shift.</li>
+<li>LLM classification of case text into root causes.</li>
+<li>ABC slotting analysis for pick faces.</li>
+<li>H3 delivery-zone maps of on-time performance.</li>
+<li>Delta Sharing or Secure Data Sharing to clients instead of extracts.</li>
+<li>Data contracts with each source owner, signed off by their persona.</li>
+<li>Postmortems for the pre-written incident bugs, in a standard template.</li>
+<li>A FinOps dashboard from your platform’s system tables.</li>
+<li>Generated model documentation published to GitHub Pages.</li>
+<li>A delivery-metrics dashboard built from the Tracker’s own database.</li>
+</ul>
+</section>
+
+</article>
+<aside class="hb-toc" data-hb-toc></aside>
+</div></main>
+</div>
+</body>
+</html>

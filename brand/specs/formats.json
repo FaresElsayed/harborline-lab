@@ -1,0 +1,134 @@
+{
+  "name": "Harborline number and date formats",
+  "version": "1.0.0",
+  "principles": [
+    "$ means USD and nothing else. Every other currency shows its ISO code (CAD, MXN, EUR, GBP).",
+    "Company reporting currency is USD, converted at the AX month-end rate (exchangerate table). Say so in the subtitle or tooltip.",
+    "Client-facing views (portal, invoices, revenue assurance per client) show the client's billing currency.",
+    "Tiles abbreviate (1.28M); tables show full numbers with thousands separators.",
+    "Negative numbers use a minus sign; Finance statements (P&L, AR) use parentheses.",
+    "Rates have one decimal (96.4%); shares in charts have none (34%); changes in a rate are percentage points (pp).",
+    "Every timestamp carries its time zone. Operations views use warehouse local time, platform views use UTC, executive views use ET (head office)."
+  ],
+  "formats": [
+    {
+      "what": "USD amount, tile",
+      "example": "$1.28M",
+      "power_bi": "\\$#,0.00,,\"M\"",
+      "excel_dax_format": "\"$#,0.00,,\"\"M\"\"\"",
+      "python": "f\"${v/1e6:,.2f}M\"",
+      "sql": "'$' || TO_CHAR(ROUND(v/1e6, 2), 'FM999,990.00') || 'M'"
+    },
+    {
+      "what": "USD amount, table",
+      "example": "$12,480",
+      "power_bi": "\\$#,0;-\\$#,0;\\$0",
+      "python": "f\"${v:,.0f}\"",
+      "sql": "TO_CHAR(v, '$999,999,990')  -- Snowflake; Databricks: format_number(v, 0)"
+    },
+    {
+      "what": "USD amount, finance statement",
+      "example": "(12,480.00)",
+      "power_bi": "#,0.00;(#,0.00);-",
+      "python": "f\"({abs(v):,.2f})\" if v < 0 else f\"{v:,.2f}\"",
+      "sql": "n/a: format in the BI tool"
+    },
+    {
+      "what": "Client currency",
+      "example": "CAD 12,480.50 · MXN 248,300.00 · EUR 9,120.00",
+      "power_bi": "measure with a dynamic format string: SELECTEDVALUE('Currency'[Code]) & \" #,0.00\"",
+      "python": "f\"{code} {v:,.2f}\"",
+      "sql": "currency_code || ' ' || format_number(v, 2)"
+    },
+    {
+      "what": "Count",
+      "example": "1,284,550 (table) · 1.28M (tile) · 48.2K (tile)",
+      "power_bi": "#,0  |  tile: display units Auto, 1 decimal",
+      "python": "f\"{v:,.0f}\""
+    },
+    {
+      "what": "Rate / percentage",
+      "example": "96.4%",
+      "power_bi": "0.0%",
+      "python": "f\"{v:.1%}\""
+    },
+    {
+      "what": "Share in a chart",
+      "example": "34%",
+      "power_bi": "0%",
+      "python": "f\"{v:.0%}\""
+    },
+    {
+      "what": "Change in a rate",
+      "example": "+1.2 pp",
+      "power_bi": "+0.0\" pp\";-0.0\" pp\";0.0\" pp\"",
+      "python": "f\"{d*100:+.1f} pp\""
+    },
+    {
+      "what": "Relative change",
+      "example": "+3.4%",
+      "power_bi": "+0.0%;-0.0%;0.0%",
+      "python": "f\"{d:+.1%}\""
+    },
+    {
+      "what": "Duration under 1 hour",
+      "example": "42 min",
+      "power_bi": "0\" min\"",
+      "python": "f\"{m:.0f} min\""
+    },
+    {
+      "what": "Duration under 48 hours",
+      "example": "18.4 h",
+      "power_bi": "0.0\" h\"",
+      "python": "f\"{h:.1f} h\""
+    },
+    {
+      "what": "Duration 48 hours or more",
+      "example": "3.2 d",
+      "power_bi": "0.0\" d\"",
+      "python": "f\"{d:.1f} d\""
+    },
+    {
+      "what": "Weight",
+      "example": "12,480 lb",
+      "power_bi": "#,0\" lb\"",
+      "note": "Network views in lb. TOR1 and MTY1 record kg: convert (1 kg = 2.20462 lb) and say 'converted from kg' in the tooltip."
+    },
+    {
+      "what": "Temperature",
+      "example": "4.6 °C",
+      "power_bi": "0.0\" °C\"",
+      "note": "Cold chain is in Celsius everywhere, including US sites."
+    },
+    {
+      "what": "Date, table",
+      "example": "2026-10-31",
+      "power_bi": "yyyy-mm-dd",
+      "python": "%Y-%m-%d",
+      "sql": "TO_CHAR(d, 'YYYY-MM-DD') / date_format(d, 'yyyy-MM-dd')"
+    },
+    {
+      "what": "Date, axis",
+      "example": "Oct 31 · Oct 2026 · 2026-W44",
+      "power_bi": "mmm d  |  mmm yyyy  |  ISO week from the date table",
+      "python": "%b %#d on Windows (%b %-d on Linux/macOS) | %b %Y | %G-W%V"
+    },
+    {
+      "what": "Timestamp",
+      "example": "2026-10-31 14:05 ET",
+      "power_bi": "yyyy-mm-dd hh:nn \"ET\"",
+      "python": "%Y-%m-%d %H:%M %Z"
+    },
+    {
+      "what": "Data as of",
+      "example": "Data as of 2026-10-31 06:00 ET · refreshed daily 06:00",
+      "power_bi": "card bound to MAX(load_completed_at) converted to ET",
+      "note": "Lives in the footer slot of every page."
+    },
+    {
+      "what": "Fiscal period",
+      "example": "FY2026 · Q4 FY2026 · Oct 2026",
+      "note": "Fiscal year = calendar year (fiscal_year_start_month 1)."
+    }
+  ]
+}

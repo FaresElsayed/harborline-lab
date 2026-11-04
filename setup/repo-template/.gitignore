@@ -1,0 +1,26 @@
+# Secrets and local settings
+.env
+*.pem
+*.key
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# dbt
+target/
+dbt_packages/
+logs/
+
+# Local data extracts
+data/
+*.parquet
+
+# Editor and OS noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

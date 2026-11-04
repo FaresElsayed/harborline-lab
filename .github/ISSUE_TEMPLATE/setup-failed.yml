@@ -1,0 +1,49 @@
+name: Setup stopped or failed
+description: The setup file stopped, or something didn't work after it finished.
+labels: ["setup"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        First, run the setup file again. It carries on where it stopped, and that fixes many problems.
+        Then check the known issues page in the handbook.
+  - type: dropdown
+    id: system
+    attributes:
+      label: Your computer
+      options:
+        - Windows 11
+        - Windows 10
+        - Mac with Apple silicon
+        - Mac with Intel
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: step
+    attributes:
+      label: Which step did it stop at?
+      placeholder: "[16/24] Start the simulator"
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: The error report
+      description: |
+        Paste the report setup printed. It's saved in `setup-error.txt`, in `%LOCALAPPDATA%\HarborlineLab` on Windows and `~/Library/Logs/HarborlineLab` on Mac.
+        Remove anything private first, such as your name, email or file paths.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: The last 50 lines of setup.log (optional)
+      description: It's in the same folder. Remove anything private here too.
+      render: text
+  - type: input
+    id: hardware
+    attributes:
+      label: RAM, free disk and antivirus (optional)
+      placeholder: "16 GB, 120 GB free, Windows Defender"
