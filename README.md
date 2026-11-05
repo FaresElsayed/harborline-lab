@@ -28,7 +28,7 @@
 </p>
 
 <p align="center">
-  <a href="#quick-start"><img src="docs/media/harborline-tour.gif" alt="A short tour: your badge on day one, a generated day of data, a wall of AI colleagues, the skills you learn, and where to get it" width="420"></a>
+  <a href="#quick-start"><img src="docs/media/harborline-tour.gif" alt="A short tour: your badge on day one, a generated day of data, a wall of AI teammates, the skills you learn, and where to get it" width="420"></a>
 </p>
 
 ## Why this exists
@@ -49,6 +49,7 @@ Harborline Logistics fixes both. It's a warehouse and shipping company (a 3PL) w
 | **Realistic dirt** | Orphans, duplicates, late facts, schema drift and more, at a rate you control (1 bad record in 10,000 by default). Every one is logged, so you can score your own data-quality checks |
 | **A real backlog** | 8 projects, 32 weeks, 385 pre-written tickets with due dates and acceptance criteria, on a Jira-style board that runs locally |
 | **It starts easy and gets harder** | Tickets run from level 1 to level 5. Your first sprint is a first query, a first table and a first pull request. By the last project you're handed an ambiguous business problem and a deadline, and the method is yours |
+| **A first release in two long days** | Eight tickets, about 22 hours: your first table in the cloud, one number on a dashboard that matches the source, and merged pull requests. The Start here page tracks them |
 | **You won't get lost** | A Start here page, your next ticket always in view, a "Stuck?" line on every ticket, and a board you can order by due date |
 | **19 AI colleagues** | The CFO, the warehouse GM, the Salesforce admin and more, each with a prompt you paste into any AI website. They know their own area, send you to the right person, and argue about definitions |
 | **A team lead and a reviewer** | Nadia coaches you without writing the solution. Iris signs off your dashboards against the source data |

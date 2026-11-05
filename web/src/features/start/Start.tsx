@@ -11,6 +11,7 @@ import { levelOf, nextTicket, useTracker } from '@/features/tracker/data';
 import { NextTicketCard, YouAreHere } from '@/features/tracker/here';
 import { handbookUrl, REPO_URL } from '@/lib/base';
 import { fmtDay } from '@/lib/dates';
+import { FirstRelease, FirstReleaseLink } from './FirstRelease';
 import { markFinished, setStepDone, STEP_IDS, useStartPath, type StepId } from './path';
 
 const isDemo = import.meta.env.VITE_DEMO === '1';
@@ -268,6 +269,7 @@ export default function StartPage() {
           <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-active" role="progressbar" aria-label="Start here progress" aria-valuemin={0} aria-valuemax={path.total} aria-valuenow={path.doneCount}>
             <div className="h-full origin-left rounded-full bg-good transition-transform duration-300 ease-out" style={{ transform: `scaleX(${path.doneCount / path.total})` }} />
           </div>
+          <FirstReleaseLink />
         </div>
 
         {path.allDone ? (
@@ -304,6 +306,7 @@ export default function StartPage() {
             <YouAreHere />
           </aside>
           <div className="min-w-0">
+            <FirstRelease className="mb-6" />
             <Answers />
           </div>
         </div>

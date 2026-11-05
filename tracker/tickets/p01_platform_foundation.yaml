@@ -102,7 +102,7 @@ stories:
         due_day: 1
         priority: Highest
         components: [Platform]
-        labels: [setup, level-1]
+        labels: [setup, level-1, first-release]
         description: |
           Run the setup file (SETUP-WINDOWS.cmd or SETUP-MAC.command) until it finishes with ALL DONE. It installs what's
           missing and skips the rest. If it stops, paste its report to Kevin O'Hara, do what he says and run it again.
@@ -123,9 +123,10 @@ stories:
         due_day: 1
         priority: Highest
         components: [Platform]
-        labels: [setup, wms, level-1]
+        labels: [setup, wms, level-1, first-release]
         description: |
           Start the simulator and run a Medium or Large build, if setup has not done it already (Medium is 2 years of history, Large 3; the Control Center shows an estimate).
+          On the first-release path, Small is enough. Rebuild at Medium before you go further: a rebuild leaves your tickets alone.
 
           Then make your first connection: Postgres, database `wms`, as `etl_reader`, the same login your pipelines will use.
           Run one query and look at the result. Don't build anything yet.
@@ -148,7 +149,7 @@ stories:
         due_day: 2
         priority: Highest
         components: [CI/CD]
-        labels: [git, setup, level-1]
+        labels: [git, setup, level-1, first-release]
         description: |
           The setup file created `harborline-analytics` on your machine and on your GitHub account, with a starter
           README. The layout from here is your call, but someone new should understand it from the README in five
@@ -171,7 +172,7 @@ stories:
         due_day: 2
         priority: High
         components: [CI/CD]
-        labels: [git, standards, level-1]
+        labels: [git, standards, level-1, first-release]
         description: |
           Sam's rule: nothing reaches `main` without a pull request, and every PR tells a reviewer what changed, why, how
           it was tested and what could break. You're the only engineer building this, so the first reviewer is you tomorrow
@@ -359,13 +360,16 @@ stories:
         due_day: 4
         priority: Highest
         components: [Platform]
-        labels: [cloud, environments, level-2]
+        labels: [cloud, environments, level-2, first-release]
         description: |
           Create the account or workspace and the structures for two environments. You must be able to break dev with
           no risk to prod, and prod should change only through a merged PR (fully enforced once CD exists in P1.S5).
           Anyone reading an object name should know its environment and its layer (bronze, silver or gold).
 
           Creating these by hand is fine for now, as long as you write down what you made. They go into code in P1.S5.T8.
+
+          On the first-release path, skip the spike for now and pick Databricks Free Edition, unless you have a reason not to.
+          You'll still write the comparison later, and it can change your mind.
 
           **Where to start:** The project brief's *Environments and infrastructure*, then your platform's own quick-start.
         acceptance_criteria:
@@ -383,7 +387,7 @@ stories:
         due_day: 5
         priority: Highest
         components: [Security, Platform]
-        labels: [security, secrets, level-2]
+        labels: [security, secrets, level-2, first-release]
         description: |
           Pipelines need the Postgres `etl_reader` password, the Salesforce client secret, the carrier API key and, if you take
           Project 4's stretch comparison, an EIA API key. Decide where secrets live on your machine and on the platform, how code reads them, and how
@@ -493,9 +497,9 @@ stories:
         due_day: 6
         priority: Highest
         components: [Ingestion]
-        labels: [wms, first-load, level-1]
+        labels: [wms, first-load, level-1, first-release]
         description: |
-          Copy one table from the WMS to your dev environment, by the route your connectivity ADR describes. `warehouse` is
+          Copy one table from the WMS to your dev environment, by the route your connectivity ADR describes (on the first-release path that ADR comes later, so a script on your machine is the route for now). `warehouse` is
           the right first table: one row per site, no consumer data, nothing to get wrong. Copy the whole table, every time.
           Don't build a framework yet. A short script is fine.
 
@@ -514,11 +518,11 @@ stories:
         due_day: 7
         priority: Highest
         components: [Ingestion, Dashboards]
-        labels: [wms, first-number, level-1]
+        labels: [wms, first-number, level-1, first-release]
         description: |
           Sam's first question of any platform is whether its numbers are right. Land `order_header` in dev bronze, leaving out
           every `ship_to_*` column, and join it to the `warehouse` table you landed. Show one number per site, orders received
-          in the last 30 days, in the dashboard tool you named in ADR-0001 (a saved query with a simple chart counts). Then
+          in the last 30 days, in the dashboard tool you named in ADR-0001 (a saved query with a simple chart counts; on the first-release path, use your platform's own). Then
           check it against the source.
 
           **Where to start:** The first query in Getting Started → *Try each source system* is nearly this one. Run it in

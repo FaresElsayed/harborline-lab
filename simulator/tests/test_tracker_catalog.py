@@ -326,6 +326,20 @@ def test_shipped_catalog_keeps_the_published_numbers() -> None:
     assert epics == [1, 52, 100, 150, 200, 248, 297, 346]  # the Project brief links each project to its epic key
 
 
+def test_first_release_is_eight_easy_tickets_that_really_can_be_done_in_order() -> None:
+    """The Start page, handbook and README all say 8 tickets and about 22 hours."""
+    issues = _shipped()
+    path = [i for i in issues if "first-release" in i.labels]
+    assert [i.source_id for i in path] == ["P1.S1.T1", "P1.S1.T2", "P1.S1.T3", "P1.S1.T4", "P1.S2.T2", "P1.S2.T3",
+                                           "P1.S3.T1", "P1.S3.T2"]
+    assert sum(i.estimate_hours or 0 for i in path) == 22
+    assert all(_level(i) <= 2 for i in path)
+    assert [i.due_day for i in path] == sorted(i.due_day for i in path), "the Start page lists them by due date"
+    # The handbook tells them to start P1.S2.T2 without this one. Nothing else on the path may wait on a skipped ticket.
+    ids = {i.source_id for i in path}
+    assert {dep for i in path for dep in i.depends_on} - ids == {"P1.S2.T1"}
+
+
 def test_each_project_runs_in_sprint_order_and_ends_in_dashboards_and_sign_off() -> None:
     issues = _shipped()
     for project in range(1, workdays.PROJECTS + 1):
