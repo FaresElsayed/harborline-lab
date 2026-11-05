@@ -30,7 +30,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/media/control-center.png" alt="The Harborline Control Center, showing the simulated clock, dataset and live activity" width="860">
+  <a href="https://fareselsayed.github.io/harborline-lab/"><img src="docs/media/harborline-tour.gif" alt="A short tour: your badge on day one, a generated day of data, a wall of AI colleagues, the skills you learn, and the link to try it" width="420"></a>
 </p>
 
 ## Why this exists
@@ -59,6 +59,10 @@ Harborline Logistics fixes both. It's a warehouse and shipping company (a 3PL) w
 | **A setup that fixes itself** | One file per operating system. It installs what's missing and handles most known errors on its own |
 
 ## See it
+
+<p align="center">
+  <img src="docs/media/control-center.png" alt="The Harborline Control Center, showing the simulated clock, dataset and live activity" width="860">
+</p>
 
 <table>
   <tr>
