@@ -167,7 +167,7 @@ export default function ScenariosPage() {
     <>
       <PageHeader
         title="Scenarios"
-        subtitle="Business events on demand. Each one changes the source systems the way the real event would, then runs one sim hour so the effects flow through."
+        subtitle="Business events on demand. Each one changes the source systems the way the real event would, then runs one sim hour so the effects flow through. Use one when a ticket calls for it, or to see how your pipeline copes."
       />
       {scenarios.isError ? (
         <ErrorNote error={scenarios.error} onRetry={() => void scenarios.refetch()} what="the scenario list" />

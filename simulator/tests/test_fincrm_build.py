@@ -19,7 +19,7 @@ from harborline.ids import to_id18
 from harborline.sim import testing
 from harborline.sim.crm import dates_of, obj_prefix, sim_clients
 from harborline.sim.edi import iter_documents
-from harborline.sim.files import Files
+from harborline.sim.files import Files, fuel_pct
 
 
 @pytest.fixture(scope="module")
@@ -135,6 +135,27 @@ def test_freight_bills_have_tracking_text_and_planted_lines(build: dict[str, Any
     assert names.str.match(r"^TRK 1Z\w+ WT [\d.]+(LB|KG) ZN [2-8] GND").any()
     assert names.str.startswith("FSC ").any() and names.str.startswith("FUEL SURCHARGE").any()
     assert names.str.match(r"^PRO \d+ BOL").any()
+
+
+def test_fuel_lines_follow_the_published_diesel_file(build: dict[str, Any]) -> None:
+    ctx = build["ctx"]
+    with (landing(ctx) / "files" / "reference" / "diesel_weekly.csv").open(newline="", encoding="ascii") as fh:
+        price = {r["week_start"]: float(r["diesel_usd_per_gal"]) for r in csv.DictReader(fh)}
+    scac_of = {v["acct"]: key.split(":")[1] for key, v in ctx.world["ax"]["vend"].items() if key.startswith("CARRIER:")}
+    late = {s["scac"] for s in ctx.planted["stories"] if s["id"] == "fuel_surcharge_misapplied"}
+    lines = df(ctx, "ax2012", "SELECT j.invoiceaccount, j.invoicedate, t.name FROM dbo.vendinvoicetrans t "
+                              "JOIN dbo.vendinvoicejour j ON j.invoiceid = t.invoiceid AND j.dataareaid = t.dataareaid "
+                              "WHERE t.name LIKE 'FUEL SURCHARGE %%' OR t.name LIKE 'FSC %%'")
+    assert len(lines) > 100
+    seen = set()
+    for line in lines.itertuples():
+        scac = scac_of[line.invoiceaccount.strip()]
+        match = re.match(r"(?:FUEL SURCHARGE|FSC) ([\d.]+)% (?:PRO )?(\S+)", line.name)
+        service = "LTL" if line.name.startswith("FSC") else match.group(2)
+        week = line.invoicedate - timedelta(days=14 if scac in late else 7)
+        assert float(match.group(1)) == fuel_pct(scac, service, price[week.isoformat()]), (scac, line.name)
+        seen.add(scac)
+    assert seen - late
 
 
 def test_draft_journals_edited_and_posted(build: dict[str, Any]) -> None:

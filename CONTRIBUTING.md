@@ -18,7 +18,8 @@ The simulator and API are Python in `simulator/`, and the web app is React and T
 Run the tests against a throwaway database:
 
 ```bash
-docker run -d --name hl-test-pg -e POSTGRES_PASSWORD=harborline-admin -p 55434:5432 postgres:17 -c wal_level=logical -c max_replication_slots=10 -c max_wal_senders=10
+export HL_TEST_PG_PASSWORD="$(openssl rand -hex 16)"
+docker run -d --name hl-test-pg -e POSTGRES_PASSWORD="$HL_TEST_PG_PASSWORD" -p 55434:5432 postgres:17 -c wal_level=logical -c max_replication_slots=10 -c max_wal_senders=10
 ```
 
 ```bash
@@ -26,7 +27,7 @@ cd simulator && python -m venv .venv && .venv/bin/pip install -e ".[dev]"
 ```
 
 ```bash
-HL_TEST_PG_PORT=55434 HL_TEST_PG_PASSWORD=harborline-admin .venv/bin/python -m pytest -q
+HL_TEST_PG_PORT=55434 .venv/bin/python -m pytest -q
 ```
 
 Work on the web app without a backend, using sample data:
@@ -48,7 +49,9 @@ cd web && npx tsc -b
 - `SETUP-WINDOWS.cmd` must stay ASCII with CRLF line endings, and run on PowerShell 5.1. `SETUP-MAC.command` must run on bash 3.2.
 - Setup must never wipe finished data. See `test_setup_can_never_wipe_finished_data`.
 - Don't add real company names to anything that behaves badly in the simulation. Real carriers appear only as neutral shipping options.
-- Bump `setup/VERSION` when you change anything setup copies, so existing installs pick it up.
+- Bumping `setup/VERSION` on `main` is what releases a new version to everyone: the next time anyone runs setup, it sees the higher number and offers the update. So bump it when you change anything setup copies, and only when `main` is ready to ship. Numbers compare part by part, so `2026.11.10` is newer than `2026.11.9`.
+- `setup/UPDATE_REPO` names the repository updates come from. On a fork, change it to yours, or leave it blank to turn update checks off. `HL_UPDATE_REPO` in the environment overrides it for testing (on Windows, a single space counts as blank).
+- Never commit a password or key, not even a sample. Setup generates them into `.env`, different on every install, and only fills in what is blank, so an update can't change them. CI runs gitleaks, and `test_no_key_is_in_the_package` fails on any of the old sample values.
 
 ## Pull requests
 

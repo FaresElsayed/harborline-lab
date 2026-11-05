@@ -75,7 +75,7 @@ const DEFS: Def[] = [
     ],
     mode: 'two',
     gaps: [
-      ['P4-D1', 'Fuel surcharge variance (expected %)', 'Needs the weekly EIA diesel price, which is public reference data. The carriers’ fuel tables are in the rate card workbooks; the applied % is on the bill lines.'],
+      ['P4-D1', 'Fuel surcharge variance (expected %)', 'Uses the weekly diesel file in landing/files/reference. The carriers’ fuel tables are in the rate card workbooks; the applied % is on the bill lines.'],
       ['P4-D1', 'Disputable now', 'Each carrier’s dispute window is an agreed value in the metric catalog; the overbilled lines themselves can be re-performed.'],
       ['P4-D2', 'Composite score', 'Weights and the minimum-volume rule are agreed values in the metric catalog.'],
     ],

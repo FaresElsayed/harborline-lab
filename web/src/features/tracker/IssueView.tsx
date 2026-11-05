@@ -12,12 +12,12 @@ import { Button, IconButton } from '@/components/ui/button';
 import { Checkbox, Input, Label, Select, Textarea, controlClass } from '@/components/ui/field';
 import { copyText, Empty, ErrorNote, Skeleton, Tabs } from '@/components/ui/misc';
 import { Dialog, Menu, MenuContent, MenuItem, MenuTrigger } from '@/components/ui/overlay';
-import { withBase } from '@/lib/base';
+import { handbookUrl, withBase } from '@/lib/base';
 import { fmtDateTime, fmtDay, fmtRelative, toDay, today } from '@/lib/dates';
 import { fmtHours } from '@/lib/format';
 import { usePersisted } from '@/lib/store';
-import { Avatar, DueBadge, IssueKey, PriorityIcon, STATUS_TONE, StatusLozenge, TypeIcon } from './atoms';
-import { branchName, epicShort, isWorkItem, useTracker } from './data';
+import { Avatar, DueBadge, IssueKey, LevelChip, PriorityIcon, STATUS_TONE, StatusLozenge, TypeIcon } from './atoms';
+import { branchName, epicShort, handbookFor, isWorkItem, plainLabels, teamPath, useTracker } from './data';
 
 const STATUSES: StatusName[] = ['To Do', 'In Progress', 'In Review', 'Done'];
 
@@ -225,6 +225,83 @@ function Attachments({ items }: { items: Array<{ name: string; path: string; url
         ) : null}
       </Dialog>
     </>
+  );
+}
+
+// ---------------------------------------------------------------- getting unstuck
+
+const NADIA = '/team/nadia-petrov';
+const quietLink = 'font-medium text-accent-strong hover:underline';
+
+/** Always near the top of a ticket: who to ask about what, and where to read up. */
+function Stuck({ issue }: { issue: Issue }) {
+  const t = useTracker();
+  const requester = issue.reporter && issue.reporter !== t.me && t.people.has(issue.reporter) ? t.person(issue.reporter) : null;
+  const page = handbookFor(issue);
+  return (
+    <aside aria-label="Stuck?" className="mt-3 rounded-m bg-raised px-3 py-2 text-sm leading-[1.35rem] text-muted">
+      <strong className="font-semibold text-ink">Stuck?</strong>{' '}
+      {requester ? (
+        <>
+          Ask{' '}
+          <Link to={teamPath(requester.key)} className={quietLink}>
+            {requester.name}
+          </Link>
+          , who asked for this, what it should do.{' '}
+        </>
+      ) : null}
+      Ask{' '}
+      <Link to={NADIA} className={quietLink}>
+        Nadia Petrov
+      </Link>
+      , your team lead, how to approach it.{' '}
+      {page ? (
+        <>
+          Read{' '}
+          <a href={handbookUrl(page.page)} target="_blank" rel="noreferrer" className={quietLink}>
+            {page.label}
+          </a>
+          .{' '}
+        </>
+      ) : null}
+      Not sure who?{' '}
+      <Link to="/team/channel" className={quietLink}>
+        #data-help
+      </Link>{' '}
+      points you to the right person.
+    </aside>
+  );
+}
+
+/** On an epic: the same four things the project brief lists, so nobody has to guess when a project is over. */
+function ProjectDone({ issue, doneTickets, tickets }: { issue: Issue; doneTickets: number; tickets: number }) {
+  const t = useTracker();
+  const requester = t.person(issue.reporter);
+  return (
+    <Section title="This project is done when">
+      <ul className="flex list-disc flex-col gap-1 pl-5 text-base text-ink">
+        <li>
+          Every ticket under it is Done <span className="num text-muted">({doneTickets} of {tickets} so far)</span>
+        </li>
+        <li>
+          <Link to="/team/iris-novak" className={quietLink}>
+            Iris Novak
+          </Link>{' '}
+          has signed off its dashboards against a{' '}
+          <Link to="/control/extract" className={quietLink}>
+            source extract
+          </Link>
+        </li>
+        <li>You have tagged a release</li>
+        <li>You have given {requester?.name ?? 'the requester'} a short readout</li>
+      </ul>
+      <p className="mt-2 text-sm text-muted">
+        <a href={handbookUrl('project-brief.html#evaluation')} target="_blank" rel="noreferrer" className={quietLink}>
+          How the work is judged
+        </a>{' '}
+        is the honest check to run at the end.
+      </p>
+    </Section>
   );
 }
 
@@ -582,9 +659,9 @@ function Details({ issue, save }: { issue: Issue; save: (p: IssuePatch, msg?: st
         </Field>
       ) : null}
       <Field label="Labels">
-        {issue.labels.length ? (
+        {plainLabels(issue.labels).length ? (
           <span className="flex flex-wrap gap-1">
-            {issue.labels.map((l) => (
+            {plainLabels(issue.labels).map((l) => (
               <span key={l} className="rounded-s bg-active px-1.5 text-sm leading-5 text-ink">
                 {l}
               </span>
@@ -680,6 +757,7 @@ export function IssueView({
   const attachments = (issue.attachments ?? []).map((a) => (typeof a === 'string' ? { name: a.split('/').pop() ?? a, path: a } : a));
   const branch = issue.branch_name ?? branchName(issue);
   const kidsDone = kids.filter((k) => k.status === 'Done').length;
+  const epicTickets = t.issues.filter((i) => i.epic_key === issue.key);
 
   const header = (
     <div className="flex items-center justify-between gap-3">
@@ -753,7 +831,7 @@ export function IssueView({
         </Section>
       ) : null}
       {kids.length ? (
-        <Section title={issue.type === 'Epic' ? 'Stories and tasks' : 'Tasks'} meta={`${kidsDone} of ${kids.length} done`}>
+        <Section title={issue.type === 'Epic' ? 'Stories' : 'Tasks'} meta={`${kidsDone} of ${kids.length} done`}>
           <ul className="-mx-2">
             {kids.map((k) => (
               <IssueLine key={k.key} issue={k} onOpen={onOpenIssue} />
@@ -761,6 +839,7 @@ export function IssueView({
           </ul>
         </Section>
       ) : null}
+      {issue.type === 'Epic' ? <ProjectDone issue={issue} doneTickets={epicTickets.filter((i) => i.status === 'Done').length} tickets={epicTickets.length} /> : null}
       {links.length ? (
         <Section title="Linked issues">
           <ul className="-mx-2">
@@ -801,6 +880,7 @@ export function IssueView({
         Copy branch name
       </Button>
       <DueBadge issue={issue} />
+      <LevelChip issue={issue} />
     </div>
   );
 
@@ -812,6 +892,7 @@ export function IssueView({
           <SummaryEditor issue={issue} startEditing={!!editSummary} onSave={(s) => save({ summary: s })} size="panel" />
         </div>
         {statusRow}
+        <Stuck issue={issue} />
         <div className="mt-5 rounded-m border border-line px-3 py-1.5">
           <Details issue={issue} save={save} />
         </div>
@@ -827,6 +908,7 @@ export function IssueView({
           <SummaryEditor issue={issue} startEditing={!!editSummary} onSave={(s) => save({ summary: s })} size="page" />
         </div>
         {statusRow}
+        <Stuck issue={issue} />
         {main}
       </div>
       <aside className="min-w-0 max-[1100px]:order-first">

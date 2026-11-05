@@ -48,7 +48,7 @@ stories:
     sprint: 1
     due_day: 5
     components: [Ingestion]
-    labels: [iot, telemetry, late-data]
+    labels: [iot, telemetry, late-data, level-3]
     description: |
       > "The gateways buffer when the Wi-Fi drops and dump everything when it comes back, sometimes hours later and
       > sometimes twice. And a couple of devices think it's a different time than it is." (Grace)
@@ -59,7 +59,8 @@ stories:
         `ingested_at` is when the gateway landed the row.
       - `dock_door_event` holds door OPEN and CLOSE events.
 
-      All three are append-only, with a nominal 5-minute cadence and 60 days of history on Medium, 90 on Large. A publication
+      Readings and door events are append-only, with a nominal 5-minute cadence and 60 days of history on Medium, 90 on
+      Large. `sensor` rows are updated when a probe is recalibrated. A publication
       `hl_iot_cdc` exists if you want to use it.
 
       **What good looks like**
@@ -85,12 +86,14 @@ stories:
         due_day: 1
         priority: High
         components: [Ingestion]
-        labels: [iot, spike, needs-clarification]
+        labels: [iot, spike, needs-clarification, level-3]
         description: |
           Learn the estate: sensor types and units, which zones are regulated, gateway behaviour, cadence, battery,
-          calibration, and what a null reading means.
+          calibration, and what a null reading means. Then hold the sensor list up against the WMS zones. Decide which zones
+          this project treats as regulated, and name any zone or sensor that has no partner on the other side.
         acceptance_criteria:
           - "Sensor inventory by site, zone and type, annotated with Grace's answers"
+          - "Regulated zones listed, with sensors and WMS zones reconciled and any mismatch named"
           - "Known quirks listed (late flushes, duplicates, drift)"
           - &docs "Note committed via PR (docs/DATA-<n>-… branch, Conventional Commit with the key) and linked from this ticket"
         depends_on: []
@@ -101,14 +104,25 @@ stories:
         due_day: 2
         priority: High
         components: [Ingestion]
-        labels: [iot, incremental, late-data]
+        labels: [iot, incremental, late-data, level-4]
         description: |
-          Load readings and door events incrementally. Rows that arrive hours late must never be skipped, and nothing may
-          load twice. Prove it with the simulator's late_data_dump scenario.
+          > "I can't tell you how late a flush will be. Hours is normal, and sometimes the same reading arrives twice. If
+          > Quality's numbers move when a gateway reconnects, they have to move to the right answer, and nothing can go
+          > missing on the way." (Grace)
+
+          Readings and door events have to reach the platform incrementally and stay complete, however late they turn up.
+          Ayesha will use this data as evidence, so a missed row isn't a small defect. It is a stretch of time nobody can
+          vouch for.
+
+          Nobody has decided these, so settle them and defend your answers:
+          - How late a row can arrive and still be picked up, and what happens to one that comes later than that.
+          - How quickly a late row has to show up downstream, against what the load costs to run on your free tier.
+          - What state you are left in when a load fails halfway.
         acceptance_criteria:
-          - "After late_data_dump, platform counts equal source counts per sensor-day"
-          - "Re-running a load is a no-op"
-          - "Ingestion lag (ingested_at → available) measured"
+          - "After the simulator's late_data_dump scenario, platform counts equal source counts per sensor-day"
+          - "Re-running a load changes nothing"
+          - "Ingestion lag, from gateway landing to available on the platform, is measured"
+          - "The PR states the latest arrival the design handles, what happens beyond it, and the trade-off you accepted"
           - &git "Merged via PR from a feat/DATA-<n>-… branch; Conventional Commits carry the key; PR self-review done; CI green"
         depends_on: []
       - id: P7.S1.T3
@@ -118,14 +132,21 @@ stories:
         due_day: 3
         priority: Medium
         components: [Ingestion, Data Quality]
-        labels: [iot, time-zones, clock-drift]
+        labels: [iot, time-zones, clock-drift, level-4]
         description: |
-          Convert device epoch milliseconds to UTC and to site-local time. Detect devices whose clocks run ahead or behind,
-          for example readings that claim to be from after they were landed.
+          > "Every reading carries the device's own clock, and a couple of those are wrong. The only other clock is when the
+          > gateway stored the row, and on a flush that one is hours behind. I still need to know which devices have drifted
+          > and by how much." (Grace)
+
+          Quality reads these timelines in site-local time, next to WMS events and a paper log, and shows them to auditors.
+          Every reading needs a correct UTC and site-local time, and a clock that is wrong has to be detected rather than trusted.
+
+          Left open on purpose: once a device is known to have drifted, is its time corrected or only flagged? A corrected time
+          is a changed record, and Ayesha decides whether it can stand as evidence.
         acceptance_criteria:
-          - "Every reading has UTC and site-local timestamps"
-          - "Drift per device measured daily; outliers flagged"
-          - "DST nights correct for CHI1 and TOR1 (tested)"
+          - "Every reading has UTC and site-local timestamps, correct across DST nights at CHI1 and TOR1 (tested)"
+          - "Drift per device measured daily; outliers flagged; what the measure can't see is stated in the PR"
+          - "Whether drifted times are corrected or only flagged is decided with Ayesha and recorded"
           - *git
         depends_on: [P7.S1.T2]
       - id: P7.S1.T4
@@ -135,7 +156,7 @@ stories:
         due_day: 3
         priority: Medium
         components: [Data Quality]
-        labels: [iot, duplicates]
+        labels: [iot, duplicates, level-3]
         description: |
           Gateways resend batches. Identify duplicates, which may come with different reading ids, keep one copy, and report
           how often it happens per site.
@@ -152,12 +173,12 @@ stories:
         due_day: 4
         priority: High
         components: [Modeling]
-        labels: [iot, time-series]
+        labels: [iot, time-series, level-3]
         description: |
           Quality reasons in continuous time. Build a regular 5-minute grid per sensor with the observed values and
           explicit gaps. Don't interpolate silently, and keep the raw readings for audit.
         acceptance_criteria:
-          - "Grid per sensor for 90 days"
+          - "Grid per sensor for all the sensor history your build has"
           - "Gap intervals flagged and measurable"
           - "Raw readings retained and linked to grid cells"
           - *git
@@ -169,9 +190,10 @@ stories:
         due_day: 5
         priority: Medium
         components: [Ingestion, Platform]
-        labels: [iot, performance, free-tier]
+        labels: [iot, performance, free-tier, level-3]
         description: |
-          Load all 90 days of history and lay out the tables so that a zone-day query is fast on your warehouse.
+          Load all the sensor history your build has (60 days on Medium, 90 on Large) and lay out the tables so that a zone-day
+          query is fast on your warehouse.
         acceptance_criteria:
           - "History loaded and reconciled"
           - "Zone-day query < 3 s measured on your SQL warehouse"
@@ -189,28 +211,36 @@ stories:
     sprint: 1
     due_day: 10
     components: [Modeling, Data Quality]
-    labels: [cold-chain, excursions]
+    labels: [cold-chain, excursions, level-4]
     description: |
       > "An excursion isn't one hot reading. It's out of range for long enough to matter, and the rules differ by zone." (Ayesha)
 
-      The thresholds and duration rules per zone belong to Ayesha's SOP, so get them from her. The WMS zone master also
-      stores minimum and maximum temperatures. If the two disagree, Ayesha decides. After an excursion, Quality puts the
-      exposed lots on HOLD and reviews them for release or destruction.
+      > "For any excursion I must be able to say which rule applied on that date, which lots were exposed, and that each
+      > one was dealt with. If I can't show that, it doesn't matter what the chart says." (Ayesha)
+
+      The thresholds and duration rules per zone belong to Ayesha's SOP, and only she can rule on them. The WMS zone master
+      also stores minimum and maximum temperatures. If the two disagree, Ayesha decides. After an excursion, Quality puts
+      the exposed lots on HOLD and reviews them for release or destruction.
+
+      Three audiences read this differently. Quality wants nothing missed, Operations doesn't want routine dock activity
+      reported as a quality event, and an auditor wants the same answer every time the report is run. History is judged
+      by the rules in force at the time, not by today's rules. Exposure means what was in the zone during the episode,
+      not what is there now.
 
       **What good looks like**
-      - Excursion episodes with start, end, duration, peak and severity, judged by the rules in force at the time.
-      - Exposure per episode: which lots were in the zone, judged from inventory history and not today's snapshot.
-      - A compliance check: was every exposed lot held, and how long did the review take?
-      - Late readings update episodes deterministically.
+      - Excursion episodes with start, end, duration, peak and severity, and the rule that applied.
+      - Exposure per episode, with lots and quantities.
+      - A compliance answer: was every exposed lot held, and how long did the review take?
+      - An episode changes only when new data says it should.
 
       **Definition of Done**
       - All sub-tasks done; five episodes hand-checked with Ayesha
       - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
       - Rules and definitions in the metric catalog; CHANGELOG entry
     acceptance_criteria:
-      - "Excursion rules per zone type signed off by Ayesha and stored as effective-dated reference data"
-      - "Episodes for 90 days, hand-checked against 5 episodes Ayesha picks"
-      - "Exposure per episode lists lots and quantities from inventory history"
+      - "Excursion rules per zone type signed off by Ayesha; any past date is judged by the rules in force on that date"
+      - "Episodes for all the sensor history your build has, hand-checked against 5 episodes Ayesha picks"
+      - "Exposure per episode lists lots and quantities as they stood during the episode"
       - "Hold compliance per episode, including exposed lots that were never held"
     depends_on: [P7.S1, P2.S1]
     tasks:
@@ -221,13 +251,19 @@ stories:
         due_day: 4
         priority: Highest
         components: [Modeling]
-        labels: [needs-clarification, definitions, cold-chain]
+        labels: [needs-clarification, definitions, cold-chain, level-4]
         description: |
-          Get the rules: range and minimum duration per zone type, humidity rules, how gaps count, how a single spike counts,
-          and when two episodes are really one. Luis thinks door-open blips during loading shouldn't count. Ayesha may
-          disagree. Get a decision.
+          > "My SOP gives a range and a minimum duration per zone type. It was written for people reading charts, so it won't
+          > answer every case a program meets. Find those cases and bring them to me with examples. I will rule on them." (Ayesha)
+
+          > "Door's open during loading, the temp bumps and comes back. That's not a quality event. Keep it off the report." (Luis)
+
+          Ayesha may disagree with Luis. The decision is hers under the SOP, and it has to be on record, because Luis will read
+          the same report. Humidity counts too. Temperature limits, durations and humidity limits come from Ayesha and no one
+          else, so don't work them out from the data.
         acceptance_criteria:
-          - "Rules table per zone type signed off by Ayesha"
+          - "Rules table per zone type signed off by Ayesha, covering temperature, humidity and every ambiguous case you brought her"
+          - "A real example from the readings behind each ruling"
           - "Ops vs Quality disagreement resolved and recorded"
           - "Definitions added to the metric catalog"
           - *docs
@@ -239,7 +275,7 @@ stories:
         due_day: 6
         priority: Medium
         components: [Modeling]
-        labels: [reference-data]
+        labels: [reference-data, level-3]
         description: |
           Rules change, and history must be judged by the rules that were in force at the time. Keep thresholds
           effective-dated and compare them with the WMS zone master.
@@ -255,14 +291,23 @@ stories:
         due_day: 8
         priority: Highest
         components: [Modeling]
-        labels: [cold-chain, excursions]
+        labels: [cold-chain, excursions, level-4]
         description: |
-          Detect excursion episodes per sensor and zone. Record start, end (or ongoing), duration, peak and minimum,
-          degree-minutes outside range, and the rule that fired. Late readings must update episodes deterministically.
+          > "I need every excursion the way my SOP defines it, and I will check them against my own records. If a gateway
+          > flushes three hours late, an episode may have to change. It must not change for any other reason. An auditor
+          > will notice when the same episode looks different on two printouts." (Ayesha)
+
+          Each episode has to answer what an auditor would ask: which zone and sensor, when it started, when it ended or that
+          it's still going, how long it lasted, its peak and minimum, degree-minutes outside range, and the rule that fired.
+
+          Not specified, and yours to propose and defend: probes in the same zone that disagree, an episode with a gap in the
+          middle of it, and an episode that spans a change of rule.
         acceptance_criteria:
-          - "Episodes computed for 90 days"
+          - "Episodes computed for all the sensor history your build has"
           - "Matches 5 episodes hand-picked by Ayesha (charts attached to the PR)"
-          - "late_data_dump changes episodes only where the new data says so"
+          - "late_data_dump changes episodes only where the new data says so; two runs on the same data give identical episodes"
+          - "Each episode names the rule version that fired"
+          - "Your handling of disagreeing probes, gaps and rule changes is documented, and Ayesha has accepted it"
           - *git
         depends_on: [P7.S2.T2]
       - id: P7.S2.T4
@@ -272,15 +317,23 @@ stories:
         due_day: 9
         priority: High
         components: [Modeling]
-        labels: [cold-chain, lots]
+        labels: [cold-chain, lots, level-4]
         description: |
-          For each episode, list the lots (client, item, lot, quantity) stored in the affected zone while it lasted. Use
-          inventory history, not today's snapshot.
+          > "The list of exposed lots is the list I put on HOLD, so being wrong costs something in both directions. Too few,
+          > and product we should have stopped leaves the building. Too many, and I'm reviewing a client's stock that was
+          > never at risk, and perhaps destroying it." (Ayesha)
+
+          For each episode, she needs the lots (client, item, lot, quantity) that were in the affected zone while it lasted.
+          Today's stock doesn't answer that. It has moved on since.
+
+          What about a lot that left five minutes into the episode, or arrived just before it ended? How long in the zone is
+          long enough to count as exposed? That is Ayesha's call, so give her real cases to rule on.
         acceptance_criteria:
-          - "Exposure per episode with lots and quantities"
+          - "Exposure per episode with lots and quantities, as they stood during the episode"
           - "Correct for lots that moved in or out during the episode (tested)"
+          - "What counts as exposed, including part-way moves, agreed with Ayesha and in the metric catalog"
           - *git
-        depends_on: [P7.S2.T3]
+        depends_on: [P7.S2.T3, P7.S3.T1]
       - id: P7.S2.T5
         type: Task
         summary: "Hold compliance check"
@@ -288,12 +341,18 @@ stories:
         due_day: 10
         priority: High
         components: [Data Quality]
-        labels: [cold-chain, holds, compliance]
+        labels: [cold-chain, holds, compliance, level-4]
         description: |
-          Did every qualifying excursion lead to holds on the exposed lots? How long did Quality take to release or destroy them?
+          > "If I told an auditor that every exposed lot was held, could I prove it? That is the question. If the honest
+          > answer is no, I want the list before they find it." (Ayesha)
+
+          Did every qualifying excursion lead to holds on the exposed lots? How long did Quality take to release or destroy
+          them? Ayesha owns the review-time target. Deciding which hold answers which excursion is part of the job, and you
+          will have to defend that rule, along with how a hold that came late counts.
         acceptance_criteria:
           - "Per episode: exposed lots, held lots and hold time"
           - "Lots exposed but never held listed for Ayesha"
+          - "The rule tying a hold to an excursion is written down and agreed with Ayesha, including holds that came late"
           - "Review-time distribution compared with Ayesha's target"
           - *git
         depends_on: [P7.S2.T4]
@@ -304,7 +363,7 @@ stories:
         due_day: 10
         priority: Medium
         components: [Modeling]
-        labels: [cold-chain, dock-doors]
+        labels: [cold-chain, dock-doors, level-3]
         description: |
           Grace wants door-open time shown next to each excursion. Dock door events exist for the cold sites.
         acceptance_criteria:
@@ -323,7 +382,7 @@ stories:
     sprint: 1
     due_day: 10
     components: [Modeling]
-    labels: [traceability, lots, wms]
+    labels: [traceability, lots, wms, level-3]
     description: |
       > "For any lot I need its whole life: who sent it, when it arrived, where it sat, what happened to it, and every
       > order it left on." (Ayesha)
@@ -356,7 +415,7 @@ stories:
         due_day: 2
         priority: High
         components: [Modeling]
-        labels: [needs-clarification, spike, lots]
+        labels: [needs-clarification, spike, lots, level-3]
         description: |
           Map where lot numbers are captured at receiving, putaway, moves, picks, shipping, returns, holds and destruction,
           and which identifiers link each step to the next.
@@ -372,7 +431,7 @@ stories:
         due_day: 5
         priority: High
         components: [Modeling]
-        labels: [lots]
+        labels: [lots, level-3]
         description: |
           Build one row per client, item and lot, with expiry, first receipt, supplier or ASN, quantities received, shipped,
           adjusted, destroyed and on hand, and current hold status. People type lot numbers, so they need normalizing.
@@ -389,14 +448,22 @@ stories:
         due_day: 7
         priority: High
         components: [Modeling]
-        labels: [lots, traceability]
+        labels: [lots, traceability, level-4]
         description: |
-          Build the graph of lot movements with quantities: receipt → LPN → locations → pick → order → shipment, carton and
-          tracking number. Include returns that re-enter stock and transfers between sites.
+          > "An auditor doesn't take a total on trust. They pick one shipment and ask me to walk it back to the receipt, then
+          > forward to everyone who received the same lot. Every step has to add up." (Ayesha)
+
+          Ayesha needs the whole movement of every lot, with quantities, from receipt to every shipment, carton and tracking
+          number. That includes returns that re-enter stock and transfers between sites, and a tracking number that has
+          since been replaced still counts.
+
+          Some links won't be provable from the sources. Show Ayesha where those are and what the trace does about them. An
+          honest gap is acceptable. A quiet guess isn't.
         acceptance_criteria:
           - "Edges cover receive, move, pick, ship, return, transfer and destroy"
           - "Quantity is conserved at every node (tested)"
           - "Every tracking number a shipment ever had is kept, with valid-from and valid-to"
+          - "Points where the sources can't prove a link are listed for Ayesha, with how the trace treats each one"
           - *git
         depends_on: [P7.S3.T2]
       - id: P7.S3.T4
@@ -406,13 +473,18 @@ stories:
         due_day: 8
         priority: High
         components: [Data Quality]
-        labels: [lots, reconciliation]
+        labels: [lots, reconciliation, level-4]
         description: |
-          For each lot, received − shipped − destroyed ± adjustments ± returns must equal on hand. Each exception is either
-          a data defect (list it) or a gap in your model (fix it).
+          > "99.9% is the bar, and the other 0.1% isn't a rounding error. Those are exactly the lots an auditor will ask me
+          > about. I want each of them explained." (Ayesha)
+
+          For each lot, received − shipped − destroyed ± adjustments ± returns must equal on hand. Each exception is either a
+          data defect (list it) or a gap in your model (fix it). The proof has to hold on a warehouse that doesn't stop moving,
+          and it has to survive being rerun by someone who doubts it.
         acceptance_criteria:
           - "Balance check across all lots runs daily"
-          - "Exceptions < 0.1% of lots, and each one is explained"
+          - "Exceptions < 0.1% of lots, each one explained as a data defect or a fixed model gap"
+          - "The moment the proof is taken at, and how in-flight stock is treated, are documented"
           - *git
         depends_on: [P7.S3.T3]
       - id: P7.S3.T5
@@ -422,7 +494,7 @@ stories:
         due_day: 9
         priority: Medium
         components: [Serving]
-        labels: [performance]
+        labels: [performance, level-3]
         description: |
           A lot's full trace must come back in under 3 s on your full dataset (about 20 M ledger rows on Large) on your SQL warehouse.
         acceptance_criteria:
@@ -437,7 +509,7 @@ stories:
         due_day: 10
         priority: Low
         components: [Documentation]
-        labels: [documentation, audit]
+        labels: [documentation, audit, level-3]
         description: |
           Auditors will ask how you know. Document the lineage from source columns to the trace, and the controls (balance
           proof, reconciliations) that make it trustworthy.
@@ -456,10 +528,17 @@ stories:
     sprint: 2
     due_day: 14
     components: [Modeling]
-    labels: [recall, traceability, pii]
+    labels: [recall, traceability, pii, level-5]
     description: |
       > "When a client calls a recall, I need every order, consignee and carrier for that lot within hours, not days. And
       > I need to know what's still in our buildings so I can hold it." (Ayesha)
+
+      Today this takes two days. Quality must be able to send a package to the client and the regulator within 24 hours.
+      A list missing one consumer is a safety failure. A list sent to the wrong person is a privacy incident. The consignee
+      list contains consumer PII, which stays restricted until Project 8 formalizes governance, on interim rules agreed
+      with Mei.
+
+      You own this from the moment the call comes in to a package Quality can stand behind.
 
       **Inputs:** one or more lots, or a SKU and a date range.
 
@@ -467,8 +546,8 @@ stories:
       - the orders, shipments and ship-to addresses that received the lot, with quantities, carrier, tracking numbers and delivery status
       - the stock still on hand in any building, so it can be held
 
-      Quality must be able to send a package to the client and the regulator within 24 hours. The consignee list contains
-      consumer PII. Keep access to it restricted until Project 8 formalizes governance, and agree the interim rules with Mei.
+      **Who decides:** Ayesha decides the recall, the package and what counts as complete. Mei decides who may see consignee
+      data. Omar owns what the client hears and when. They won't want the same thing, so bring them to one answer.
 
       **Definition of Done**
       - All sub-tasks done; mock recall drill passed
@@ -478,6 +557,7 @@ stories:
       - "Forward trace (lot → orders, shipments, ship-tos, carriers, delivery status) and backward trace (order or tracking → lots → sibling orders)"
       - "Traced shipped quantity equals the lot's shipped balance, including returns, transfers and destroyed stock"
       - "Recall package generated per request; access restricted and every export logged"
+      - "Interim PII rules agreed with Mei and recorded"
       - "Mock recall drill: package delivered in < 2 hours with quantities reconciled 100%"
     depends_on: [P7.S3, P4.S1]
     tasks:
@@ -488,13 +568,20 @@ stories:
         due_day: 11
         priority: High
         components: [Modeling]
-        labels: [needs-clarification, recall]
+        labels: [needs-clarification, recall, level-4]
         description: |
-          What does Quality receive from a client in a recall: lots, SKUs or date ranges? What has to go back, to whom, in
-          what format, and how fast? Who may see the consignee list? Ask Mei.
+          > "A client rarely calls with a neat list. It may be one lot, or several, or everything of one SKU made between two
+          > dates. I need to start a trace from whatever they give me." (Ayesha)
+
+          > "Who needs the consignee list? To do what? For how long?" (Mei)
+
+          Pin down what comes in, what goes back, to whom, in what form and how fast. A client and a regulator may not need
+          the same thing. Omar owns what the client hears and when, and he doesn't get clear consignee data. Find out where
+          these people disagree before the drill does it for you.
         acceptance_criteria:
-          - "Intake fields and output package defined"
-          - "Recipients and interim PII rules agreed with Ayesha and Mei"
+          - "Intake fields defined, and the output package defined per recipient"
+          - "Recipients and interim PII rules agreed with Ayesha and Mei: who sees what, and for how long"
+          - "What the client hears and when agreed with Omar"
           - *docs
         depends_on: []
       - id: P7.S4.T2
@@ -504,14 +591,18 @@ stories:
         due_day: 12
         priority: Highest
         components: [Modeling]
-        labels: [recall, traceability]
+        labels: [recall, traceability, level-4]
         description: |
-          Trace from lots to every order, shipment, carton and tracking number, and ship-to, with quantities and delivery
-          status from carrier events.
+          > "The number that matters is the one I can't see: a customer who received the lot and isn't on my list. Tell me how
+          > you know the list is complete." (Ayesha)
+
+          From any lot, Quality needs every order, shipment, carton, tracking number and ship-to, with quantities, and whether
+          the carrier says it arrived. Decide and defend what the trace says when the sources can't pin a unit to one carton,
+          and when a carrier has told us nothing about a shipment.
         acceptance_criteria:
           - "Forward trace works for any lot"
           - "Traced shipped quantity equals the lot's shipped balance"
-          - "Delivery status from carrier events included"
+          - "Delivery status from carrier events included; shipments with no carrier events shown as such, not as delivered"
           - *git
         depends_on: [P7.S4.T1]
       - id: P7.S4.T3
@@ -521,7 +612,7 @@ stories:
         due_day: 13
         priority: High
         components: [Modeling]
-        labels: [recall, traceability]
+        labels: [recall, traceability, level-3]
         description: |
           Trace from a complaint (an order number or tracking number) to the lots it contained, their supplier or ASN, and
           the other orders that received those lots.
@@ -537,12 +628,18 @@ stories:
         due_day: 13
         priority: Medium
         components: [Modeling]
-        labels: [recall, edge-cases]
+        labels: [recall, edge-cases, level-4]
         description: |
-          Units that were returned and restocked, transferred between sites, or destroyed after a hold must all be traced correctly.
+          > "A unit that came back and was restocked may have gone out again to someone else. A unit destroyed after a hold
+          > has to show as destroyed, not as lost. I will be asked to account for every one of them." (Ayesha)
+
+          Returned, restocked, transferred between sites, destroyed after a hold: all of it must trace correctly. One thing
+          nobody has ruled on: does a consumer who already sent the unit back stay on the list? Ayesha will decide. Bring her
+          the cases.
         acceptance_criteria:
-          - "A test covers each edge case"
+          - "A test covers returned-and-restocked, transferred and destroyed-after-hold units"
           - "Trace totals reconcile with the lot balance"
+          - "How a consumer who returned a unit appears in the package is ruled on by Ayesha and recorded"
           - *git
         depends_on: [P7.S4.T2]
       - id: P7.S4.T5
@@ -552,14 +649,22 @@ stories:
         due_day: 14
         priority: High
         components: [Serving, Security]
-        labels: [recall, pii, export]
+        labels: [recall, pii, export, level-5]
         description: |
-          Produce one recall package per request: a client-ready consignee list and an internal summary covering quantities,
-          on-hand stock to hold, and carriers. Restrict access, and log every export.
+          > "One request, one package. A consignee list the client can use, and an internal summary I can act on: quantities,
+          > on-hand stock to hold, carriers." (Ayesha)
+
+          > "That list is consumer names, addresses and phone numbers. Restricted. Who gets it? How does it leave? When is it
+          > gone?" (Mei)
+
+          Own this end to end, including what happens after the file leaves the platform. If a correction arrives after a
+          package has gone out, the people holding the old one need to be able to tell what changed.
         acceptance_criteria:
-          - "Package generated per request id"
+          - "Package generated per request id; a re-issue shows what changed since the last one"
+          - "A client's list holds only that client's consignees"
           - "Export restricted to the Quality recall role"
           - "Every export logged (who, when, request id, row count)"
+          - "Delivery, retention and who may hold copies agreed with Mei and recorded"
           - *git
         depends_on: [P7.S4.T3, P7.S4.T4]
       - id: P7.S4.T6
@@ -569,15 +674,22 @@ stories:
         due_day: 14
         priority: Medium
         components: [Modeling]
-        labels: [cold-chain, holds]
+        labels: [cold-chain, holds, level-5]
         description: |
-          For each held lot, summarize its exposure (minutes out of range, peak temperature, degree-minutes and mean kinetic
-          temperature), so Ayesha can decide whether to release or destroy it.
+          > "When I release a lot, I put my name on it. When I destroy one, it costs a client money. For every held lot I need
+          > evidence that would still stand up a year from now, and I need to know where that evidence is weak." (Ayesha)
+
+          Ayesha makes the decision, not you. Your job is what she decides from: for each held lot, its minutes out of range,
+          peak temperature, degree-minutes and mean kinetic temperature. Lots are not always simple. One may sit through several
+          episodes, change zones, or be covered by a sensor record with holes in it. How much evidence is enough is her call,
+          and she can only make it if the weak spots are visible.
         acceptance_criteria:
-          - "Evidence available for every held lot"
-          - "Mean kinetic temperature method documented and checked against a worked example"
+          - "Evidence available for every held lot, across every episode it was exposed to"
+          - "Mean kinetic temperature method and constants accepted by Ayesha, in the metric catalog, and checked against a worked example"
+          - "Missing or doubtful sensor periods are stated in the evidence and never counted as in range"
+          - "Walked through with Ayesha on real held lots; she confirms she could decide from it"
           - *git
-        depends_on: [P7.S4.T2]
+        depends_on: [P7.S4.T2, P7.S2.T4]
       - id: P7.S4.T7
         type: Task
         summary: "Mock recall drill"
@@ -585,14 +697,17 @@ stories:
         due_day: 14
         priority: Highest
         components: [Modeling]
-        labels: [recall, drill]
+        labels: [recall, drill, level-5]
         description: |
-          Pick a lot-controlled food item at random, at CHI1, from a lot that shipped to at least 20 orders. Ask Ayesha to
-          role-play the recall call. Produce the package and time it from request to delivery.
+          > "A drill I've been warned about proves very little. Pick the lot at random, let me make the call, and start the
+          > clock when I do." (Ayesha)
+
+          The lot: a lot-controlled food item at CHI1, chosen at random, from a lot that shipped to at least 20 orders. Ayesha
+          role-plays the recall call. You run the response and report honestly on how it went.
         acceptance_criteria:
           - "Package delivered < 2 hours after the request"
           - "Quantities reconcile 100%"
-          - "Drill report with lessons learned"
+          - "Drill report with lessons learned, including what would have gone wrong in a real recall, reviewed by Ayesha, Omar and Mei"
           - *docs
         depends_on: [P7.S4.T5]
 
@@ -606,20 +721,17 @@ stories:
     sprint: 2
     due_day: 16
     components: [Data Quality, Observability]
-    labels: [iot, sensor-health]
+    labels: [iot, sensor-health, level-4]
     description: |
       > "A sensor that's dead is easy. A sensor that's lying is the dangerous one." (Grace)
 
-      A green chart only means something if the sensor behind it is healthy. Detect:
-      - flatlined or stuck values
-      - physically implausible spikes
-      - dropouts
-      - low batteries
-      - clock drift
-      - calibration that is due or overdue (`sensor.calibration_due`)
+      A green chart only means something if the sensor behind it is healthy. When a sensor is unhealthy, its readings
+      mustn't count as "in range". Quality also wants to hear about an excursion while it is happening, not the next morning.
 
-      When a sensor is unhealthy, its readings mustn't count as "in range". Quality also wants to hear about an excursion
-      while it is happening, not the next morning.
+      Grace needs to know about values that stay flat or stick, physically implausible spikes, dropouts, low batteries,
+      clock drift, and calibration that is due or overdue. None of this comes free. Every healthy probe wrongly flagged
+      takes time in range away from Ayesha for no reason, and every alert that means nothing teaches people to ignore
+      the next one.
 
       **Definition of Done**
       - All sub-tasks done; thresholds tuned with Grace
@@ -639,12 +751,17 @@ stories:
         due_day: 11
         priority: High
         components: [Data Quality]
-        labels: [needs-clarification, sensor-health]
+        labels: [needs-clarification, sensor-health, level-4]
         description: |
-          Agree what "unhealthy" means for each sensor type. How long must identical values last before they're suspicious?
-          What jump is physically impossible in a cooler, or in a freezer? Also agree battery thresholds and calibration windows.
+          > "I can tell you what a probe can physically do. I can't tell you how sure you have to be before you stop believing
+          > one. It costs something either way. Call a good probe bad and Ayesha's compliance drops for nothing. Call a bad
+          > probe good and the green chart means nothing." (Grace)
+
+          "Unhealthy" needs a definition for each sensor type, and a cooler isn't a freezer. Grace owns the rules, including
+          battery thresholds and calibration windows. Ayesha lives with the consequences, so she should hear them too.
         acceptance_criteria:
-          - "Rules signed off by Grace"
+          - "Rules signed off by Grace, per sensor type"
+          - "For each rule, the cost of a false alarm and of a missed fault is stated, and Ayesha has seen it"
           - *docs
         depends_on: []
       - id: P7.S5.T2
@@ -654,7 +771,7 @@ stories:
         due_day: 12
         priority: Medium
         components: [Modeling]
-        labels: [sensor-health]
+        labels: [sensor-health, level-3]
         description: |
           Map which sensors cover which zones, and list the zones that rely on a single temperature sensor.
         acceptance_criteria:
@@ -662,6 +779,29 @@ stories:
           - "Single-sensor zones listed for Grace"
           - *git
         depends_on: []
+      - id: P7.S5.T5
+        type: Task
+        summary: "Calibration and battery tracker"
+        estimate_hours: 2
+        due_day: 12
+        priority: Low
+        components: [Data Quality]
+        labels: [sensor-health, maintenance, level-2]
+        description: |
+          Grace is catching up on maintenance and wants two lists per site, for active sensors only:
+          - Calibration: every sensor overdue or due in the next 30 days, with its due date and the days until due
+            (negative if overdue).
+          - Battery: every sensor below the low-battery threshold from the health rules, with its latest reading and its
+            change over the last 30 days.
+
+          **Where to start:** Open `telemetry.sensor` in the `iot` database for `calibration_due` and `is_active`, and
+          `telemetry.sensor_reading` for `battery_pct`. The **Source systems** handbook page describes both, and Grace Liu
+          owns the battery threshold. `calibration_due` moves on in place when a probe is recalibrated.
+        acceptance_criteria:
+          - "Both lists exist per site, with the columns above, active sensors only"
+          - "Grace confirms they match her maintenance plan"
+          - *git
+        depends_on: [P7.S5.T1]
       - id: P7.S5.T3
         type: Task
         summary: "Flatline and spike detection"
@@ -669,13 +809,17 @@ stories:
         due_day: 13
         priority: High
         components: [Data Quality]
-        labels: [sensor-health, anomaly-detection]
+        labels: [sensor-health, anomaly-detection, level-4]
         description: |
-          Detect stuck and spiking sensors with tunable thresholds, then review the false positives with Grace.
+          > "Doors open and real temperatures do jump, so don't page me about a probe that's doing its job. I want the one that
+          > has stopped doing it." (Grace)
+
+          Find sensors that have stuck or are spiking, in a way Grace can tune and can check for herself. She decides when the
+          false-positive rate is acceptable, and you bring her the evidence to decide it.
         acceptance_criteria:
-          - "Detection runs over all 90 days"
+          - "Detection runs over all the sensor history your build has"
           - "Every flagged period can be reviewed with a chart"
-          - "False-positive rate reviewed with Grace and thresholds tuned"
+          - "Thresholds can be tuned; false-positive rate reviewed with Grace and tuned to her satisfaction"
           - *git
         depends_on: [P7.S5.T1]
       - id: P7.S5.T4
@@ -685,30 +829,20 @@ stories:
         due_day: 14
         priority: Medium
         components: [Data Quality]
-        labels: [sensor-health]
+        labels: [sensor-health, level-4]
         description: |
-          A zone with no healthy temperature sensor for longer than its excursion duration rule is blind. List the blind
-          zones and when they were blind.
+          > "If a zone is blind, nobody can say whether it had an excursion. I want to know when and for how long before an
+          > auditor does." (Ayesha)
+
+          Definition, already agreed: a zone with no healthy temperature sensor for longer than its excursion duration rule is
+          blind. Not agreed: a zone that looked blind until a late flush filled the gap. Was it blind or not? Which answer
+          goes in the record? Propose one and get Ayesha's agreement.
         acceptance_criteria:
           - "Blind-zone intervals per zone"
+          - "The treatment of gaps later filled by a late flush is agreed with Ayesha and documented"
           - "Feeds the Cold Chain Monitor"
           - *git
         depends_on: [P7.S5.T2, P7.S5.T3]
-      - id: P7.S5.T5
-        type: Task
-        summary: "Calibration and battery tracker"
-        estimate_hours: 2
-        due_day: 15
-        priority: Low
-        components: [Data Quality]
-        labels: [sensor-health, maintenance]
-        description: |
-          List calibration due in the next 30 days and already overdue, and batteries trending low.
-        acceptance_criteria:
-          - "Lists per site"
-          - "Grace confirms they match her maintenance plan"
-          - *git
-        depends_on: [P7.S5.T1]
       - id: P7.S5.T6
         type: Task
         summary: "Re-judge compliance with sensor health"
@@ -716,13 +850,18 @@ stories:
         due_day: 16
         priority: High
         components: [Modeling]
-        labels: [cold-chain, sensor-health]
+        labels: [cold-chain, sensor-health, level-5]
         description: |
-          Re-evaluate time in range and excursions for periods when a sensor was unhealthy. Those periods are "unknown",
-          not "in range". Show Ayesha what changed.
+          > "If a period I reported as in range becomes unknown, then a figure I have already given an auditor was wrong. I need
+          > to know exactly what changed and why before anyone else does, and I will decide what follows." (Ayesha)
+
+          Periods when a sensor was unhealthy are "unknown", not "in range". Re-judge time in range and excursions on that
+          basis, then own the conversation that comes after. Lots sat in those zones during those periods, and Luis reads
+          the same numbers with a different view of what unknown should mean.
         acceptance_criteria:
           - "Time in range recomputed with an 'unknown' category"
-          - "Diff report for Ayesha showing what changed"
+          - "Diff report for Ayesha showing what changed, why, and which lots were in the zone during newly unknown periods"
+          - "Walked through with Ayesha; her decision on those lots and on earlier reported figures is recorded"
           - *git
         depends_on: [P7.S5.T4]
       - id: P7.S5.T7
@@ -732,14 +871,18 @@ stories:
         due_day: 16
         priority: High
         components: [Observability]
-        labels: [alerting, cold-chain]
+        labels: [alerting, cold-chain, level-4]
         description: |
-          Quality wants to know about an excursion while it is happening. Alert within 15 minutes of an excursion rule
-          being met, or of a regulated zone going blind.
+          > "I don't want to learn about an excursion at the morning meeting. But a late flush can't get my team out of bed for
+          > something that ended hours ago, and one hiccup can't send fifty messages." (Ayesha)
+
+          Quality wants an alert within 15 minutes of an excursion rule being met, or of a regulated zone going blind. Think
+          about what that promise means when the gateway is the thing that's down, and tell Ayesha where it stops holding.
         acceptance_criteria:
           - "Alert ≤ 15 minutes after the rule is met, measured in a drill"
           - "Alert includes zone, start, current reading and exposed lots"
           - "No alert storms from duplicate gateway flushes"
+          - "What happens for an excursion that only becomes known in a late flush is agreed with Ayesha and documented"
           - *git
         depends_on: [P7.S5.T4]
 
@@ -753,13 +896,15 @@ stories:
     sprint: 2
     due_day: 20
     components: [Dashboards]
-    labels: [dashboards, brand-kit, readout]
+    labels: [dashboards, brand-kit, readout, level-5]
     attachments: [wireframes/P7-D1.svg, wireframes/P7-D2.svg]
     description: |
       There are two dashboards, specified in **P7-D1 Cold Chain Monitor** and **P7-D2 Recall Trace** (owner for both:
       Ayesha). Wireframes are attached.
 
       > "I want to walk an auditor through one screen, not three binders." (Ayesha)
+
+      You own the outcome: Ayesha stops stapling printouts, and on the day of a recall she trusts what she sees.
 
       Definitions will conflict. Does "unknown" time count against time in range? Ayesha says yes and Luis says no. What
       counts as an "excursion", and as a "lot exposed"? Each KPI needs one agreed definition with an owner in the metric catalog.
@@ -795,11 +940,15 @@ stories:
         due_day: 15
         priority: High
         components: [Dashboards]
-        labels: [needs-clarification, definitions]
+        labels: [needs-clarification, definitions, level-4]
         description: |
-          Walk Ayesha and Grace through both specs. Settle "time in range", "excursion" and "lots exposed", and record the decisions.
+          > "A number I can't defend to an auditor is worse than no number." (Ayesha)
+
+          Each KPI in both specs needs one definition that its owner signs. Three are contested. Time in range: Ayesha counts
+          unknown time against it, and Luis wants it out of the denominator. Excursion: Luis wants door-open blips excluded,
+          and Quality's SOP decides. Lots exposed has to mean the same thing on the monitor as on the hold list.
         acceptance_criteria:
-          - "Specs updated with decisions and KPI owners"
+          - "Specs updated with decisions and KPI owners, and the losing position recorded next to each contested decision"
           - "Metric catalog updated"
           - *docs
         depends_on: []
@@ -810,12 +959,21 @@ stories:
         due_day: 16
         priority: High
         components: [Modeling, Serving]
-        labels: [gold, performance]
+        labels: [gold, performance, level-4]
         description: |
-          Build hourly zone aggregates, episode facts, lot exposure and trace views that serve both dashboards fast.
+          > "On the day of a recall I won't wait for tomorrow's refresh, and on a normal day I won't look at a monitor that's
+          > an hour old." (Ayesha)
+
+          Two very different freshness promises sit on the same data. The monitor stays ≤ 15 minutes behind gateway ingestion
+          while late flushes keep changing hours it has already shown. The Recall Trace refreshes daily by 06:00 site-local,
+          and an on-demand refresh during a recall completes within 15 minutes of being triggered. Every interaction stays
+          under 3 s, and you are still on a free tier. Say what you gave up to get there.
         acceptance_criteria:
           - "Dashboards read only from gold"
           - "P95 query < 3 s measured"
+          - "Both refresh promises measured, including the on-demand recall refresh"
+          - "A late flush corrects hours already published"
+          - "Refresh cost recorded in the PR, with the trade-off you accepted"
           - *git
         depends_on: [P7.S6.T1]
       - id: P7.S6.T3
@@ -825,7 +983,7 @@ stories:
         due_day: 18
         priority: High
         components: [Dashboards]
-        labels: [dashboards, brand-kit]
+        labels: [dashboards, brand-kit, level-3]
         description: |
           Build the dashboard from the spec and wireframe with the brand kit.
         acceptance_criteria:
@@ -841,13 +999,17 @@ stories:
         due_day: 19
         priority: High
         components: [Dashboards]
-        labels: [dashboards, brand-kit, recall]
+        labels: [dashboards, brand-kit, recall, level-4]
         description: |
-          Build the dashboard from the spec and wireframe. A lot or SKU selection drives the summary, the genealogy flow,
-          the affected orders and the export.
+          > "On the day of a recall this screen is in front of me, Omar and perhaps Daniel, and each of us is allowed to see
+          > something different. It also has to tell the truth when the numbers don't close." (Ayesha)
+
+          Build what the spec and wireframe describe. The hard part is what the spec can't draw: masked and clear views of the
+          same trace, and a lot whose balance isn't zero, which must never look like a finished answer.
         acceptance_criteria:
           - "All spec visuals and filters present"
           - "Figures match the recall package for the drill lot"
+          - "A lot whose balance doesn't close is visibly incomplete"
           - "P95 < 3 s"
           - *git
         depends_on: [P7.S6.T2]
@@ -858,13 +1020,17 @@ stories:
         due_day: 19
         priority: High
         components: [Security, Dashboards]
-        labels: [access, pii, audit]
+        labels: [access, pii, audit, level-4]
         description: |
-          Enforce the access rules from the specs. Consignee details appear only for the Quality recall role, and every
-          export from the Recall Trace is logged.
+          > "Hiding a column in a report isn't access control. Show me what happens when someone asks the data directly." (Mei)
+
+          The specs set the access rules. Consignee details are clear only for the Quality recall role, other Quality users and
+          Omar see them masked, Operations sees its own sites, and every export from the Recall Trace is logged. Bring Mei
+          evidence that the rules hold.
         acceptance_criteria:
-          - "Tested with a Quality recall identity, a Quality analyst and an Ops identity"
-          - "Export log shows who, when and what"
+          - "Tested with a Quality recall identity, a Quality analyst, Omar and an Ops identity, on the data as well as on the page"
+          - "Export log shows who, when, request id and rows"
+          - "Evidence reviewed by Mei"
           - *git
         depends_on: [P7.S6.T3, P7.S6.T4]
       - id: P7.S6.T6
@@ -875,7 +1041,7 @@ stories:
         due_day: 17
         priority: High
         components: [Modeling]
-        labels: [bug, dst, time-zones]
+        labels: [bug, dst, time-zones, level-4]
         description: |
           **Reported by Dr. Ayesha Khan:**
           > "The excursion on the night the clocks went back shows on the monitor as starting at 01:40. Our paper log and the
@@ -896,16 +1062,19 @@ stories:
         due_day: 18
         priority: High
         components: [Modeling]
-        labels: [bug, recall, traceability]
+        labels: [bug, recall, traceability, level-4]
         description: |
           **Reported by Omar Haddad:**
           > "During the drill, the client's team found one of their customers who received the lot but wasn't on our list.
-          > Their records show a different tracking number from ours. The warehouse says the label was reprinted that day."
+          > Their records show a different tracking number from ours. The warehouse says the label was reprinted that day.
+          > I had to hear that from the client. I don't want to hear it from one again."
 
-          **Expected:** the trace covers every tracking number a shipment has ever had.
+          **Expected:** the trace covers every tracking number a shipment has ever had, and Ayesha can be told how far she can
+          now rely on the list.
         acceptance_criteria:
           - "Root cause found, or non-reproduction proven with a test on a reprinted-label shipment"
           - "Forward and backward trace both cover replaced tracking numbers"
+          - "The PR says how a miss like this would now be caught before the client sees it, and what still couldn't be"
           - *fix
         depends_on: [P7.S4.T2]
       - id: P7.S6.T8
@@ -915,7 +1084,7 @@ stories:
         due_day: 20
         priority: Low
         components: [Documentation]
-        labels: [documentation, recall]
+        labels: [documentation, recall, level-3]
         description: |
           Write a step-by-step guide Quality can follow without you: start a trace, check completeness, export the package,
           and know who to call.
@@ -932,11 +1101,12 @@ stories:
         priority: Highest
         reporter: iris.novak
         components: [Dashboards, Data Quality]
-        labels: [uat, sign-off, reconciliation]
+        labels: [uat, sign-off, reconciliation, level-4]
         description: |
           Nothing goes to Ayesha until Iris Novak (Business Performance Manager) has signed it off. She ties
           your numbers back to the source systems herself, checks every KPI against your metric catalog and the
-          dashboard spec, and writes up numbered findings with a verdict.
+          dashboard spec, and writes up numbered findings with a verdict. "It's probably fine" won't get past her, and on these
+          two dashboards a wrong number has an auditor or a consumer on the other end of it.
 
           For each dashboard: stop the stream, refresh, download the source extract from the Control Center, and put
           a submission in `uat/<dashboard id>/round-1/` as the team page describes (Dashboard sign-off). Attach the
@@ -956,12 +1126,17 @@ stories:
         due_day: 20
         priority: High
         components: [Documentation]
-        labels: [readout, release]
+        labels: [readout, release, level-5]
         description: |
-          Give a 5-minute readout to Ayesha and Grace: what they can prove now, how fresh the data is, and the known limits.
-          Record a 3-minute demo, tag the release, and hold a short retro.
+          > "Tell me what I can now say to an auditor, and what I still can't. I would rather hear the limits from you than
+          > from them." (Ayesha)
+
+          You have 5 minutes with Ayesha and Grace, and they decide whether the binders go away. Choose what they need to hear,
+          including how fresh the data is and where it can't be trusted. Also record a 3-minute demo, tag the release, and
+          hold a short retro.
         acceptance_criteria:
           - "Readout delivered; feedback captured as new tickets"
+          - "Known limits stated, each one accepted by Ayesha or ticketed"
           - "Demo video linked from the README"
           - "v0.7.0 tagged on main; CHANGELOG lists every ticket key in the release"
           - "Retro notes committed"

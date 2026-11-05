@@ -783,6 +783,8 @@ def file_entities() -> dict[str, Entity]:
     rc = "landing/files/carriers/rate_cards/<SCAC>_rates_<yyyymmdd>.xlsx"
     wm = "landing/files/facilities/warehouse_master_<yyyymmdd>.xlsx"
     budget = "landing/files/finance/budget/budget_FY<yyyy>.xlsx (and budget_FY<yyyy>_reforecast.xlsx)"
+    diesel = "landing/files/reference/diesel_weekly.csv"
+    sources = "landing/files/reference/signal_sources.csv"
 
     def cover(label: str, type_: str = "string", note: str = "") -> Field:
         return header_field(label, type_, note, ev=f'("{label}"')
@@ -889,6 +891,29 @@ def file_entities() -> dict[str, Entity]:
                 header_field("Ground %", "number", "parcel cards"),
                 header_field("Air %", "number", "parcel cards, air services"),
                 header_field("LTL %", "number", "LTL cards"),
+            ],
+        ),
+        ent(
+            "diesel_weekly",
+            "diesel_weekly.csv",
+            f"{diesel}: the weekly price carrier bills are rated from, rewritten in full with one more row each Monday. "
+            "A build made before this file existed gets it at its next batch",
+            [
+                header_field("week_start", "date", "the Monday the price applies from; one row per week"),
+                header_field("diesel_usd_per_gal", "number", "find its band on the rate card's Fuel Surcharge sheet"),
+            ],
+        ),
+        ent(
+            "signal_sources",
+            "signal_sources.csv",
+            f"{sources}: where this build's FX, weather, holidays and diesel came from, written once per build",
+            [
+                header_field("signal", note="fx, weather, holidays or diesel"),
+                header_field("key", note="currency, warehouse code, or the countries"),
+                header_field("source", note="frankfurter or fallback; open-meteo or synthetic; python-holidays; simulator"),
+                header_field("real_from", "date", "empty when no real data was used"),
+                header_field("real_to", "date", "later days are generated, so stop comparing here"),
+                header_field("note", note="what this means for joins to the public API"),
             ],
         ),
         ent(
@@ -2396,6 +2421,27 @@ def file_diagrams() -> list[Diagram]:
                 E("csv.sku", "mat.sku", "x"),
                 E("csv.upc", "mat.upc", "x"),
                 E("spec.Client", "csv.client", label="same client folder"),
+            ],
+        ),
+        Diagram(
+            "er-files-reference",
+            "business_files",
+            "Reference files: the diesel series carrier bills are rated from, and where the build's signals came from",
+            [
+                [
+                    B("diesel", "business_files.diesel_weekly", "week_start, diesel_usd_per_gal"),
+                    B("src", "business_files.signal_sources", "signal, key, source, real_from, real_to, note", gap=24),
+                ],
+                [
+                    B(
+                        "fuelband",
+                        "business_files.rate_card_fuel",
+                        "Diesel_from_USD_gal, Diesel_to_USD_gal, Ground_pct, Air_pct, LTL_pct",
+                    ),
+                ],
+            ],
+            [
+                E("diesel.diesel_usd_per_gal", "fuelband.Diesel_from_USD_gal", label="price falls in a band"),
             ],
         ),
         Diagram(

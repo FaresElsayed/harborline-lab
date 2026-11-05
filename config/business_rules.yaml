@@ -333,6 +333,14 @@ cold_chain:
   hold_review_days: [1, 5]            # Quality reviews held lots within this many days
   release_share: 0.7                  # share of held lots released; the rest destroyed
 
+# Probe calibration programme: telemetry.sensor.calibration_due moves on after each visit.
+sensor_calibration:
+  first_due_days: [20, 360]           # a probe's first due date, in days from when it enters the sensor list
+  interval_days: 365                  # the next due date, in days from the visit
+  early_days: [0, 21]                 # most visits: this many days before the due date
+  late_share: 0.35                    # share of visits that slip past the due date
+  late_days: [3, 120]                 # how many days those slip, which leaves about 5% of probes overdue at any time
+
 labor:
   picks_per_hour: { B2C: 95, B2B: 140 }   # lines per hour for an average picker
   hourly_wage_usd: { US: 19.5, CA: 21.0, MX: 6.5 }

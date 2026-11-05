@@ -20,15 +20,16 @@ import { tracker } from '@/api/client';
 import { compareRank, useMoveIssue, useRestore } from '@/api/queries';
 import type { Issue, Sprint } from '@/api/types';
 import { Button, IconButton } from '@/components/ui/button';
-import { Input, Select } from '@/components/ui/field';
+import { Input, Segmented, Select } from '@/components/ui/field';
 import { download, Empty, ErrorNote, Skeleton } from '@/components/ui/misc';
 import { Dialog, Menu, MenuContent, MenuItem, MenuTrigger, Tooltip } from '@/components/ui/overlay';
 import { fmtDay, toDay, today } from '@/lib/dates';
 import { fmtHours, fmtInt, plural } from '@/lib/format';
-import { ui } from '@/lib/store';
+import { ui, usePersisted } from '@/lib/store';
 import { Avatar, DueBadge, Estimate, IssueKey, StatusLozenge, TypeIcon } from './atoms';
-import { SPRINT_CAPACITY_HOURS, epicShort, sprintHours, useIssueParam, useTracker } from './data';
-import { containerCollision } from './dnd';
+import { SPRINT_CAPACITY_HOURS, compareDue, epicShort, insertByDue, sprintHours, useIssueParam, useTracker } from './data';
+import { containerCollision, holdStill } from './dnd';
+import { YouAreHere } from './here';
 import { useIssueNav } from './nav';
 import { CompleteSprintDialog, StartSprintDialog } from './SprintDialogs';
 
@@ -126,6 +127,7 @@ function Section({
   canStart,
   onStart,
   onComplete,
+  byDue,
 }: {
   container: string;
   title: string;
@@ -138,6 +140,7 @@ function Section({
   canStart?: boolean;
   onStart?: () => void;
   onComplete?: () => void;
+  byDue: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: container, data: { container } });
   const hours = sprintHours(items);
@@ -175,7 +178,7 @@ function Section({
       </header>
       {sprint?.goal && !collapsed ? <p className="-mt-1 px-10 pb-2 text-sm text-muted">Goal: {sprint.goal}</p> : null}
       {!collapsed ? (
-        <SortableContext id={container} items={items.map((i) => i.key)} strategy={verticalListSortingStrategy}>
+        <SortableContext id={container} items={items.map((i) => i.key)} strategy={byDue ? holdStill : verticalListSortingStrategy}>
           <ul className="overflow-hidden rounded-b-l">
             {items.map((i) => (
               <Row key={i.key} issue={i} container={container} epicName={severalEpics ? epicNames.get(i.key) : undefined} onOpen={onOpen} />
@@ -276,6 +279,8 @@ export default function BacklogPage() {
   const [starting, setStarting] = useState<Sprint | null>(null);
   const [completing, setCompleting] = useState<Sprint | null>(null);
   const [restoreOpen, setRestoreOpen] = useState(false);
+  const [listOrder, setListOrder] = usePersisted<'rank' | 'due'>('harborline.backlog.order', 'rank');
+  const byDue = listOrder === 'due';
   const initialised = useRef(false);
 
   const sprints = useMemo(() => [...t.sprints].sort((a, b) => a.id - b.id), [t.sprints]);
@@ -299,8 +304,8 @@ export default function BacklogPage() {
       .filter((i) => type === 'all' || i.type === type)
       .filter((i) => epic === 'all' || i.epic_key === epic)
       .filter((i) => !q || i.summary.toLowerCase().includes(q) || i.key.toLowerCase().includes(q))
-      .sort(compareRank);
-  }, [t.issues, text, type, epic]);
+      .sort(byDue ? compareDue : compareRank);
+  }, [t.issues, text, type, epic, byDue]);
 
   const shown = sprints.filter((s) => showClosed || s.state !== 'closed');
   const base = useMemo(() => {
@@ -338,6 +343,7 @@ export default function BacklogPage() {
     if (!from || !to || from === to) return;
     setDraft((prev) => {
       const p = prev ?? base;
+      if (byDue) return { ...p, [from]: p[from].filter((k) => k !== active.id), [to]: insertByDue(p[to], String(active.id), t.byKey) };
       const dst = [...p[to]];
       const idx = dst.indexOf(String(over.id));
       dst.splice(idx < 0 ? dst.length : idx, 0, String(active.id));
@@ -350,6 +356,12 @@ export default function BacklogPage() {
     const container = findContainer(key);
     setDragging(null);
     if (!over || !container) return setDraft(null);
+    // In due-date order the date decides the position: a drag can move a ticket between sprints, not rank it.
+    if (byDue && (t.byKey.get(key)?.sprint_id ?? null) === (container === BACKLOG ? null : Number(container))) {
+      setDraft(null);
+      if (over !== key) toast.message('This list is in due-date order', { description: 'Switch the order to Manual to rank by hand.' });
+      return;
+    }
     const list = [...cols[container]];
     const from = list.indexOf(key);
     const to = over === container ? list.length - 1 : list.indexOf(over);
@@ -369,7 +381,7 @@ export default function BacklogPage() {
     const label = sprintId == null ? 'the backlog' : sprints.find((s) => s.id === sprintId)?.name;
     const previous = issue?.sprint_id ?? null;
     move.mutate(
-      { key, before, after, patch: sprintChanged ? { sprint_id: sprintId } : undefined },
+      { key, before: byDue ? undefined : before, after: byDue ? undefined : after, patch: sprintChanged ? { sprint_id: sprintId } : undefined },
       {
         onSuccess: () => {
           if (!sprintChanged) return;
@@ -437,12 +449,26 @@ export default function BacklogPage() {
           </div>
         </div>
 
+        <YouAreHere className="mt-4" />
+
         <div className="mt-5 flex flex-wrap items-center gap-2">
-          <div className="w-64">
+          <div className="w-52">
             <Input leading={<Search aria-hidden />} value={text} onChange={(e) => setText(e.target.value)} placeholder="Search the backlog" aria-label="Search the backlog" />
           </div>
           <Select ariaLabel="Issue type" value={type} onValueChange={setType} className="w-36" options={[{ value: 'all', label: 'All types' }, ...(['Story', 'Task', 'Bug', 'Spike'] as const).map((x) => ({ value: x, label: x }))]} />
-          <Select ariaLabel="Epic" value={epic} onValueChange={setEpic} className="w-64" options={[{ value: 'all', label: 'All epics' }, ...t.epics.map((e) => ({ value: e.key, label: epicShort(e.summary) }))]} />
+          <Select ariaLabel="Epic" value={epic} onValueChange={setEpic} className="w-52" options={[{ value: 'all', label: 'All epics' }, ...t.epics.map((e) => ({ value: e.key, label: epicShort(e.summary) }))]} />
+          <span className="flex items-center gap-2">
+            <span className="text-sm text-muted">Order</span>
+            <Segmented
+              ariaLabel="Order issues by"
+              value={listOrder}
+              onValueChange={setListOrder}
+              options={[
+                { value: 'rank', label: 'Manual', title: 'The order you ranked them in' },
+                { value: 'due', label: 'Due date', title: 'Overdue and soonest first, no due date last' },
+              ]}
+            />
+          </span>
           <span className="flex-1" />
           {sprints.some((s) => s.state === 'closed') ? (
             <Button variant="quiet" aria-pressed={showClosed} onClick={() => setShowClosed((v) => !v)}>
@@ -490,10 +516,28 @@ export default function BacklogPage() {
                   canStart={!t.active && s.id === t.nextFuture?.id}
                   onStart={() => setStarting(s)}
                   onComplete={() => setCompleting(s)}
+                  byDue={byDue}
                 />
               ))}
-              <Section container={BACKLOG} title="Backlog" items={items(BACKLOG)} collapsed={collapsed.has(BACKLOG)} onToggle={() => toggle(BACKLOG)} epicNames={epicNames} onOpen={open} />
-              {filtered.length === 0 && filtersOn ? <Empty>No issues match these filters.</Empty> : null}
+              <Section container={BACKLOG} title="Backlog" items={items(BACKLOG)} collapsed={collapsed.has(BACKLOG)} onToggle={() => toggle(BACKLOG)} epicNames={epicNames} onOpen={open} byDue={byDue} />
+              {filtered.length === 0 && filtersOn ? (
+                <Empty
+                  action={
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setText('');
+                        setType('all');
+                        setEpic('all');
+                      }}
+                    >
+                      Clear filters
+                    </Button>
+                  }
+                >
+                  No issues match these filters.
+                </Empty>
+              ) : null}
             </div>
             <DragOverlay dropAnimation={{ duration: 180, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' }}>
               {activeIssue ? (

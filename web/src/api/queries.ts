@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { sim, team, tracker, uat, type IssueQuery } from './client';
+import { appVersion, sim, team, tracker, uat, type IssueQuery } from './client';
 import type { DqSettings, Issue, IssuePatch, NewIssue, Preset, Sprint, TrackerMeta } from './types';
 
 export const keys = {
@@ -28,6 +28,66 @@ export const useRuns = (limit = 100) => useQuery({ queryKey: keys.runs, queryFn:
 export const useScenarios = () => useQuery({ queryKey: keys.scenarios, queryFn: sim.scenarios, staleTime: Infinity });
 export const useTeamLinks = () => useQuery({ queryKey: ['team-links'], queryFn: team.links, staleTime: 60_000 });
 export const useConnections = () => useQuery({ queryKey: keys.connections, queryFn: sim.connections, staleTime: 60_000 });
+
+// ---------------------------------------------------------------- update check
+
+const DAY = 24 * 3_600_000;
+const UPDATE_KEY = 'harborline.update.check';
+
+/** Numeric, part by part: 2026.11.10 is newer than 2026.11.9. */
+export function isNewerVersion(latest: string, local: string) {
+  const a = latest.split('.').map(Number);
+  const b = local.split('.').map(Number);
+  for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
+    const diff = (a[i] ?? 0) - (b[i] ?? 0);
+    if (diff) return diff > 0;
+  }
+  return false;
+}
+
+/** Asks GitHub for setup/VERSION at most once a day, across reloads. An attempt that fails counts too: it just tries tomorrow. */
+async function latestVersion(repo: string): Promise<string | null> {
+  try {
+    const seen = JSON.parse(localStorage.getItem(UPDATE_KEY) ?? 'null') as { at: number; repo: string; version: string | null } | null;
+    if (seen && seen.repo === repo && Date.now() - seen.at < DAY) return seen.version;
+  } catch {
+    /* nothing remembered: ask */
+  }
+  let version: string | null = null;
+  try {
+    const res = await fetch(`https://raw.githubusercontent.com/${repo}/main/setup/VERSION`, { credentials: 'omit', signal: AbortSignal.timeout(8000) });
+    const text = res.ok ? (await res.text()).trim() : '';
+    version = /^\d+(\.\d+)*$/.test(text) ? text : null;
+  } catch {
+    /* offline or blocked: say nothing */
+  }
+  try {
+    localStorage.setItem(UPDATE_KEY, JSON.stringify({ at: Date.now(), repo, version }));
+  } catch {
+    /* private window */
+  }
+  return version;
+}
+
+/** The newer version number, or null: not checked yet, nothing newer, offline, or the demo, which has nothing to update. */
+export function useUpdateAvailable() {
+  const q = useQuery({
+    queryKey: ['app', 'update'],
+    queryFn: async () => {
+      const local = await appVersion.local();
+      if (!local?.version || !/^[\w.-]+\/[\w.-]+$/.test(local.update_repo ?? '')) return null;
+      const latest = await latestVersion(local.update_repo);
+      return latest && isNewerVersion(latest, local.version) ? latest : null;
+    },
+    enabled: import.meta.env.VITE_DEMO !== '1',
+    staleTime: DAY,
+    gcTime: Infinity,
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+  return q.data ?? null;
+}
 
 function refreshSim(qc: QueryClient) {
   void qc.invalidateQueries({ queryKey: keys.status });

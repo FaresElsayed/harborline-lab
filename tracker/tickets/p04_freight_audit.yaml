@@ -30,7 +30,7 @@ epic:
     disputes only within a limited window after the invoice, so old errors are gone for good.
 
     **Sources:** the carrier tracking aggregator API, EDI 940/945 files from B2B clients, carrier rate-card workbooks in
-    `landing/files/`, the EIA diesel price API, AX vendor invoices (from Project 3) and the WMS shipments you already have.
+    `landing/files/`, the weekly diesel reference file there, AX vendor invoices (from Project 3) and the WMS shipments you already have.
 
     **Success measures**
     - Every carrier bill line is matched, rated, and either accepted or disputable with evidence.
@@ -39,6 +39,328 @@ epic:
   dashboards: [P4-D1, P4-D2]
 
 stories:
+  # ---------------------------------------------------------------- S3
+  - id: P4.S3
+    summary: "Carrier rate cards and diesel price for fuel surcharge"
+    type: Story
+    reporter: beth.kowalczyk
+    priority: High
+    story_points: 8
+    sprint: 1
+    due_day: 4
+    components: [Ingestion, Modeling]
+    labels: [rate-cards, xlsx, files, fuel, level-3]
+    description: |
+      To audit a bill you need to know what it **should** have cost. Each carrier's negotiated rates are in a workbook in
+      `landing/files/`. New versions arrive after renegotiations and general rate increases. Each workbook has base rates
+      by service, zone and weight, plus accessorials and the fuel-surcharge table. Parcel carriers bill on the greater of
+      actual and dimensional weight.
+
+      Fuel surcharges float weekly with a diesel price. `landing/files/reference/diesel_weekly.csv` is the series the
+      carriers' tables read and bills were rated from, so it is your rate-card reference. The real EIA series is a
+      separate stretch comparison and won't match it.
+
+      **Talk to:** Beth Kowalczyk (how each carrier's contract works: dimensional divisors, minimums, fuel effective dates)
+      and Alan Brooks (how freight is accrued).
+
+      **Definition of Done**
+      - All sub-tasks done; rate cards (every version) and weekly diesel prices in silver
+      - Expected cost for any historical shipment computable from the rate-card version in effect on its ship date
+      - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
+    acceptance_criteria:
+      - "Every carrier rate-card version ingested with effective dates, tolerating layout differences between carriers"
+      - "Weekly diesel prices for the full history plus weekly increments"
+      - "Fuel surcharge % per carrier per week, with the effective-date rule agreed with Beth"
+      - "Billable weight per package per carrier rule (actual vs dimensional)"
+      - "Expected charge per package (base, fuel and accessorials) from the rate-card version in effect on the ship date"
+    depends_on: [P1.S5, P2.S2]
+    tasks:
+      - id: P4.S3.T2
+        type: Task
+        summary: "Weekly diesel prices from the reference file"
+        estimate_hours: 3
+        due_day: 1
+        priority: High
+        components: [Ingestion]
+        labels: [files, fuel, level-2]
+        description: |
+          Load `landing/files/reference/diesel_weekly.csv`, the weekly on-highway diesel price, for the full history and
+          keep it current. The file is rewritten in full with one more row each Monday.
+
+          **Where to start:** Open Business files in Source systems. Beth Kowalczyk can tell you how carriers use the price.
+
+          **Stretch:** load the real US series from the EIA API into its own table and chart the two. They won't match,
+          because the simulator generates its own series. The Public APIs table has the series and the page where you
+          register for a free key. Real publication can slip around holidays, and values are occasionally revised.
+        acceptance_criteria:
+          - "Weekly diesel price for the full history plus weekly increments, one row per week"
+          - "A re-run picks up each new week, with no duplicate weeks"
+          - "If you take the stretch: EIA key kept in the secret store, not in Git, and the EIA series is never used to rate bills"
+          - &git "Merged via PR from a feat/DATA-<n>-… branch; Conventional Commits carry the key; PR self-review done; CI green"
+        depends_on: [P1.S2.T3, P1.S5.T1]
+      - id: P4.S3.T1
+        type: Task
+        summary: "Ingest carrier rate-card workbooks"
+        estimate_hours: 6
+        due_day: 2
+        priority: Highest
+        components: [Ingestion]
+        labels: [rate-cards, xlsx, scd2, level-3]
+        description: |
+          Each carrier sends rates in its own layout: zones across, weights down, accessorial tables on other sheets, notes in
+          merged cells. New versions arrive over time and must not overwrite history.
+        acceptance_criteria:
+          - "Every carrier and version loaded with file metadata and effective dates"
+          - "Long format: carrier × service × zone × weight break → rate"
+          - "Accessorial and fuel tables captured"
+          - "A layout surprise fails loudly, per carrier"
+          - *git
+        depends_on: [P1.S5.T1]
+      - id: P4.S3.T5
+        type: Task
+        summary: "Accessorial catalog per carrier"
+        estimate_hours: 3
+        due_day: 2
+        priority: Medium
+        components: [Modeling]
+        labels: [accessorials, rate-cards, level-2]
+        description: |
+          Residential delivery, delivery-area surcharges, additional handling, liftgate on LTL: each carrier prices them on
+          its own card, per country and per rate-card version. Build one catalog that maps each carrier's accessorial codes
+          and descriptions to common types, with the amounts and the conditions under which each applies.
+
+          **Where to start:** Open the `Accessorials` sheet in a few workbooks under `landing/files/carriers/rate_cards/`, one parcel and one
+          LTL at least. Each sheet has a Code, a Description and an amount per currency. Beth Kowalczyk owns the rules for
+          when each one applies.
+        acceptance_criteria:
+          - "Accessorials per carrier, country and rate-card version mapped to common types"
+          - "Conditions of applicability documented (for example residential vs commercial address)"
+          - "Unmapped accessorials listed for Beth"
+          - *git
+        depends_on: [P4.S3.T1]
+      - id: P4.S3.T3
+        type: Task
+        summary: "Fuel surcharge % by carrier and week"
+        estimate_hours: 3
+        due_day: 3
+        priority: High
+        components: [Modeling]
+        labels: [fuel, rate-cards, level-3]
+        description: |
+          Carriers map the diesel price to a fuel-surcharge percentage through a table in their rate card, applied from a
+          specific day relative to the price publication. Ask Beth Kowalczyk exactly when each carrier's new percentage
+          takes effect.
+        acceptance_criteria:
+          - "Fuel % per carrier, service type and week"
+          - "Effective-date rule per carrier documented with Beth's answer"
+          - "Tested on a week where the diesel band changed"
+          - *git
+        depends_on: [P4.S3.T1, P4.S3.T2]
+      - id: P4.S3.T4
+        type: Task
+        summary: "Billable weight and zones"
+        estimate_hours: 4
+        due_day: 3
+        priority: High
+        components: [Modeling]
+        labels: [dim-weight, zones, level-3]
+        description: |
+          Parcel carriers bill the greater of actual and dimensional weight (L × W × H divided by a divisor that differs by
+          carrier and contract), rounded up by their rules. Zones depend on origin and destination. Agree with Beth where the
+          authoritative zone comes from.
+        acceptance_criteria:
+          - "Billable weight per carton per carrier rule, using canonical units from P1"
+          - "Zone per package from the agreed source"
+          - "Rules documented per carrier"
+          - *git
+        depends_on: [P4.S3.T1, P2.S2.T4]
+      - id: P4.S3.T6
+        type: Task
+        summary: "Expected cost per package"
+        estimate_hours: 6
+        due_day: 4
+        priority: Highest
+        components: [Modeling]
+        labels: [expected-cost, rate-cards, level-3]
+        description: |
+          Combine rate card, billable weight, zone, service, fuel and applicable accessorials into an expected charge per
+          package, using the rate-card version in effect on the ship date. This is the yardstick the audit measures every
+          bill against. LTL is priced differently; agree with Beth how far to take LTL in this project.
+        acceptance_criteria:
+          - "Expected charge per parcel package with a component breakdown"
+          - "LTL scope agreed with Beth and implemented to that scope"
+          - "Spot-checked against five real bill lines per carrier"
+          - "Missing-rate cases flagged, never defaulted to zero"
+          - *git
+        depends_on: [P4.S3.T3, P4.S3.T4, P4.S3.T5]
+
+  # ---------------------------------------------------------------- S2
+  - id: P4.S2
+    summary: "EDI 940/945 parsing: X12 envelopes, control numbers and duplicates"
+    type: Story
+    reporter: beth.kowalczyk
+    priority: High
+    story_points: 8
+    sprint: 1
+    due_day: 7
+    components: [Ingestion, Data Quality]
+    labels: [edi, x12, files, duplicates, level-3]
+    description: |
+      Harborline's B2B clients (mostly auto parts and general merchandise) send orders as EDI **940** warehouse shipping
+      orders, and Harborline sends back **945** warehouse shipping advices when they ship. The 945 is the record of what
+      Harborline told the client it shipped, with the BOL and PRO numbers and the carrier. When a client disputes a shipment
+      or a freight charge, the 945 is the evidence. Tomás Ortega runs the EDI translator and the `landing/edi/` folders.
+
+      **What to expect (X12 004010)**
+      - Envelopes (ISA, GS, ST) with control numbers and counts that must agree.
+      - Resent files and duplicate interchanges.
+      - The occasional malformed transaction set, such as a wrong segment count.
+      - Client PO numbers that should match WMS `client_order_ref`.
+
+      **Definition of Done**
+      - All sub-tasks done; 940s and 945s parsed into structured tables with envelope validation, deduplication and quarantine
+      - 945s matched to WMS shipments and 940s to WMS orders, with match rates reported
+      - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
+    acceptance_criteria:
+      - "Every document in landing/edi, loose files and the monthly history archives alike, is parsed or quarantined with a reason; none is silently skipped"
+      - "Envelope validation: delimiters read from ISA; control numbers and counts checked at interchange, group and transaction-set level"
+      - "Duplicate interchanges and resends loaded once, with resends recorded"
+      - "940 orders and 945 shipments in silver at header and line level"
+      - "945s matched to WMS shipments and 940s to WMS orders, with match rates per trading partner"
+    depends_on: [P1.S5]
+    tasks:
+      - id: P4.S2.T1
+        type: Task
+        summary: "EDI walkthrough with Tomás"
+        estimate_hours: 2
+        due_day: 5
+        priority: Medium
+        components: [Documentation]
+        labels: [edi, stakeholder, level-2]
+        description: |
+          Ask Tomás Ortega which trading partners send what, how files are named and moved, what the 997 acknowledgements
+          mean, and what happens when a file is resent. Then look at real files in `landing/edi/`.
+
+          **Where to start:** Read the EDI section of Source systems, then open one file under `landing/edi/inbound/940/` and one under
+          `landing/edi/outbound/945/`. Tomás Ortega runs the translator, so bring him what you can't explain.
+        acceptance_criteria:
+          - "Trading partners and document types listed"
+          - "File lifecycle (arrival, processing, archive) documented"
+          - "Known quirks recorded, each with an example file name"
+          - &docs "Committed via PR (docs/DATA-<n>-… branch, Conventional Commit with the key) and linked from this ticket"
+        depends_on: []
+      - id: P4.S2.T2
+        type: Spike
+        summary: "Spike: parse X12 with a library or write your own"
+        estimate_hours: 2
+        due_day: 5
+        priority: Medium
+        components: [Ingestion, Documentation]
+        labels: [edi, spike, adr, level-3]
+        description: |
+          Time-box: 2 hours. Try at least one open-source X12 library against real files from `landing/edi/` (including a
+          broken one), and compare it with a small parser of your own. Consider maintenance, licence, how failures surface,
+          and whether it runs where your pipeline runs.
+        acceptance_criteria:
+          - "Short ADR with the options tried, the evidence and the decision"
+          - "Behaviour on a malformed file shown for each option"
+          - *docs
+        depends_on: [P4.S2.T1]
+      - id: P4.S2.T3
+        type: Task
+        summary: "Parse X12 envelopes and validate control numbers"
+        estimate_hours: 5
+        due_day: 5
+        priority: Highest
+        components: [Ingestion]
+        labels: [edi, x12, validation, level-2]
+        description: |
+          Read interchanges, groups and transaction sets with the delimiters taken from the ISA segment, never assumed. Read
+          both the loose files and the monthly zips under `landing/edi/archive/`. Check that every closing segment agrees with
+          its opening segment on the control number and that the counts are right. Quarantine what fails, with the reason.
+
+          **Where to start:** The EDI section of Source systems says what SE01, GE01 and IEA01 each count. Check one small file by hand against
+          it before you write any code. Tomás Ortega can walk you through a file segment by segment.
+        acceptance_criteria:
+          - "Interchange, group and transaction-set metadata stored per file, for loose and archived files"
+          - "Control numbers and the SE01, GE01 and IEA01 counts validated; failures quarantined with a reason"
+          - "Unit tests with good and broken samples, including a wrong segment count"
+          - *git
+        depends_on: [P4.S2.T2]
+      - id: P4.S2.T7
+        type: Task
+        summary: "EDI processing monitor"
+        estimate_hours: 2
+        due_day: 6
+        priority: Medium
+        components: [Orchestration]
+        labels: [edi, observability, level-2]
+        description: |
+          Tomás wants to know when a partner goes quiet or the backlog grows. Track files received vs processed per partner
+          per day and how long processing takes.
+
+          **Where to start:** Start from the per-file metadata you stored in P4.S2.T3. File names carry the set, the partner and the time, as
+          Source systems describes under EDI. Ask Tomás Ortega what gap is normal for a partner.
+        acceptance_criteria:
+          - "Files and transaction sets received, processed and quarantined per partner per day"
+          - "Alert when a partner sends nothing for longer than its usual gap, or quarantine grows"
+          - "Visible on P1-D1"
+          - *git
+        depends_on: [P4.S2.T3]
+      - id: P4.S2.T4
+        type: Task
+        summary: "940 and 945 documents to structured tables"
+        estimate_hours: 6
+        due_day: 6
+        priority: Highest
+        components: [Modeling]
+        labels: [edi, x12, level-3]
+        description: |
+          Turn 940 shipping orders and 945 shipping advices into header and line tables: depositor order number, client PO,
+          ship-to, requested dates, and lines with quantities, UPC or SKU and lot. For 945s, also the ship date, BOL, PRO,
+          carrier SCAC and shipped vs ordered quantities.
+        acceptance_criteria:
+          - "940 header and line, and 945 header and line, in silver"
+          - "Party loops and reference segments read correctly wherever they appear in a transaction set"
+          - "Quantities and units typed"
+          - "Sample transactions hand-checked against the raw files"
+          - *git
+        depends_on: [P4.S2.T3]
+      - id: P4.S2.T5
+        type: Task
+        summary: "Duplicates, resends and control-number gaps"
+        estimate_hours: 3
+        due_day: 6
+        priority: High
+        components: [Data Quality]
+        labels: [edi, duplicates, level-3]
+        description: |
+          Clients resend files when they aren't sure Harborline got them, and the same order can appear in more than one
+          interchange. Load each business document once, keep a trail of resends, and report control-number gaps.
+        acceptance_criteria:
+          - "Duplicate interchanges and transaction sets loaded once; dedup key documented"
+          - "Resend history kept"
+          - "Control-number gaps per trading partner reported"
+          - *git
+        depends_on: [P4.S2.T3]
+      - id: P4.S2.T6
+        type: Task
+        summary: "Match EDI documents to WMS orders and shipments"
+        estimate_hours: 4
+        due_day: 7
+        priority: High
+        components: [Modeling, Data Quality]
+        labels: [edi, reconciliation, level-3]
+        description: |
+          Each 940 should become a WMS order (client PO ↔ `client_order_ref`), and each 945 should describe a WMS shipment.
+          Measure how well they line up and list what doesn't.
+        acceptance_criteria:
+          - "940 → WMS order and 945 → WMS shipment match rates per trading partner and month"
+          - "Unmatched documents listed with reason categories"
+          - "Quantity differences between 945 lines and WMS shipment lines flagged"
+          - *git
+        depends_on: [P4.S2.T4, P4.S2.T5, P2.S2.T4]
+
   # ---------------------------------------------------------------- S1
   - id: P4.S1
     summary: "Carrier tracking API ingestion: cursor, rate limits, late events and history backfill"
@@ -47,9 +369,9 @@ stories:
     priority: Highest
     story_points: 13
     sprint: 1
-    due_day: 6
+    due_day: 10
     components: [Ingestion, Modeling]
-    labels: [carrier-api, api, late-data, backfill]
+    labels: [carrier-api, api, late-data, backfill, level-3]
     description: |
       Harborline subscribes to a tracking aggregator that returns every scan for every package across all carriers. Tomás
       Ortega set up the integration account; ask him about the API key and its limits.
@@ -79,28 +401,51 @@ stories:
         type: Task
         summary: "Explore the tracking API with Tomás and Beth"
         estimate_hours: 2
-        due_day: 1
+        due_day: 7
         priority: High
         components: [Ingestion, Documentation]
-        labels: [carrier-api, stakeholder]
+        labels: [carrier-api, stakeholder, level-2]
         description: |
-          Put the API key (Control Center → Links) in your secret store and explore the API: event shape, statuses and
+          Put the API key (Control Center → Connections) in your secret store and explore the API: event shape, statuses and
           exception codes, cursor behaviour and limits. Ask Tomás Ortega what he knows about the aggregator's quirks, and
           Beth Kowalczyk what each status means to her team.
+
+          **Where to start:** Open the Carrier tracking API section of Source systems, then call `GET /tracking-events` with a small `limit`.
+          Tomás Ortega holds the account and knows the limits. Beth Kowalczyk knows what each status means to her team.
         acceptance_criteria:
           - "API documented: endpoints, auth, paging, limits, event fields, status and exception codes"
           - "Questions and answers from Tomás and Beth recorded"
           - "Sample payloads saved, with no secrets in them"
-          - &docs "Committed via PR (docs/DATA-<n>-… branch, Conventional Commit with the key) and linked from this ticket"
+          - *docs
         depends_on: []
+      - id: P4.S1.T3
+        type: Task
+        summary: "Throttling and transient errors"
+        estimate_hours: 3
+        due_day: 8
+        priority: High
+        components: [Ingestion]
+        labels: [carrier-api, reliability, rate-limits, level-2]
+        description: |
+          The API allows about 120 requests a minute, answers 429 with `Retry-After` when you go over, and fails with a 503
+          about 1% of the time. Be a good API citizen, and never lose a page.
+
+          **Where to start:** Source systems has the limits under Carrier tracking API. Go over them on purpose once, so you see a real 429 and
+          its `Retry-After` header. Ask Tomás Ortega if the API behaves differently from what you expected.
+        acceptance_criteria:
+          - "Retry-After honoured; backoff with jitter on 503s"
+          - "Request rate stays under 120 a minute (measured over a full run)"
+          - "Retries, throttles and failures counted per run and visible on P1-D1"
+          - *git
+        depends_on: [P4.S1.T1]
       - id: P4.S1.T2
         type: Task
         summary: "Incremental cursor-based ingestion"
         estimate_hours: 6
-        due_day: 3
+        due_day: 8
         priority: Highest
         components: [Ingestion]
-        labels: [carrier-api, incremental]
+        labels: [carrier-api, incremental, level-3]
         description: |
           Ingest new events on the schedule. Persist the cursor and `since` so a crash, a restart or a laptop that slept all
           weekend resumes exactly where it stopped. Within the 90-day retention, missing a weekend should never lose data.
@@ -109,71 +454,88 @@ stories:
           - "Exactly-once landing in bronze; re-runs don't duplicate"
           - "Catch-up after a multi-day gap tested"
           - "Throughput per run recorded"
-          - &git "Merged via PR from a feat/DATA-<n>-… branch; Conventional Commits carry the key; PR self-review done; CI green"
-        depends_on: [P4.S1.T1]
-      - id: P4.S1.T3
-        type: Task
-        summary: "Throttling and transient errors"
-        estimate_hours: 3
-        due_day: 3
-        priority: High
-        components: [Ingestion]
-        labels: [carrier-api, reliability, rate-limits]
-        description: |
-          The API allows about 120 requests a minute, answers 429 with `Retry-After` when you go over, and fails with a 503
-          about 1% of the time. Be a good API citizen, and never lose a page.
-        acceptance_criteria:
-          - "Retry-After honoured; backoff with jitter on 503s"
-          - "Request rate stays under the limit (measured)"
-          - "Retries, throttles and failures counted per run and visible on P1-D1"
           - *git
         depends_on: [P4.S1.T1]
-      - id: P4.S1.T4
-        type: Task
-        summary: "Late, duplicate and out-of-order events"
-        estimate_hours: 5
-        due_day: 5
-        priority: Highest
-        components: [Modeling]
-        labels: [carrier-api, late-data, dedup]
-        description: |
-          Events arrive after later events, arrive twice, and carriers correct earlier statuses. Downstream needs both the
-          full event history and a reliable current status per package, and on-time metrics must not change because a
-          duplicate arrived.
-        acceptance_criteria:
-          - "Duplicates removed by a documented key"
-          - "Event history ordered by event time, with arrival time kept"
-          - "Current status per package correct after out-of-order and corrected events (tested)"
-          - "Late events update downstream facts incrementally"
-          - *git
-        depends_on: [P4.S1.T2]
       - id: P4.S1.T5
         type: Task
         summary: "Backfill from the history export"
         estimate_hours: 4
-        due_day: 5
+        due_day: 9
         priority: High
         components: [Ingestion]
-        labels: [carrier-api, backfill, files]
+        labels: [carrier-api, backfill, files, level-4]
         description: |
-          The API reaches back only 90 days. A history export (gzipped CSV) in `landing/files/carrier/history_export/` covers
-          the time before that. Stitch the two so there's no gap or double count at the seam, and document which source wins
-          when both have the same event.
+          > "Ninety days won't get me through an RFP. I need the whole history, and if the numbers jump or dip where the old
+          > data meets the new, nobody in that room will believe the rest of it." (Beth)
+
+          The API reaches back only 90 days, and that edge moves every day. A one-time gzipped CSV export in
+          `landing/files/carrier/history_export/` covers the time before that. The two have to read as one history, with no
+          gap and no double count, today and every day after.
+
+          Yours to decide and defend: which source wins when both have the same event, what happens to a correction that
+          lands on the other side of the seam, and how anyone would notice if the seam broke next month.
         acceptance_criteria:
           - "Export loaded with file metadata"
           - "Seam between export and API tested for gaps and duplicates"
-          - "Source precedence documented"
+          - "Source precedence documented, with the reasoning"
           - "Event counts per month reconciled across the stitched history"
           - *git
         depends_on: [P4.S1.T2]
+      - id: P4.S1.T4
+        type: Task
+        summary: "Late, duplicate and out-of-order events"
+        estimate_hours: 5
+        due_day: 9
+        priority: Highest
+        components: [Modeling]
+        labels: [carrier-api, late-data, dedup, level-4]
+        description: |
+          > "The on-time number I take into a carrier review can't move because a scan showed up twice, and it can't be wrong
+          > because a correction came in days after the fact. The carrier will spot that before I do." (Beth)
+
+          Events arrive after later events, arrive twice, and carriers correct statuses they already reported. Downstream
+          needs the full history of what was reported and one reliable answer to "where is this package now", and both have
+          to survive a re-run.
+
+          Not specified, and yours to settle: what makes two events the same event, which time decides the order, what a
+          correction replaces and what it leaves in place, and how far back a late event may change facts people have already
+          seen. Keep what that costs on every run in mind: on Large this is every package over 3 years, each with several scans.
+        acceptance_criteria:
+          - "An event delivered twice counts once; what makes two events the same is documented"
+          - "Event history ordered by when things happened, with arrival time kept"
+          - "Current status per package correct after out-of-order and corrected events (tested)"
+          - "A late or corrected event changes downstream facts without a full rebuild; any limit on how far back is documented"
+          - *git
+        depends_on: [P4.S1.T2]
+      - id: P4.S1.T7
+        type: Task
+        summary: "Tracking-event data-quality checks"
+        estimate_hours: 2
+        due_day: 10
+        priority: Medium
+        components: [Data Quality]
+        labels: [carrier-api, dq, level-2]
+        description: |
+          Some tracking problems are data problems; some are lost packages. Flag both, so Beth can tell them apart.
+
+          **Where to start:** Start from your deduplicated events and the event and exception codes listed under Carrier tracking API in Source
+          systems. For numbers Harborline never shipped, compare with the tracking-number trail from P2.S2.T4. Beth Kowalczyk
+          sets the number of days without a scan.
+        acceptance_criteria:
+          - "Unknown status or exception codes flagged"
+          - "Events for tracking numbers Harborline never shipped flagged"
+          - "Events dated before the ship time or in the future flagged, comparing in UTC per P2.S1.T5"
+          - "Packages with no carrier scan after the number of days Beth sets are listed"
+          - *git
+        depends_on: [P4.S1.T4, P2.S2.T4]
       - id: P4.S1.T6
         type: Task
         summary: "Package tracking model linked to WMS shipments"
         estimate_hours: 6
-        due_day: 6
+        due_day: 10
         priority: Highest
         components: [Modeling]
-        labels: [carrier-api, shipments, tracking]
+        labels: [carrier-api, shipments, tracking, level-3]
         description: |
           One row per package with its key milestones (label created, first carrier scan, out for delivery, delivered,
           exceptions) in UTC, plus the local date that matters for on-time (agree which with Beth), linked to the WMS
@@ -185,324 +547,6 @@ stories:
           - "Match rate per carrier recorded"
           - *git
         depends_on: [P4.S1.T4, P4.S1.T5, P2.S2.T4]
-      - id: P4.S1.T7
-        type: Task
-        summary: "Tracking-event data-quality checks"
-        estimate_hours: 2
-        due_day: 6
-        priority: Medium
-        components: [Data Quality]
-        labels: [carrier-api, dq]
-        description: |
-          Some tracking problems are data problems; some are lost packages. Flag both, so Beth can tell them apart.
-        acceptance_criteria:
-          - "Unknown status or exception codes flagged"
-          - "Events for tracking numbers Harborline never shipped flagged"
-          - "Events dated before the ship time or in the future flagged"
-          - "Packages with no carrier scan an agreed number of days after shipping listed"
-          - *git
-        depends_on: [P4.S1.T4]
-
-  # ---------------------------------------------------------------- S2
-  - id: P4.S2
-    summary: "EDI 940/945 parsing: X12 envelopes, control numbers and duplicates"
-    type: Story
-    reporter: beth.kowalczyk
-    priority: High
-    story_points: 8
-    sprint: 1
-    due_day: 9
-    components: [Ingestion, Data Quality]
-    labels: [edi, x12, files, duplicates]
-    description: |
-      Harborline's B2B clients (mostly auto parts and general merchandise) send orders as EDI **940** warehouse shipping
-      orders, and Harborline sends back **945** warehouse shipping advices when they ship. The 945 is the record of what
-      Harborline told the client it shipped, with the BOL and PRO numbers and the carrier. When a client disputes a shipment
-      or a freight charge, the 945 is the evidence. Tomás Ortega runs the EDI translator and the `landing/edi/` folders.
-
-      **What to expect (X12 004010)**
-      - Envelopes (ISA, GS, ST) with control numbers and counts that must agree.
-      - Resent files and duplicate interchanges.
-      - The occasional malformed transaction set, such as a wrong segment count.
-      - Client PO numbers that should match WMS `client_order_ref`.
-
-      **Definition of Done**
-      - All sub-tasks done; 940s and 945s parsed into structured tables with envelope validation, deduplication and quarantine
-      - 945s matched to WMS shipments and 940s to WMS orders, with match rates reported
-      - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
-    acceptance_criteria:
-      - "Every document in landing/edi, loose files and the monthly history archives alike, is parsed or quarantined with a reason; none is silently skipped"
-      - "Envelope validation: delimiters read from ISA; control numbers and counts checked at interchange, group and transaction-set level"
-      - "Duplicate interchanges and resends loaded once, with resends recorded"
-      - "940 orders and 945 shipments in silver at header and line level"
-      - "945s matched to WMS shipments and 940s to WMS orders, with match rates per trading partner"
-    depends_on: [P1.S5]
-    tasks:
-      - id: P4.S2.T1
-        type: Task
-        summary: "EDI walkthrough with Tomás"
-        estimate_hours: 2
-        due_day: 6
-        priority: Medium
-        components: [Documentation]
-        labels: [edi, stakeholder]
-        description: |
-          Ask Tomás Ortega which trading partners send what, how files are named and moved, what the 997 acknowledgements
-          mean, and what happens when a file is resent. Then look at real files in `landing/edi/`.
-        acceptance_criteria:
-          - "Trading partners and document types listed"
-          - "File lifecycle (arrival, processing, archive) documented"
-          - "Known quirks recorded"
-          - *docs
-        depends_on: []
-      - id: P4.S2.T2
-        type: Spike
-        summary: "Spike: parse X12 with a library or write your own"
-        estimate_hours: 2
-        due_day: 6
-        priority: Medium
-        components: [Ingestion, Documentation]
-        labels: [edi, spike, adr]
-        description: |
-          Time-box: 2 hours. Try at least one open-source X12 library against real files from `landing/edi/` (including a
-          broken one), and compare it with a small parser of your own. Consider maintenance, licence, how failures surface,
-          and whether it runs where your pipeline runs.
-        acceptance_criteria:
-          - "Short ADR with the options tried, the evidence and the decision"
-          - "Behaviour on a malformed file shown for each option"
-          - *docs
-        depends_on: [P4.S2.T1]
-      - id: P4.S2.T3
-        type: Task
-        summary: "Parse X12 envelopes and validate control numbers"
-        estimate_hours: 5
-        due_day: 7
-        priority: Highest
-        components: [Ingestion]
-        labels: [edi, x12, validation]
-        description: |
-          Read interchanges, groups and transaction sets with the delimiters taken from the ISA segment, never assumed.
-          Validate control numbers and counts at every level, and quarantine what fails.
-        acceptance_criteria:
-          - "Interchange, group and transaction-set metadata stored per file"
-          - "Control numbers and counts validated; failures quarantined with a reason"
-          - "Unit tests with good and broken samples"
-          - *git
-        depends_on: [P4.S2.T2]
-      - id: P4.S2.T4
-        type: Task
-        summary: "940 and 945 documents to structured tables"
-        estimate_hours: 6
-        due_day: 8
-        priority: Highest
-        components: [Modeling]
-        labels: [edi, x12]
-        description: |
-          Turn 940 shipping orders and 945 shipping advices into header and line tables: depositor order number, client PO,
-          ship-to, requested dates, and lines with quantities, UPC or SKU and lot. For 945s, also the ship date, BOL, PRO,
-          carrier SCAC and shipped vs ordered quantities.
-        acceptance_criteria:
-          - "940 header and line, and 945 header and line, in silver"
-          - "Party loops and reference segments handled generically, not by position"
-          - "Quantities and units typed"
-          - "Sample transactions hand-checked against the raw files"
-          - *git
-        depends_on: [P4.S2.T3]
-      - id: P4.S2.T5
-        type: Task
-        summary: "Duplicates, resends and control-number gaps"
-        estimate_hours: 3
-        due_day: 8
-        priority: High
-        components: [Data Quality]
-        labels: [edi, duplicates]
-        description: |
-          Clients resend files when they aren't sure Harborline got them, and the same order can appear in more than one
-          interchange. Load each business document once, keep a trail of resends, and report control-number gaps.
-        acceptance_criteria:
-          - "Duplicate interchanges and transaction sets loaded once; dedup key documented"
-          - "Resend history kept"
-          - "Control-number gaps per trading partner reported"
-          - *git
-        depends_on: [P4.S2.T3]
-      - id: P4.S2.T6
-        type: Task
-        summary: "Match EDI documents to WMS orders and shipments"
-        estimate_hours: 4
-        due_day: 9
-        priority: High
-        components: [Modeling, Data Quality]
-        labels: [edi, reconciliation]
-        description: |
-          Each 940 should become a WMS order (client PO ↔ `client_order_ref`), and each 945 should describe a WMS shipment.
-          Measure how well they line up and list what doesn't.
-        acceptance_criteria:
-          - "940 → WMS order and 945 → WMS shipment match rates per trading partner and month"
-          - "Unmatched documents listed with reason categories"
-          - "Quantity differences between 945 lines and WMS shipment lines flagged"
-          - *git
-        depends_on: [P4.S2.T4, P4.S2.T5, P2.S2.T4]
-      - id: P4.S2.T7
-        type: Task
-        summary: "EDI processing monitor"
-        estimate_hours: 2
-        due_day: 9
-        priority: Medium
-        components: [Orchestration]
-        labels: [edi, observability]
-        description: |
-          Tomás wants to know when a partner goes quiet or the backlog grows. Track files received vs processed per partner
-          per day and how long processing takes.
-        acceptance_criteria:
-          - "Files and transaction sets received, processed and quarantined per partner per day"
-          - "Alert when a partner sends nothing for longer than its usual gap, or quarantine grows"
-          - "Visible on P1-D1"
-          - *git
-        depends_on: [P4.S2.T3]
-
-  # ---------------------------------------------------------------- S3
-  - id: P4.S3
-    summary: "Carrier rate cards and diesel price for fuel surcharge"
-    type: Story
-    reporter: beth.kowalczyk
-    priority: High
-    story_points: 8
-    sprint: 1
-    due_day: 10
-    components: [Ingestion, Modeling]
-    labels: [rate-cards, xlsx, public-api, fuel]
-    description: |
-      To audit a bill you need to know what it **should** have cost. Each carrier's negotiated rates are in a workbook in
-      `landing/files/`. New versions arrive after renegotiations and general rate increases. Each workbook has base rates
-      by service, zone and weight, plus accessorials and the fuel-surcharge table. Parcel carriers bill on the greater of
-      actual and dimensional weight.
-
-      Fuel surcharges float weekly with the US Energy Information Administration's diesel price. The EIA has a free API;
-      you'll need to register for a key.
-
-      **Talk to:** Beth Kowalczyk (how each carrier's contract works: dimensional divisors, minimums, fuel effective dates)
-      and Alan Brooks (how freight is accrued).
-
-      **Definition of Done**
-      - All sub-tasks done; rate cards (every version) and weekly diesel prices in silver
-      - Expected cost for any historical shipment computable from the rate-card version in effect on its ship date
-      - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
-    acceptance_criteria:
-      - "Every carrier rate-card version ingested with effective dates, tolerating layout differences between carriers"
-      - "Weekly diesel prices for the full history plus weekly increments"
-      - "Fuel surcharge % per carrier per week, with the effective-date rule agreed with Beth"
-      - "Billable weight per package per carrier rule (actual vs dimensional)"
-      - "Expected charge per package (base, fuel and accessorials) from the rate-card version in effect on the ship date"
-    depends_on: [P1.S5, P2.S2]
-    tasks:
-      - id: P4.S3.T1
-        type: Task
-        summary: "Ingest carrier rate-card workbooks"
-        estimate_hours: 6
-        due_day: 8
-        priority: Highest
-        components: [Ingestion]
-        labels: [rate-cards, xlsx, scd2]
-        description: |
-          Each carrier sends rates in its own layout: zones across, weights down, accessorial tables on other sheets, notes in
-          merged cells. New versions arrive over time and must not overwrite history.
-        acceptance_criteria:
-          - "Every carrier and version loaded with file metadata and effective dates"
-          - "Long format: carrier × service × zone × weight break → rate"
-          - "Accessorial and fuel tables captured"
-          - "A layout surprise fails loudly, per carrier"
-          - *git
-        depends_on: [P1.S5.T1]
-      - id: P4.S3.T2
-        type: Task
-        summary: "Weekly diesel prices from the EIA API"
-        estimate_hours: 3
-        due_day: 7
-        priority: High
-        components: [Ingestion]
-        labels: [public-api, fuel]
-        description: |
-          Load the weekly US on-highway diesel price for the full history and keep it current. Register for a free EIA key
-          and keep it in the secret store. Publication can slip around holidays, and values are occasionally revised.
-        acceptance_criteria:
-          - "Weekly diesel price for the full history plus weekly increments"
-          - "Key kept in the secret store"
-          - "Late and revised publications handled"
-          - *git
-        depends_on: [P1.S2.T3]
-      - id: P4.S3.T3
-        type: Task
-        summary: "Fuel surcharge % by carrier and week"
-        estimate_hours: 3
-        due_day: 9
-        priority: High
-        components: [Modeling]
-        labels: [fuel, rate-cards]
-        description: |
-          Carriers map the diesel price to a fuel-surcharge percentage through a table in their rate card, applied from a
-          specific day relative to the price publication. Ask Beth Kowalczyk exactly when each carrier's new percentage
-          takes effect.
-        acceptance_criteria:
-          - "Fuel % per carrier, service type and week"
-          - "Effective-date rule per carrier documented with Beth's answer"
-          - "Tested on a week where the diesel band changed"
-          - *git
-        depends_on: [P4.S3.T1, P4.S3.T2]
-      - id: P4.S3.T4
-        type: Task
-        summary: "Billable weight and zones"
-        estimate_hours: 4
-        due_day: 9
-        priority: High
-        components: [Modeling]
-        labels: [dim-weight, zones]
-        description: |
-          Parcel carriers bill the greater of actual and dimensional weight (L × W × H divided by a divisor that differs by
-          carrier and contract), rounded up by their rules. Zones depend on origin and destination. Agree with Beth where the
-          authoritative zone comes from.
-        acceptance_criteria:
-          - "Billable weight per carton per carrier rule, using canonical units from P1"
-          - "Zone per package from the agreed source"
-          - "Rules documented per carrier"
-          - *git
-        depends_on: [P4.S3.T1, P2.S2.T4]
-      - id: P4.S3.T5
-        type: Task
-        summary: "Accessorial catalog per carrier"
-        estimate_hours: 3
-        due_day: 9
-        priority: Medium
-        components: [Modeling]
-        labels: [accessorials, rate-cards]
-        description: |
-          Residential delivery, delivery-area surcharges, additional handling, liftgate on LTL: every carrier names and prices
-          them differently. Build one catalog that maps each carrier's accessorial codes and descriptions to common types,
-          with the conditions under which each applies.
-        acceptance_criteria:
-          - "Accessorials per carrier mapped to common types"
-          - "Conditions of applicability documented (for example residential vs commercial address)"
-          - "Unmapped accessorials listed for Beth"
-          - *git
-        depends_on: [P4.S3.T1]
-      - id: P4.S3.T6
-        type: Task
-        summary: "Expected cost per package"
-        estimate_hours: 6
-        due_day: 10
-        priority: Highest
-        components: [Modeling]
-        labels: [expected-cost, rate-cards]
-        description: |
-          Combine rate card, billable weight, zone, service, fuel and applicable accessorials into an expected charge per
-          package, using the rate-card version in effect on the ship date. This is the yardstick the audit measures every
-          bill against. LTL is priced differently; agree with Beth how far to take LTL in this project.
-        acceptance_criteria:
-          - "Expected charge per parcel package with a component breakdown"
-          - "LTL scope agreed with Beth and implemented to that scope"
-          - "Spot-checked against five real bill lines per carrier"
-          - "Missing-rate cases flagged, never defaulted to zero"
-          - *git
-        depends_on: [P4.S3.T3, P4.S3.T4, P4.S3.T5]
 
   # ---------------------------------------------------------------- S4
   - id: P4.S4
@@ -514,11 +558,13 @@ stories:
     sprint: 2
     due_day: 15
     components: [Modeling, Data Quality]
-    labels: [freight-audit, ax2012, parsing, matching]
+    labels: [freight-audit, ax2012, parsing, matching, level-4]
     description: |
-      Carriers bill weekly. AP (Alan Brooks's team) posts each bill in AX as a vendor invoice (`vendinvoicejour` and
-      `vendinvoicetrans`, vendors in the CARRIER group). The detail is in the free-text line description, something like
-      `TRK 1Z… WT 12.4LB ZN 5 GND`. Formats differ by carrier and have drifted over the years.
+      > "Every Monday thirteen bills show up and AP pays them. I want to know, line by line, which ones are wrong, why, and
+      > what I can still get back." (Beth)
+
+      AP (Alan Brooks's team) posts each carrier bill in AX as a vendor invoice with the detail in free text. Formats differ
+      by carrier and have drifted over the years.
 
       Beth wants every bill line matched to what Harborline shipped and compared with what it should have cost under the
       contract, with each discrepancy classified so she can dispute it: weight billed above what was measured, the same
@@ -527,8 +573,12 @@ stories:
       **Constraints**
       - Disputes need evidence a carrier will accept: tracking number, measured weight and dimensions, the contract rate
         and the calculation.
-      - Some lines will never match (reprinted labels, PRO numbers on LTL, typos). They need a queue, not a shrug.
+      - Carriers accept disputes only inside a window after the invoice. Beth owns those windows and the tolerances.
+      - Some lines will never match. They need a queue, not a shrug.
       - Volume: one bill line per parcel package, so millions of lines over the full history.
+
+      **Yours to settle and defend:** what happens when one line breaks two rules, how sure a match has to be before
+      Harborline accuses a carrier of anything, and what Beth sees when a re-run changes a number she already sent.
 
       **Definition of Done**
       - All sub-tasks done; freight audit fact with expected vs billed per line and classified discrepancies, tested
@@ -549,10 +599,14 @@ stories:
         due_day: 11
         priority: Medium
         components: [Documentation]
-        labels: [stakeholder, freight-audit]
+        labels: [stakeholder, freight-audit, level-2]
         description: |
           Ask Alan Brooks how AP receives, posts and pays carrier bills, and how freight is accrued (account 2100) and
           expensed (5100). Ask Beth Kowalczyk what she disputes today, how, and within what window for each carrier.
+
+          **Where to start:** Open the AX 2012 section of Source systems and find `vendinvoicejour` and `vendinvoicetrans`; carriers are vendors
+          with `vendgroup` CARRIER in `vendtable`. Look at one posted bill, then take your questions to Alan and Beth. Priya
+          Raman knows the AX tables.
         acceptance_criteria:
           - "Bill-to-pay process documented, with owners"
           - "Dispute window and evidence requirements per carrier recorded"
@@ -566,7 +620,7 @@ stories:
         due_day: 12
         priority: Highest
         components: [Modeling]
-        labels: [ax2012, parsing, free-text]
+        labels: [ax2012, parsing, free-text, level-3]
         description: |
           Extract the tracking or PRO number, billed weight and unit, zone, service and charge type from
           `vendinvoicetrans.name` for every carrier. Formats differ by carrier and over time, and some lines are surcharges
@@ -585,7 +639,7 @@ stories:
         due_day: 13
         priority: Highest
         components: [Modeling]
-        labels: [matching, tracking]
+        labels: [matching, tracking, level-3]
         description: |
           Join parsed lines to WMS shipments and cartons by tracking number. Remember that a reprinted label changes the
           tracking number, LTL bills reference PRO numbers, and some lines carry typos. Every unmatched line goes to a queue
@@ -597,85 +651,15 @@ stories:
           - "Lines that match more than one shipment flagged"
           - *git
         depends_on: [P4.S4.T2, P2.S2.T4]
-      - id: P4.S4.T4
-        type: Task
-        summary: "Audit rules and discrepancy classes"
-        estimate_hours: 6
-        due_day: 14
-        priority: Highest
-        components: [Modeling, Data Quality]
-        labels: [freight-audit, rules]
-        description: |
-          Compare each matched line with its expected charge (P4.S3) and classify discrepancies: billed weight above
-          Harborline's billable weight, the same package billed twice, residential or delivery-area surcharges on addresses
-          that don't qualify, a higher service than shipped, a base rate off the card. Each rule needs a tolerance agreed with Beth.
-        acceptance_criteria:
-          - "Each discrepancy class implemented with a documented tolerance"
-          - "Duplicate detection works across invoices and weeks"
-          - "Every flagged line carries its evidence fields"
-          - "Rules tested with crafted examples"
-          - *git
-        depends_on: [P4.S4.T3, P4.S3.T6]
-      - id: P4.S4.T5
-        type: Task
-        summary: "Fuel surcharge audit by week"
-        estimate_hours: 3
-        due_day: 14
-        priority: High
-        components: [Modeling]
-        labels: [freight-audit, fuel]
-        description: |
-          Compare the fuel-surcharge percentage each carrier applied, week by week, with what its own table says it should
-          have been for that week's diesel price and effective date.
-        acceptance_criteria:
-          - "Applied vs expected fuel % per carrier per week"
-          - "Dollar impact per week"
-          - "Weeks with systematic differences highlighted"
-          - *git
-        depends_on: [P4.S4.T3, P4.S3.T3]
-      - id: P4.S4.T6
-        type: Task
-        summary: "Dispute-ready output"
-        estimate_hours: 3
-        due_day: 15
-        priority: High
-        components: [Modeling]
-        labels: [freight-audit, disputes]
-        description: |
-          Beth needs to file disputes that carriers will accept. Produce, per carrier and invoice, the disputable lines and
-          amounts with their evidence, only within the dispute window.
-        acceptance_criteria:
-          - "Per carrier and invoice: lines, amounts, discrepancy class and evidence"
-          - "Window rule per carrier applied"
-          - "Export format agreed with Beth (CSV or workbook)"
-          - *git
-        depends_on: [P4.S4.T4, P4.S4.T5]
-      - id: P4.S4.T7
-        type: Task
-        summary: "Freight accruals and client freight recovery"
-        estimate_hours: 3
-        due_day: 15
-        priority: Medium
-        components: [Modeling]
-        labels: [finance, freight]
-        description: |
-          Alan Brooks wants to know how freight accrued at ship time compares with what carriers eventually billed, and how
-          much of the freight cost Harborline recovers from clients through the `FRT-RCV` charge (pass-through plus markup).
-        acceptance_criteria:
-          - "Accrued vs billed freight by month and carrier"
-          - "Freight recovery billed vs carrier cost by client and month"
-          - "Ties to GL 2100, 5100 and revenue account 4030 per entity, converted per the currency policy"
-          - *git
-        depends_on: [P4.S4.T3, P3.S3.T4]
       - id: P4.S4.T8
         type: Bug
         reporter: beth.kowalczyk
         summary: "Bug: most LTL freight bill lines land in the unmatched queue"
         estimate_hours: 3
-        due_day: 15
+        due_day: 13
         priority: High
         components: [Modeling]
-        labels: [bug, matching, ltl]
+        labels: [bug, matching, ltl, level-3]
         description: |
           **Reported by Beth Kowalczyk:**
           > "The unmatched queue is full of ODFL, Marlowe and Estes lines, something like four in ten LTL lines. Parcel looks
@@ -688,6 +672,87 @@ stories:
           - "LTL match rate comparable to parcel, or the remaining gap explained line by line for a sample"
           - &fix "Fix merged via PR from a fix/DATA-<n>-… branch with a regression test; Conventional Commits carry the key; CI green"
         depends_on: [P4.S4.T3]
+      - id: P4.S4.T5
+        type: Task
+        summary: "Fuel surcharge audit by week"
+        estimate_hours: 3
+        due_day: 14
+        priority: High
+        components: [Modeling]
+        labels: [freight-audit, fuel, level-3]
+        description: |
+          Compare the fuel-surcharge percentage each carrier applied, week by week, with what its own table says it should
+          have been for that week's price in `diesel_weekly.csv` and its effective date.
+        acceptance_criteria:
+          - "Applied vs expected fuel % per carrier per week"
+          - "Dollar impact per week"
+          - "Weeks with systematic differences highlighted"
+          - *git
+        depends_on: [P4.S4.T3, P4.S3.T3]
+      - id: P4.S4.T7
+        type: Task
+        summary: "Freight accruals and client freight recovery"
+        estimate_hours: 3
+        due_day: 14
+        priority: Medium
+        components: [Modeling]
+        labels: [finance, freight, level-3]
+        description: |
+          Alan Brooks wants to know how freight accrued at ship time compares with what carriers eventually billed, and how
+          much of the freight cost Harborline recovers from clients through the `FRT-RCV` charge (pass-through plus markup).
+        acceptance_criteria:
+          - "Accrued vs billed freight by month and carrier"
+          - "Freight recovery billed vs carrier cost by client and month"
+          - "Ties to GL 2100, 5100 and revenue account 4030 per entity, converted per the currency policy"
+          - *git
+        depends_on: [P4.S4.T3, P3.S3.T4]
+      - id: P4.S4.T4
+        type: Task
+        summary: "Audit rules and discrepancy classes"
+        estimate_hours: 6
+        due_day: 14
+        priority: Highest
+        components: [Modeling, Data Quality]
+        labels: [freight-audit, rules, level-4]
+        description: |
+          > "Tell me which lines are wrong, why, and by how much, in a form I can put in front of a carrier rep who'll argue
+          > with every one of them. If I dispute pennies, or flag something that turns out to be fine, I lose the rep's patience
+          > and the next real dispute goes with it." (Beth)
+
+          Each matched line gets compared with its expected charge (P4.S3). The discrepancies Beth disputes: billed weight above
+          Harborline's billable weight, the same package billed twice, residential or delivery-area surcharges on addresses
+          that don't qualify, a higher service than shipped, and a base rate off the card. Fuel is audited in P4.S4.T5.
+          Tolerances are Beth's decision; bring her a number you can defend for each rule.
+
+          Nobody has said what happens when one line breaks two rules, how to tell a duplicate from a legitimate rebill, or how
+          a rule should behave when the expected charge itself is uncertain. Getting it wrong in either direction costs
+          money: real overbilling that gets paid, or a false accusation against a carrier.
+        acceptance_criteria:
+          - "Each discrepancy class flagged with a tolerance Beth has signed off"
+          - "A package billed twice is caught across invoices and weeks"
+          - "Every flagged line carries its evidence fields"
+          - "A line that breaks two rules is not counted twice in the overbilled amount"
+          - "Under-billing kept apart from overbilling, as the P4-D1 spec defines"
+          - "Rules tested with crafted examples, including lines that must not be flagged"
+          - *git
+        depends_on: [P4.S4.T3, P4.S3.T6]
+      - id: P4.S4.T6
+        type: Task
+        summary: "Dispute-ready output"
+        estimate_hours: 3
+        due_day: 15
+        priority: High
+        components: [Modeling]
+        labels: [freight-audit, disputes, level-3]
+        description: |
+          Beth needs to file disputes that carriers will accept. Produce, per carrier and invoice, the disputable lines and
+          amounts with their evidence, only within the dispute window.
+        acceptance_criteria:
+          - "Per carrier and invoice: lines, amounts, discrepancy class and evidence"
+          - "Window rule per carrier applied"
+          - "Export format agreed with Beth (CSV or workbook)"
+          - *git
+        depends_on: [P4.S4.T4, P4.S4.T5]
 
   # ---------------------------------------------------------------- S5
   - id: P4.S5
@@ -699,19 +764,23 @@ stories:
     sprint: 2
     due_day: 17
     components: [Modeling]
-    labels: [carrier-performance, on-time, lanes, metrics]
+    labels: [carrier-performance, on-time, lanes, metrics, level-4]
     description: |
       For the RFP Beth needs facts per carrier, service and lane: on-time delivery, transit times, exceptions and cost. A
-      lane is origin warehouse → destination region; agree the granularity with Beth (state, 3-digit ZIP or zone).
+      lane is origin warehouse → destination region, at a granularity Beth decides.
 
       **On-time, again**
       > "I measure carriers against what *they* committed to. Omar's team measures against what the *client's customer*
       > was promised. Both are fair. They're not the same number." (Beth)
 
-      Talk to Beth and Omar Haddad, and check the metric catalog from Project 2, before you build it.
+      Beth and Omar Haddad each own their definition, and the Project 2 metric catalog already has on-time measures of its
+      own. All of them have to live side by side without anyone mistaking one for another.
 
       > "A package that sat on our dock for a day isn't the carrier's fault. I need late deliveries split between us and
       > them." (Beth)
+
+      Carriers will read these numbers looking for a reason to dismiss them. Expect to defend how you count a package that
+      crossed a holiday, a lane with a handful of packages, and a number that moved after a late scan.
 
       **Definition of Done**
       - All sub-tasks done; delivery performance fact per package with on-time flags per agreed definition, transit and tender lag
@@ -734,7 +803,7 @@ stories:
         due_day: 15
         priority: Highest
         components: [Documentation]
-        labels: [stakeholder, metrics, on-time]
+        labels: [stakeholder, metrics, on-time, level-3]
         description: |
           Interview Beth Kowalczyk and Omar Haddad separately about on-time delivery: what starts and stops the clock,
           business or calendar days, which transit standard applies (the carrier's service commitment or the promise to the
@@ -752,33 +821,26 @@ stories:
         due_day: 16
         priority: Highest
         components: [Modeling]
-        labels: [carrier-performance, kpi]
+        labels: [carrier-performance, kpi, level-4]
         description: |
-          Per package: ship time, first carrier scan, delivery, transit time in business days, on-time flags per the catalog
-          definitions, and exception flags. Decide with Beth whose calendar counts for business days (origin or destination).
+          > "When I put a transit number on the table, the rep is going to ask how I counted. I need an answer that holds up
+          > for a package that crossed a holiday, crossed a time zone, or got a correction a week after delivery." (Beth)
+
+          Everything on the scorecard reads from this fact: per package, when it shipped, when the carrier first scanned it,
+          when it was delivered, transit in business days, tender lag, on-time per the catalog definitions, and exceptions.
+          Whose calendar counts for business days is Beth's decision, so bring her the consequences of each answer.
+
+          Packages keep changing after they're delivered, because scans arrive late and carriers correct themselves. Decide
+          how the fact stays right without rebuilding the whole history, and what happens to packages that never get a first
+          scan or a delivery.
         acceptance_criteria:
           - "Grain is one row per package, with milestones and durations"
           - "On-time flags per the catalog definitions"
-          - "Updated incrementally as late events arrive"
+          - "Transit and tender lag match the P4-D2 definitions; the calendar rule Beth chose is documented"
+          - "A late or corrected event changes only the packages it touches (tested)"
+          - "Packages with no first scan or no delivery are handled by a stated rule"
           - *git
         depends_on: [P4.S5.T1, P4.S1.T6]
-      - id: P4.S5.T3
-        type: Task
-        summary: "Warehouse-caused vs carrier-caused lateness"
-        estimate_hours: 3
-        due_day: 16
-        priority: High
-        components: [Modeling]
-        labels: [carrier-performance, attribution]
-        description: |
-          If Harborline handed the package over late (after cutoff, or the first carrier scan comes a day after the ship
-          confirmation), the carrier shouldn't wear it. Agree the attribution rule with Beth and apply it.
-        acceptance_criteria:
-          - "Attribution rule documented, with Beth's sign-off"
-          - "Each late package attributed"
-          - "Share of lateness by cause per site and carrier"
-          - *git
-        depends_on: [P4.S5.T2, P2.S2.T5]
       - id: P4.S5.T4
         type: Task
         summary: "Exceptions by lane"
@@ -786,7 +848,7 @@ stories:
         due_day: 17
         priority: High
         components: [Modeling]
-        labels: [carrier-performance, exceptions, lanes]
+        labels: [carrier-performance, exceptions, lanes, level-3]
         description: |
           Damage, address problems, weather delays, lost packages: by carrier, service and lane, at the lane granularity
           agreed with Beth.
@@ -803,7 +865,7 @@ stories:
         due_day: 17
         priority: Medium
         components: [Modeling]
-        labels: [weather, calendar]
+        labels: [weather, calendar, level-3]
         description: |
           Reuse the P2 weather and calendar data to put delays in context: a storm week shouldn't count against a carrier in
           the same way as a sunny one. Show the context; don't excuse delays automatically.
@@ -820,7 +882,7 @@ stories:
         due_day: 17
         priority: High
         components: [Modeling]
-        labels: [carrier-performance, cost]
+        labels: [carrier-performance, cost, level-3]
         description: |
           For the RFP, Beth needs fully loaded cost (base, fuel, accessorials) per package and per billable pound by carrier,
           service, lane and weight band, from audited bill lines rather than estimates.
@@ -838,7 +900,7 @@ stories:
         due_day: 17
         priority: High
         components: [Modeling]
-        labels: [bug, time-zones]
+        labels: [bug, time-zones, level-3]
         description: |
           **Reported by Beth Kowalczyk:**
           > "Some west-coast packages show negative transit times. Apparently they were delivered the evening before we
@@ -852,6 +914,31 @@ stories:
           - "Tests for time handling at Pacific, Central and Eastern sites"
           - *fix
         depends_on: [P4.S5.T2]
+      - id: P4.S5.T3
+        type: Task
+        summary: "Warehouse-caused vs carrier-caused lateness"
+        estimate_hours: 3
+        due_day: 17
+        priority: High
+        components: [Modeling]
+        labels: [carrier-performance, attribution, level-4]
+        description: |
+          > "If it missed the cutoff, or the first scan came a day after we confirmed the ship, the carrier shouldn't wear it.
+          > And when a rep tells me 'you handed it to us late', I need to know if that's true, package by package." (Beth)
+
+          Beth wants every late package attributed to the warehouse or the carrier, and the rule is hers to sign off. Carriers
+          will see the effect of this rule in their scores, and Luis Moreno's sites will see it in theirs, so it has to hold
+          up from both sides.
+
+          Her sentence above doesn't cover everything. A package can be handed over late and then lose more time in the
+          network. A late first scan can mean a slow warehouse or a driver who didn't scan at pickup. Some packages have no
+          first scan at all. Bring Beth a rule, what it does in those cases, and how the split changes if she chooses differently.
+        acceptance_criteria:
+          - "Attribution rule documented, with Beth's sign-off"
+          - "Each late package attributed, including those with both causes or no first scan"
+          - "Share of lateness by cause per site and carrier"
+          - *git
+        depends_on: [P4.S5.T2, P2.S2.T5]
       - id: P4.S5.T8
         type: Task
         summary: "Agree scorecard weights with Beth"
@@ -859,13 +946,21 @@ stories:
         due_day: 17
         priority: Medium
         components: [Documentation]
-        labels: [stakeholder, scorecard]
+        labels: [stakeholder, scorecard, level-4]
         description: |
-          The RFP scorecard ranks carriers on several measures. Ask Beth which measures count and how much (on-time, cost,
-          billing accuracy, exceptions), and how to treat carriers with little volume on a lane.
+          > "The RFP ranks carriers on one score, and the first thing every carrier will do is argue with the weights. I want a
+          > score I can defend, and I don't want a carrier that ran six packages on a lane coming out on top." (Beth)
+
+          The measures in play are on-time, cost, billing accuracy and exceptions. Beth signs off which ones count, how much,
+          and the minimum volume on a lane.
+
+          Still open: which on-time definition feeds the score, how dollars and percentages end up on one scale, and what
+          happens to a carrier that only serves part of the network. Show Beth how the ranking moves under the weights you
+          propose before she commits.
         acceptance_criteria:
           - "Weights and the minimum-volume rule documented with Beth's sign-off"
           - "Composite score reproducible from the metric catalog"
+          - "Worked example of a low-volume carrier and of one that serves only part of the network"
           - *docs
         depends_on: [P4.S5.T1]
 
@@ -879,9 +974,12 @@ stories:
     sprint: 2
     due_day: 20
     components: [Dashboards]
-    labels: [dashboard, freight-audit, carrier-performance]
+    labels: [dashboard, freight-audit, carrier-performance, level-4]
     attachments: [wireframes/P4-D1.svg, wireframes/P4-D2.svg]
     description: |
+      > "Monday morning I want one page that tells me what I'm fighting about this week. For the RFP I want a ranking nobody
+      > can argue with." (Beth)
+
       Two dashboards; specs are in the dashboard catalog and wireframes are attached.
 
       - **P4-D1 Freight Audit**: what Harborline was billed vs what it should have paid, by carrier and week, with every
@@ -918,7 +1016,7 @@ stories:
         due_day: 18
         priority: High
         components: [Modeling]
-        labels: [gold, performance]
+        labels: [gold, performance, level-3]
         description: |
           Pre-aggregate audit results (carrier × invoice × week, carrier × discrepancy class) and performance (carrier ×
           service × lane × month) so every view is fast on a small warehouse.
@@ -935,7 +1033,7 @@ stories:
         due_day: 18
         priority: Highest
         components: [Dashboards]
-        labels: [dashboard, brand]
+        labels: [dashboard, brand, level-3]
         description: |
           Build the dashboard to the P4-D1 spec and wireframe. Beth needs to go from "this carrier overbilled last month" to
           the lines and evidence she'll send them in two clicks.
@@ -953,7 +1051,7 @@ stories:
         due_day: 19
         priority: High
         components: [Dashboards]
-        labels: [dashboard, brand]
+        labels: [dashboard, brand, level-3]
         description: |
           Build the dashboard to the P4-D2 spec and wireframe: carrier ranking, lanes, trends and the agreed composite score.
         acceptance_criteria:
@@ -970,13 +1068,21 @@ stories:
         due_day: 19
         priority: High
         components: [Dashboards, Security]
-        labels: [export, access]
+        labels: [export, access, level-4]
         description: |
-          Beth shares a scorecard with each carrier at quarterly reviews. Produce a per-carrier version (PDF or filtered view)
-          that can't leak other carriers' data or Harborline's internal costs and margins.
+          > "Every quarter I sit down with each carrier's rep and hand over their scorecard. If one of them can work out who else
+          > we use on their lanes, or what we pay anyone else, that's a problem I can't take back." (Beth)
+
+          Each carrier gets its own version, with its own metrics and its own billed amounts. It can't show another carrier's
+          data or Harborline's internal costs and margins.
+
+          Hiding names may not be enough. Nobody has decided whether a carrier sees its rank or a network average, what to do on
+          a lane with only two carriers, or what travels along in a file's metadata. Beth decides what a carrier gets to see;
+          you owe her the risks of each choice, and a way of producing thirteen of these that can't go wrong by hand.
         acceptance_criteria:
-          - "One-click or scheduled export per carrier"
+          - "An export per carrier, on demand or on a schedule, with no manual filtering"
           - "Contains only that carrier's metrics: no other carrier names, no internal margin"
+          - "Nothing in the file lets a carrier infer another carrier's results; the decision on rank and averages is recorded with Beth"
           - "Checked by opening two carriers' exports side by side"
           - *git
         depends_on: [P4.S6.T3]
@@ -987,7 +1093,7 @@ stories:
         due_day: 20
         priority: High
         components: [Dashboards, Security]
-        labels: [access, performance]
+        labels: [access, performance, level-3]
         description: |
           Implement the access rules in the specs, prove them with a Transportation identity and an Operations identity, and
           measure load times.
@@ -1004,7 +1110,7 @@ stories:
         priority: Highest
         reporter: iris.novak
         components: [Dashboards, Data Quality]
-        labels: [uat, sign-off, reconciliation]
+        labels: [uat, sign-off, reconciliation, level-3]
         description: |
           Nothing goes to Beth until Iris Novak (Business Performance Manager) has signed it off. She ties
           your numbers back to the source systems herself, checks every KPI against your metric catalog and the
@@ -1028,12 +1134,18 @@ stories:
         due_day: 20
         priority: High
         components: [Documentation]
-        labels: [readout, release]
+        labels: [readout, release, level-5]
         description: |
-          Five minutes: how much is disputable, which carrier is the biggest problem on cost and on service, and what you'd
-          do next. Record it; it's your portfolio demo too. Then tag the release and close the epic.
+          > "You get five minutes. How much can I claw back, which carrier should I worry about, and what would you do next?" (Beth)
+
+          The worst carrier on cost and the worst on service may not be the same one. A big overbilled number means little if
+          most of it is already outside the dispute window, and a carrier's bad lane may matter more or less than its average.
+          What you tell Beth is your call, and the RFP will lean on it, so be ready for her to push on every number.
+
+          Record it; it's your portfolio demo too. Then tag the release and close the epic.
         acceptance_criteria:
           - "Readout delivered and recording (or script plus screenshots) linked here"
+          - "It states the amount still disputable, the biggest carrier problem on cost and on service, and one recommendation with its reasoning"
           - "Feedback captured as new tickets"
           - "v0.4.0 tagged on main; CHANGELOG lists every ticket key in the release"
           - "Retro notes (keep / change / try) committed"

@@ -7,7 +7,8 @@ import { Tooltip } from '@/components/ui/overlay';
 import { addDays, differenceInCalendarDays, dueState, fmtDay, format, parseDay, today, workingDay } from '@/lib/dates';
 import { fmtInt, plural } from '@/lib/format';
 import { IssueKey, StatusLozenge, TypeIcon } from './atoms';
-import { epicShort, isWorkItem, useIssueParam, useTracker } from './data';
+import { epicShort, progressOf, useIssueParam, useTracker } from './data';
+import { YouAreHere } from './here';
 
 const WEEKS = 32;
 const DEPTS: Array<[RegExp, string]> = [
@@ -28,13 +29,6 @@ interface Bar {
   end: Date;
   done: number;
   total: number;
-}
-
-function progressOf(items: Issue[]) {
-  const work = items.filter(isWorkItem);
-  const total = work.reduce((t, i) => t + (i.estimate_hours ?? 0), 0);
-  const done = work.filter((i) => i.status === 'Done').reduce((t, i) => t + (i.estimate_hours ?? 0), 0);
-  return { done, total };
 }
 
 export default function TimelinePage() {
@@ -134,6 +128,7 @@ export default function TimelinePage() {
             'Set the start date to place the epics on the calendar.'
           )}
         </p>
+        <YouAreHere className="mt-4" />
 
         {!t.issuesQ.data ? (
           <Skeleton className="mt-6 h-96 rounded-l" />

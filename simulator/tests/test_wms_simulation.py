@@ -286,3 +286,13 @@ def test_onboard_and_offboard(built: EngineCtx) -> None:
     assert q(built, "SELECT count(*) n FROM wms.order_header o JOIN wms.owner w USING (owner_id) WHERE w.owner_code = %s",
              params=(client["code"],))["n"].iloc[0] > 0
     assert wms.NAME == "wms"
+
+
+def test_calibration_carries_on_through_batches_and_streams(built: EngineCtx) -> None:
+    today = built.window.end.date()
+    sensors = q(built, "SELECT calibration_due FROM telemetry.sensor WHERE sensor_type = 'TEMP'", "iot")
+    overdue = (sensors["calibration_due"] < today).mean()
+    assert overdue <= 0.25
+    probes = built.world["iot"]["calibration"]["probes"]
+    assert sum(p[1] for p in probes.values()) > 0
+    assert all(p[2] >= int(built.window.end.timestamp()) for p in probes.values()), "a visit before the clock was not carried out"

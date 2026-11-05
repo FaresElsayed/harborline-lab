@@ -18,17 +18,20 @@ epic:
     > "No client ever sees another client's data. And no consumer's name, address, phone or email leaves this building
     > unless someone with a reason asked for it." (Mei)
 
-    This is the capstone. It starts with governance: classification, masking, roles and audit. Then it adds per-client
-    row-level security for a client-facing portal and a data share for clients who want raw data. The executive scorecard
-    reuses the semantic layer, and a performance and cost pass hardens everything you've built since week 1. It finishes
-    with a final executive readout and a portfolio package.
+    This is the capstone. It opens by finding out what the platform you've built costs and where it's slow, before
+    anything new lands on it. Then comes governance: classification, masking, roles and audit. Then per-client row-level
+    security for a client-facing portal, and a data share for clients who want raw data. The executive scorecard reuses
+    the semantic layer. It finishes with a final executive readout and a portfolio package.
+
+    **How this project runs:** the tickets here say what the business needs and who decides what. The method, and the
+    case for it, are yours. Expect your stakeholders to disagree with each other.
 
     **What this project delivers**
+    - A performance and cost review of projects 1 to 7, with P8's own dashboards held to the same target when they ship.
     - Governance as code: PII classification, masking of consignee name, address, phone and email, role-based access, and audit.
     - Row-level security per client for a portal, proven by negative tests.
     - A data share, or a governed extract, for a pilot client.
     - An executive scorecard model reusing the metric catalog, tied out to Finance and Operations.
-    - A performance and cost review across all eight projects.
     - Dashboards **P8-D1 Client Portal** and **P8-D2 Executive Scorecard**, plus the final executive readout.
 
     **Success measures**
@@ -43,6 +46,159 @@ epic:
   dashboards: [P8-D1, P8-D2]
 
 stories:
+  # ---------------------------------------------------------------- S5
+  - id: P8.S5
+    summary: "Performance and cost optimization across the platform"
+    type: Story
+    reporter: daniel.reyes
+    priority: High
+    story_points: 5
+    sprint: 1
+    due_day: 4
+    components: [Platform, Performance]
+    labels: [finops, performance, free-tier, level-3]
+    description: |
+      > "Rebecca asked me what the data platform costs us each month and I didn't have an answer. Also, a couple of the
+      > dashboards feel slow." (Daniel)
+
+      You've built seven projects' worth of pipelines and dashboards. Before this project adds masks, row filters and two
+      more dashboards on top of them, make them fast and cheap.
+      - Find the slowest and most expensive jobs and queries.
+      - Fix the physical layout of the largest tables (≈ 20 M ledger rows and ≈ 7 M order lines at Large size).
+      - Right-size compute and scheduling. Databricks Free Edition allows 5 concurrent job tasks and one 2X-Small
+        warehouse; on Snowflake, warehouse size and auto-suspend are the levers.
+      - Switch full rebuilds to incremental where it pays off.
+
+      P8-D1 and P8-D2 don't exist yet. They are held to the same 3-second target when they ship, later in this project.
+
+      **Talk to:** Sam Okafor (platform budget), Daniel and Rebecca (cost reporting).
+
+      **Definition of Done**
+      - All sub-tasks done; before and after numbers recorded
+      - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
+      - Cost report and performance notes in the repo; CHANGELOG entry
+    acceptance_criteria:
+      - "Baseline and after measurements for the top 20 jobs and queries"
+      - "Every dashboard from projects 1–7 meets P95 < 3 s, or has a documented exception that Sam accepts"
+      - "Monthly cost per project and per pipeline reported, with a paid-tier projection"
+      - "Top 3 savings implemented with measured impact"
+    depends_on: [P1.S6, P7.S6]
+    tasks:
+      - id: P8.S5.T1
+        type: Task
+        summary: "Baseline: the slowest and most expensive work"
+        estimate_hours: 4
+        due_day: 1
+        priority: High
+        components: [Performance]
+        labels: [baseline, level-3]
+        description: |
+          Measure the top 20 jobs and queries by duration and cost, and the load times of every dashboard from projects 1–7.
+          Your tier may not report money directly, so decide what counts as cost here and say so.
+        acceptance_criteria:
+          - "Baseline table committed"
+          - "Top candidates for improvement ranked by expected gain"
+          - &git "Merged via PR from a feat/DATA-<n>-… branch; Conventional Commits carry the key; PR self-review done; CI green"
+        depends_on: []
+      - id: P8.S5.T3
+        type: Task
+        summary: "Compute sizing and scheduling"
+        estimate_hours: 3
+        due_day: 2
+        priority: Medium
+        components: [Platform]
+        labels: [finops, free-tier, level-3]
+        description: |
+          Review warehouse and compute settings (size, auto-stop or auto-suspend) and the job schedule. Consolidate where
+          jobs compete for the same limits.
+        acceptance_criteria:
+          - "Settings changes with their measured effect on cost and latency"
+          - "No job schedule exceeds your tier's concurrency limit"
+          - *git
+        depends_on: [P8.S5.T1]
+      - id: P8.S5.T2
+        type: Task
+        summary: "Physical layout of the largest tables"
+        estimate_hours: 5
+        due_day: 2
+        priority: High
+        components: [Performance]
+        labels: [layout, performance, level-4]
+        description: |
+          The largest tables are laid out the way they were first loaded, not the way they get read. Make the reads that
+          matter cheaper.
+
+          Every choice has a price: rewrite time, upkeep, and the queries it makes worse. New rows and late corrections keep
+          arriving, so the layout has to hold up next month, not only on the day you measure it. Decide which tables are worth
+          the trouble and which to leave alone, and defend that with your own numbers.
+        acceptance_criteria:
+          - "Before and after query times and data scanned for the affected queries"
+          - "The layout stays good as data arrives, and any upkeep it needs is scheduled and costed"
+          - "Large tables left alone are listed with the reason"
+          - *git
+        depends_on: [P8.S5.T1]
+      - id: P8.S5.T4
+        type: Task
+        summary: "Incremental where it pays"
+        estimate_hours: 4
+        due_day: 3
+        priority: Medium
+        components: [Performance, Modeling]
+        labels: [incremental, level-4]
+        description: |
+          Some models rebuild everything on every run. Incremental is cheaper right up to the day it's quietly wrong: a late
+          row, a delete, a correction to a closed month.
+
+          Find where the saving justifies the complexity, and leave the rest alone. Whoever reads these tables later should
+          never be able to tell which way they were built.
+        acceptance_criteria:
+          - "At least two models switched, with run time and cost before and after"
+          - "Results identical to the full rebuild, including after late, changed and deleted source rows (tested)"
+          - "Models you considered and rejected are listed with the reason"
+          - *git
+        depends_on: [P8.S5.T1]
+      - id: P8.S5.T5
+        type: Task
+        summary: "Dashboard performance pass (projects 1–7)"
+        estimate_hours: 3
+        due_day: 3
+        priority: High
+        components: [Performance, Dashboards]
+        labels: [performance, level-3]
+        description: |
+          Re-measure every dashboard from projects 1–7 and fix the slow ones. P8-D1 and P8-D2 don't exist yet, and Mei's
+          masking hasn't landed, so decide how to keep the measurement repeatable: you'll run it again on both.
+        acceptance_criteria:
+          - "P95 < 3 s for every dashboard from projects 1–7, or a documented exception accepted by Sam"
+          - "The measurement can be re-run, and its results are committed"
+          - *git
+        depends_on: [P8.S5.T2]
+      - id: P8.S5.T6
+        type: Task
+        summary: "Platform cost report and FinOps tile"
+        estimate_hours: 3
+        due_day: 4
+        priority: High
+        components: [Platform]
+        labels: [finops, level-4]
+        description: |
+          > "What does the data platform cost us each month? Give me a number I can defend to Rebecca." (Daniel)
+          >
+          > "Where does that figure come from?" (Rebecca)
+
+          On a free tier the invoice says almost nothing, and one warehouse serves many projects. Rebecca needs monthly cost
+          per project, pipeline and dashboard, and what the same workload would cost at paid-tier prices. Shared compute
+          doesn't divide itself, so how you split it is a decision you'll have to explain, along with whatever you can't
+          attribute at all.
+
+          The scorecard will read this later as one KPI, so it needs one definition.
+        acceptance_criteria:
+          - "Cost report generated monthly, with the way shared cost is split stated on it"
+          - "Paid-tier projection with assumptions"
+          - "Cost KPI available to the scorecard"
+          - *git
+        depends_on: [P8.S5.T3]
+
   # ---------------------------------------------------------------- S1
   - id: P8.S1
     summary: "Governance: PII classification, masking, roles and audit"
@@ -51,18 +207,20 @@ stories:
     priority: Highest
     story_points: 8
     sprint: 1
-    due_day: 6
+    due_day: 7
     components: [Governance, Security]
-    labels: [pii, rbac, masking, audit]
+    labels: [pii, rbac, masking, audit, level-4]
     description: |
-      > "I need to know where personal data lives, who can see it, and who looked." (Mei)
+      > "I need to know where personal data lives, who can see it, and who looked. Consumer personal data stays masked in
+      > analytics unless someone shows me a documented need." (Mei)
 
       Personal data in your platform today includes:
       - consignee name, address, phone and email on WMS orders (`ship_to_*`)
       - Salesforce Contacts, and the supplied name and email on Cases
       - worker names in the WMS user table and in AX HR tables
 
-      Some of it has been copied into recall packages, health dashboards and test data over the last seven projects.
+      Some of it has been copied into recall packages, health dashboards and test data over the last seven projects. Some
+      of those copies exist for good reasons, and the people who rely on them will tell you so. Mei decides who wins.
 
       **Requirements**
       - A classification policy, with every column tagged across all layers, and new columns caught automatically.
@@ -80,71 +238,91 @@ stories:
       - "Consignee PII masked by default in every queryable layer; the approved role sees clear values (tested)"
       - "Role matrix approved by Mei, with grants managed in the repo and no direct grants to individuals"
       - "PII access audit query and monthly access review report available"
-    depends_on: [P1.S2, P1.S5]
+    depends_on: [P1.S2, P1.S5, P8.S5]
     tasks:
       - id: P8.S1.T1
         type: Task
         summary: "PII classification workshop with Mei"
         estimate_hours: 3
-        due_day: 1
+        due_day: 4
         priority: Highest
         components: [Governance]
-        labels: [needs-clarification, pii]
+        labels: [needs-clarification, pii, level-4]
         description: |
-          Agree the classification levels and who may see what. Quality may need it during a recall, CS for a client
-          escalation, and analysts maybe never. Bring a column inventory of where personal data lives today across bronze,
-          silver and gold, and in exports.
+          > "Who needs it, to do what, and for how long? Quality may need names during a recall. CS may need them for a client
+          > escalation. Analysts, maybe never. Convince me." (Mei)
+
+          The classification levels and the final word are Mei's, but she won't write the policy from nothing. Come with a true
+          picture of where personal data lives today across bronze, silver, gold and exports, not where it ought to live, and
+          with your own recommendation for each case where someone will want an exception.
         acceptance_criteria:
           - "Classification policy with levels and handling rules, signed off by Mei"
-          - "Column inventory with a proposed level per column"
+          - "Column inventory with a proposed level per column, including copies in exports and test data"
+          - "Each exception recorded: who, why, for how long, and Mei's decision"
           - &docs "Note committed via PR (docs/DATA-<n>-… branch, Conventional Commit with the key) and linked from this ticket"
         depends_on: []
       - id: P8.S1.T2
         type: Task
         summary: "Tag every column and catch new ones automatically"
         estimate_hours: 5
-        due_day: 3
+        due_day: 5
         priority: High
         components: [Governance]
-        labels: [classification, schema-drift]
+        labels: [classification, schema-drift, level-4]
         description: |
-          Apply the classification as metadata across every layer. A new column without a classification, from schema
-          drift or a new model, must fail CI or be flagged before it reaches users.
+          A classification that's right today is wrong after the next release. Columns arrive from schema drift, from a new
+          Salesforce field, from a model added in a hurry. Every column in every layer has to carry its class, and nothing
+          unclassified may reach a user.
+
+          Think past the easy case. A column derived from Restricted data isn't automatically safe, and a renamed one shouldn't
+          lose its class. When the check fires on a release day, someone is blocked: decide who, and who can unblock them.
         acceptance_criteria:
-          - "100% of columns classified"
+          - "100% of columns classified, in every layer"
           - "An unclassified new column blocks deployment (demonstrated with the schema_drift_release scenario)"
-          - &git "Merged via PR from a feat/DATA-<n>-… branch; Conventional Commits carry the key; PR self-review done; CI green"
+          - "Columns derived from Restricted data have their own class, with the reason recorded"
+          - *git
         depends_on: [P8.S1.T1]
       - id: P8.S1.T3
         type: Task
         summary: "Mask consignee PII by default"
         estimate_hours: 6
-        due_day: 4
+        due_day: 5
         priority: Highest
         components: [Security]
-        labels: [pii, masking]
+        labels: [pii, masking, level-4]
         description: |
-          Consignee name, address lines, phone and email are masked for everyone except the roles Mei approves. Analysts
-          still need to count distinct consignees and repeat buyers, and to analyse by city, state or country, without
-          seeing who anyone is.
+          > "Masked for everyone except the roles I approve. Name, address lines, phone and email." (Mei)
+
+          Analysts still need to count distinct consignees and repeat buyers, and to analyse by city, state or country, without
+          seeing who anyone is. Those two needs pull against each other. How much of an address is still an address? Is someone
+          who misspells their name twice one buyer or two? What can a determined analyst work out from what you leave them?
+
+          The dashboards from earlier projects read these tables, and they must keep working and stay fast.
         acceptance_criteria:
           - "Masked by default in every layer users can query"
           - "The authorized role sees clear values (tested)"
           - "Repeat-consignee counts and geographic aggregates work without clear values"
+          - "A clear value can't be recovered from a masked one with analyst access"
+          - "Dashboards from projects 1–7 still work and stay within the 3 s target with masking on (re-measured)"
           - *git
-        depends_on: [P8.S1.T2]
+        depends_on: [P8.S1.T2, P8.S5.T5]
       - id: P8.S1.T4
         type: Task
         summary: "Role model as code"
         estimate_hours: 6
-        due_day: 5
+        due_day: 6
         priority: Highest
         components: [Security, Platform]
-        labels: [rbac, iac]
+        labels: [rbac, iac, level-4]
         description: |
-          Define least-privilege roles for engineers, analysts, finance, quality, client success, service identities and
-          (next story) client users. Grant to groups, not individuals, and keep dev and prod separate. Grants live in the
-          repo and CI/CD applies them.
+          > "If your answer to who has access is a person's name, try again." (Mei)
+
+          She wants least-privilege roles for engineers, analysts, finance, quality, client success, service identities and
+          (next story) client users. Grants go to groups, not individuals. Dev and prod stay separate. Grants live in the repo
+          and CI/CD applies them, because a permission someone clicked and forgot is the one she'll find in the access review.
+
+          The hard cases are yours to propose: someone changing teams, a production emergency at night, and who may change the
+          grants themselves.
         acceptance_criteria:
           - "Role matrix approved by Mei"
           - "Grants managed in the repo and applied by CI/CD"
@@ -155,30 +333,34 @@ stories:
         type: Task
         summary: "PII access audit and monthly access review"
         estimate_hours: 4
-        due_day: 6
+        due_day: 7
         priority: High
         components: [Governance]
-        labels: [audit]
+        labels: [audit, level-4]
         description: |
-          Record who read PII columns and when, and produce a monthly access review report for Mei. Check which audit or
-          system tables your tier exposes, and document the gaps.
+          > "Before the portal goes live I review the access audit. Who read PII, when, and why was that allowed?" (Mei)
+
+          She also wants a monthly access review she can act on. A nightly service job reading bronze and a person browsing
+          names are very different events, so a report that lists both the same way is noise. Your tier won't show everything
+          you'd want, and what you can't see matters as much as what you can.
         acceptance_criteria:
           - "Query showing PII access by user and day"
-          - "Monthly access review report generated"
-          - "Tier limitations documented"
+          - "Monthly access review report generated, and Mei can act on it"
+          - "Tier limitations documented, with what production would need"
           - *git
         depends_on: [P8.S1.T3, P8.S1.T4]
       - id: P8.S1.T6
         type: Task
         summary: "Secrets and service identities review"
         estimate_hours: 2
-        due_day: 6
+        due_day: 7
         priority: Medium
         components: [Security]
-        labels: [secrets]
+        labels: [secrets, level-3]
         description: |
           Jobs must run as service identities, not your personal account. Secrets belong in a secret store, rotation must
-          be documented, and secret scanning must cover the full history.
+          be documented, and secret scanning must cover the full history. Mei treats any secret ever pushed as leaked, so decide
+          what you'll do about anything the scan finds.
         acceptance_criteria:
           - "No personal tokens used by any job"
           - "Rotation runbook in the repo"
@@ -189,16 +371,22 @@ stories:
         type: Task
         summary: "Retention and erasure requests"
         estimate_hours: 2
-        due_day: 6
+        due_day: 7
         priority: Medium
         components: [Governance]
-        labels: [needs-clarification, retention]
+        labels: [needs-clarification, retention, level-4]
         description: |
-          A client's customer asks to be forgotten. What happens to their data in your history: bronze, snapshots, exports
-          and shares? Agree a retention policy with Mei, then prove the procedure works.
+          > "A client's customer asks to be forgotten. What happens to their data in your history?" (Mei)
+
+          Bronze was built never to change, and closed months are about to be frozen. A recall trace has to reach every ship-to
+          that received a lot, and Finance's records can't be rewritten. Soon there will be exports and client shares too, and
+          those copies are outside your control.
+
+          Mei decides the retention policy, so bring her the conflicts along with a position. Then prove the procedure works.
         acceptance_criteria:
-          - "Retention policy signed off by Mei"
+          - "Retention policy signed off by Mei, with each conflict decided"
           - "Erasure procedure tested on one consignee across every layer"
+          - "What erasure can't reach is written down and accepted by Mei"
           - *docs
         depends_on: [P8.S1.T1]
 
@@ -212,7 +400,7 @@ stories:
     sprint: 1
     due_day: 10
     components: [Security, Serving]
-    labels: [rls, client-portal]
+    labels: [rls, client-portal, level-4]
     description: |
       > "Start with a pilot of three clients: a big multi-site one, one billed in Canadian dollars, and a small one.
       > They should see their orders, shipments, inventory, receipts, returns and what they'll be billed. Nothing else,
@@ -224,6 +412,9 @@ stories:
       - An offboarded client loses access on the day their status changes.
       - CSMs see the clients in their book, and leadership sees everyone.
       - A negative test suite proves that client A can't see client B by any path.
+
+      Not everything is decided. What a client in its notice period can see, and what stays visible about a client after
+      it leaves, are for you to settle with Omar and Mei.
 
       **Definition of Done**
       - All sub-tasks done; Mei reviewed the negative tests
@@ -243,15 +434,19 @@ stories:
         due_day: 7
         priority: High
         components: [Serving]
-        labels: [needs-clarification, client-portal]
+        labels: [needs-clarification, client-portal, level-4]
         description: |
-          Agree the datasets, grain and history depth, and pick the pilot clients. Should a client see its own customers'
-          names and addresses? That's Mei's decision, so bring her the question with the options.
+          > "Should a client see its own customers' names and addresses? They'll say of course, they're their customers.
+          > That's Mei's decision, not mine." (Omar)
+
+          Agree the datasets, grain and history depth with Omar, and pick the three pilot clients. Mei rules on consumer PII
+          for client users, so bring her the question with the consequences of each answer and what you'd recommend. A client
+          will also ask why they can't see last year, or the months before they joined. Have an answer.
         acceptance_criteria:
           - "Scope document: datasets, pilot clients, history depth"
           - "Mei's decision on consignee PII for client users recorded"
           - *docs
-        depends_on: []
+        depends_on: [P8.S1.T1]
       - id: P8.S2.T2
         type: Task
         summary: "Identity on your tier: how client users are represented"
@@ -259,7 +454,7 @@ stories:
         due_day: 7
         priority: Medium
         components: [Security, Platform]
-        labels: [free-tier, identity]
+        labels: [free-tier, identity, level-3]
         description: |
           Free tiers may limit how many users and groups you can create, or whether you can federate identities. Decide how
           you'll represent client users (real test users, groups or emulated identities), and document the gap to production.
@@ -275,12 +470,17 @@ stories:
         due_day: 8
         priority: High
         components: [Security, Modeling]
-        labels: [entitlements]
+        labels: [entitlements, level-4]
         description: |
-          Map portal users and groups to client keys, including clients that span several WMS owners. Entitlements are
+          Portal users and groups have to map to clients, including clients that span several WMS owners. Entitlements are
           effective-dated and driven by the client master's status.
+
+          A wrong match here isn't a data-quality finding. It's a breach. So consider what happens when a key is missing or
+          ambiguous, when two accounts merge, and when a client comes back after leaving.
         acceptance_criteria:
-          - "Entitlement table derived from the client master"
+          - "Entitlements derive from the client master and are effective-dated"
+          - "A client with several WMS owner codes sees all of them (tested)"
+          - "A user or client that can't be matched cleanly sees nothing (tested)"
           - "offboard_client scenario removes access on the day the status changes (tested)"
           - *git
         depends_on: [P8.S2.T1, P8.S2.T2]
@@ -291,13 +491,18 @@ stories:
         due_day: 9
         priority: Highest
         components: [Security, Serving]
-        labels: [rls]
+        labels: [rls, level-4]
         description: |
-          Enforce per-client visibility in the data layer for every dataset the portal uses. Totals and rankings must be
-          computed after filtering, so they can't leak anything through aggregates.
+          > "Clients talk to each other. One number on a screen that could only be someone else's, and I'm having a very bad
+          > week." (Omar)
+
+          Per-client visibility is enforced in the data layer for every dataset the portal uses, so that no dashboard or export
+          can forget it. Totals and rankings mustn't leak anything through aggregates, and a small client sharing a warehouse
+          with a big one is the case to think about. Mei will ask how you know a new dataset can't slip past.
         acceptance_criteria:
           - "One enforcement mechanism for all portal datasets"
           - "Aggregates computed after filtering (tested)"
+          - "Portal queries stay within the 3 s target with filters on"
           - *git
         depends_on: [P8.S2.T3]
       - id: P8.S2.T5
@@ -307,13 +512,16 @@ stories:
         due_day: 10
         priority: Highest
         components: [Security]
-        labels: [rls, testing]
+        labels: [rls, testing, level-4]
         description: |
-          Prove isolation through every path: direct queries, aggregates, drill-through, exports, and joins to tables that
-          aren't filtered.
+          > "Show me the test that failed. A suite that has never gone red proves nothing." (Mei)
+
+          Isolation has to hold through every path: direct queries, aggregates, drill-through, exports, and joins to tables that
+          aren't filtered. The paths you haven't thought of are the ones Mei will try first when she gets the portal.
         acceptance_criteria:
           - "Test suite runs in CI on every PR"
           - "Covers every portal dataset and every pilot identity"
+          - "The suite goes red when isolation is deliberately broken (demonstrated)"
           - "Mei reviewed the test list"
           - *git
         depends_on: [P8.S2.T4]
@@ -324,9 +532,10 @@ stories:
         due_day: 10
         priority: Medium
         components: [Security]
-        labels: [rls, client-success]
+        labels: [rls, client-success, level-3]
         description: |
-          CSMs see the clients in their book, taken from the client master, and leadership sees everyone.
+          CSMs see the clients in their book, taken from the client master, and leadership sees everyone. Decide with Omar who
+          counts as leadership, and what happens on the day a client moves to another CSM's book.
         acceptance_criteria:
           - "Book-scoped access tested for each CSM"
           - *git
@@ -340,16 +549,16 @@ stories:
     priority: High
     story_points: 5
     sprint: 2
-    due_day: 14
+    due_day: 13
     components: [Serving]
-    labels: [data-sharing, client-portal, free-tier]
+    labels: [data-sharing, client-portal, free-tier, level-4]
     description: |
       > "Two of our bigger clients have their own data teams. They don't want a dashboard; they want the data in their
       > own warehouse." (Omar)
 
-      Share the pilot client's data the way a real platform would (Delta Sharing, Snowflake Secure Data Sharing or a
-      reader account). If your tier doesn't allow that, use a governed extract. The entitlement and PII rules are the same
-      as for the portal.
+      Share the pilot client's data the way a real platform would. If your tier doesn't allow that, a governed extract is
+      acceptable. The entitlement and PII rules are the same as for the portal. This data leaves the building and stays
+      gone, so a mistake here can't be fixed by changing a filter.
 
       **Requirements**
       - A versioned schema contract, a data dictionary written for the client, and a deprecation policy.
@@ -374,12 +583,14 @@ stories:
         due_day: 11
         priority: High
         components: [Serving, Platform]
-        labels: [adr, free-tier]
+        labels: [adr, free-tier, level-4]
         description: |
-          Compare native sharing with a governed extract on your platform and tier: availability, security, cost, the
-          client's experience, and the operational burden. Decide, and say what production would use.
+          Omar wants a client's data team to serve itself. Mei wants isolation and a revocation that really works. Sam wants no
+          new bill. On your tier those pull in different directions.
+
+          Decide how the pilot client gets its data, and say what production would use instead and why the two differ.
         acceptance_criteria:
-          - "ADR in docs/adr/ with options, decision and consequences"
+          - "ADR in docs/adr/ with options, decision and consequences, including what each stakeholder gives up"
           - "Tier limitations cited from current documentation"
           - *docs
         depends_on: []
@@ -390,29 +601,38 @@ stories:
         due_day: 11
         priority: Medium
         components: [Serving]
-        labels: [needs-clarification, data-product]
+        labels: [needs-clarification, data-product, level-4]
         description: |
-          Agree which datasets are shared, their grain, how often they refresh, how much history, and how schema changes
-          are announced to the client.
+          > "They'll ask for everything, every hour, for all time, with no breaking changes. Tell me what we can really
+          > promise." (Omar)
+
+          Agree which datasets are shared, their grain, how often they refresh, how much history, and how schema changes get
+          announced. A client's analyst will compare your share with the portal, so decide what happens when the two disagree
+          and what you'll tell them.
         acceptance_criteria:
-          - "Data product definition agreed with Omar"
+          - "Data product definition agreed with Omar, including the refresh SLA and notice for schema changes"
+          - "Any way a shared figure can differ from the portal is stated"
           - *docs
         depends_on: []
       - id: P8.S3.T3
         type: Task
         summary: "Implement the pilot share or extract"
         estimate_hours: 7
-        due_day: 13
+        due_day: 12
         priority: High
         components: [Serving, Security]
-        labels: [data-sharing]
+        labels: [data-sharing, level-4]
         description: |
           Deliver the pilot client's data through the chosen mechanism, incrementally, with only their rows and PII handled
           per Mei's rule.
+
+          Their warehouse is on the other end of it, and you can't reach in and fix it. Consider a delivery that fails halfway,
+          one that's sent twice, a source row corrected after it was delivered, and a row deleted after that.
         acceptance_criteria:
           - "Pilot client can read their data from their side (or from the extract location)"
           - "Negative tests extended to the share or extract"
           - "Incremental refresh meets the agreed SLA"
+          - "A failed, repeated or corrected delivery leaves the client with the right data (tested)"
           - *git
         depends_on: [P8.S3.T1, P8.S3.T2]
       - id: P8.S3.T4
@@ -422,7 +642,7 @@ stories:
         due_day: 13
         priority: Medium
         components: [Documentation]
-        labels: [data-contract]
+        labels: [data-contract, level-3]
         description: |
           Write a versioned schema contract, a data dictionary a client's analyst can use without calling us, sample
           queries, and a deprecation policy.
@@ -435,15 +655,18 @@ stories:
         type: Task
         summary: "Revocation and delivery audit"
         estimate_hours: 2
-        due_day: 14
+        due_day: 13
         priority: High
         components: [Security]
-        labels: [audit, offboarding]
+        labels: [audit, offboarding, level-4]
         description: |
-          When a client offboards, their share or extract stops within 24 hours. Log every delivery or access.
+          When a client offboards, their share or extract stops within 24 hours. Every delivery and access gets logged.
+
+          You can't take back what a client already holds, so be clear about what revocation does and doesn't mean. The log has
+          one job: if Mei asks what left the building, on which day and to whom, it answers precisely.
         acceptance_criteria:
           - "Revocation within 24 hours demonstrated with the offboard_client scenario"
-          - "Delivery and access log queryable"
+          - "Delivery and access log queryable: for any delivery, which client received which rows and fields"
           - *git
         depends_on: [P8.S3.T3]
 
@@ -454,15 +677,20 @@ stories:
     reporter: daniel.reyes
     priority: High
     story_points: 8
-    sprint: 1
-    due_day: 10
+    sprint: 2
+    due_day: 16
     components: [Modeling]
-    labels: [executive, semantic-layer, kpis]
+    labels: [executive, semantic-layer, kpis, level-5]
     description: |
       > "Ten numbers, maybe twelve. Every one of them already agreed with the VP who owns it. If Rebecca and Luis argue
       > about a number in the board meeting, we failed." (Daniel)
 
-      Reuse the metric catalog and semantic layer from earlier projects. Don't define an existing metric a second time.
+      This is the page the company will be run on, and the model is the easy part. Each department has lived with its own
+      version of these numbers for years. Earlier projects settled some of that and parked the rest. Some KPIs have two
+      owners and some have none. You are the one person who has seen all the definitions side by side, so what doesn't add
+      up is yours to find before the board does.
+
+      Reuse the metric catalog and semantic layer. Don't define an existing metric a second time.
 
       **Requirements**
       - Monthly and quarterly grain, by legal entity, site and vertical, in USD reporting currency.
@@ -470,8 +698,8 @@ stories:
       - Closed months frozen, with restatements tracked explicitly.
       - Tie-outs to the source dashboards and to the general ledger.
 
-      **Talk to:** Daniel (which numbers), Rebecca Lindqvist (finance KPIs and targets), Alan Brooks (revenue tie-out), and
-      the owners of each KPI from earlier projects.
+      **Who decides:** Daniel (which numbers, and ties between his VPs), Rebecca Lindqvist (finance KPIs and targets), Alan
+      Brooks (the revenue tie-out), and the owner of each KPI from earlier projects.
 
       **Definition of Done**
       - All sub-tasks done; tie-outs green
@@ -482,21 +710,29 @@ stories:
       - "Revenue ties to the AX general ledger within 0.5%; OTIF, churn and freight tie to their source dashboards"
       - "Closed months served from frozen snapshots with a restatement log"
       - "Targets sourced and versioned"
-    depends_on: [P2.S5, P3.S5, P3.S6, P4.S6, P5.S4, P7.S2]
+    depends_on: [P2.S5, P3.S5, P3.S6, P4.S6, P5.S4, P7.S2, P8.S5]
     tasks:
       - id: P8.S4.T1
         type: Task
         summary: "Interview Daniel and Rebecca: which numbers, which targets"
         estimate_hours: 3
-        due_day: 2
+        due_day: 13
         priority: Highest
         components: [Modeling]
-        labels: [needs-clarification, kpis]
+        labels: [needs-clarification, kpis, level-5]
         description: |
-          Daniel wants "one page for the board". Rebecca will want the finance KPIs reconciled to the ledger. Draw up a
-          shortlist of 10–12 KPIs, each with an owner and a target source.
+          > "One page for the board. Don't give me a discussion about it. Give me a recommendation." (Daniel)
+          >
+          > "I will want the finance KPIs reconciled to the ledger, and I will want to know where each target came from." (Rebecca)
+
+          Daniel can tell you what he worries about, not which metric answers it. Rebecca will want more on the page than he
+          does. Ask them both and you'll have too many numbers, and his wireframe has room for ten.
+
+          Come back with the list, an owner and a target source for each, and what you cut and why. Someone will be unhappy
+          about the cut. Daniel settles that, but it's your recommendation he'll be settling.
         acceptance_criteria:
           - "KPI shortlist with owner, definition source and target source"
+          - "What was left off, and why, is recorded"
           - "Daniel's sign-off recorded"
           - *docs
         depends_on: []
@@ -504,77 +740,105 @@ stories:
         type: Task
         summary: "Scorecard KPIs on the metric catalog and semantic layer"
         estimate_hours: 4
-        due_day: 5
+        due_day: 14
         priority: High
         components: [Modeling]
-        labels: [semantic-layer]
+        labels: [semantic-layer, level-5]
         description: |
-          Point each KPI at its existing definition. Register any new ones with their owner, and resolve conflicts before you build.
+          > "On-time means different things to Luis, Omar and Finance. I don't have my own definition. I want one agreed number,
+          > with the others explained." (Daniel)
+
+          Every KPI on the page should already exist in the catalog. Some exist twice, and some don't exist yet. Gross margin is
+          still open: Rebecca includes facility rent by site, Luis excludes it because site GMs can't control it, and Daniel
+          decides.
+
+          You don't pick winners. You get the people who own a number to agree on it, write down what they agreed, and don't
+          build on anything still in dispute. A KPI with no owner doesn't go on the page.
         acceptance_criteria:
           - "Every KPI resolves to exactly one catalog entry"
-          - "Owners named; conflicts closed"
+          - "Owners named; each conflict closed, with who decided and when"
+          - "Daniel's decision on gross margin recorded"
+          - *git
+        depends_on: [P8.S4.T1, P8.S5.T6]
+      - id: P8.S4.T4
+        type: Task
+        summary: "Targets from the budget and from KPI owners"
+        estimate_hours: 2
+        due_day: 14
+        priority: Medium
+        components: [Modeling]
+        labels: [targets, level-3]
+        description: |
+          Take financial targets from the budget workbook Finance maintains, and non-financial targets from each KPI's owner.
+          Decide what a tile shows when an owner hasn't set a target yet.
+        acceptance_criteria:
+          - "Targets table versioned with a source per target"
           - *git
         depends_on: [P8.S4.T1]
       - id: P8.S4.T3
         type: Task
         summary: "Scorecard model"
         estimate_hours: 8
-        due_day: 8
+        due_day: 15
         priority: High
         components: [Modeling]
-        labels: [executive, gold]
+        labels: [executive, gold, level-4]
         description: |
-          Build monthly and quarterly KPI facts by legal entity, site and vertical in USD, with variances against prior
-          period, prior year and target.
+          Daniel gets monthly and quarterly KPIs by legal entity, site and vertical in USD, with variances against prior period,
+          prior year and target.
+
+          Not every KPI survives every cut. A quarter's margin isn't the average of three months, DSO doesn't add up, and it's
+          not obvious what logo churn or platform cost means for one site. Some sites and clients have no prior year at all.
+          Exchange rates move a variance with no change in the business. Decide what each KPI does in each case, and make it
+          visible rather than letting a filter quietly return a wrong number.
         acceptance_criteria:
           - "Model covers the full history"
           - "Variances correct for the months you tested"
           - "USD conversion follows Finance's FX rules"
+          - "Quarterly and filtered figures follow each KPI's definition, and cuts that don't apply say so"
           - *git
-        depends_on: [P8.S4.T2]
-      - id: P8.S4.T4
-        type: Task
-        summary: "Targets from the budget and from KPI owners"
-        estimate_hours: 2
-        due_day: 9
-        priority: Medium
-        components: [Modeling]
-        labels: [targets]
-        description: |
-          Take financial targets from the budget workbook Finance maintains, and non-financial targets from each KPI's owner.
-        acceptance_criteria:
-          - "Targets table versioned with a source per target"
-          - *git
-        depends_on: [P8.S4.T1]
+        depends_on: [P8.S4.T2, P8.S4.T4]
       - id: P8.S4.T5
         type: Task
         summary: "Tie-outs to the ledger and the source dashboards"
         estimate_hours: 4
-        due_day: 9
+        due_day: 16
         priority: High
         components: [Data Quality]
-        labels: [reconciliation]
+        labels: [reconciliation, level-5]
         description: |
+          > "I do not want to hear that the difference is small. I want to hear what it is." (Rebecca)
+
           Revenue must tie to the AX general ledger within 0.5%. OTIF must match the Ops scorecard, churn must match Client 360,
           and freight must match Freight Audit.
+
+          Those sources were signed off months ago, on data that has moved since. For each gap, decide whether it's an error, a
+          matter of timing or a matter of definition, and get the person who owns the number to accept that. A green check
+          nobody can explain is worse than a red one.
         acceptance_criteria:
           - "Tie-out checks automated and run on every build"
           - "Differences explained; Alan Brooks reviewed the revenue tie-out"
+          - "Each KPI owner accepted the explanation for their number"
           - *git
         depends_on: [P8.S4.T3]
       - id: P8.S4.T6
         type: Task
         summary: "Frozen month-end snapshots and restatement log"
         estimate_hours: 3
-        due_day: 10
+        due_day: 16
         priority: High
         components: [Modeling]
-        labels: [snapshots]
+        labels: [snapshots, level-4]
         description: |
-          Board numbers can't move after the pack goes out. Snapshot each closed month, and track any restatement
-          explicitly with a reason.
+          > "Board numbers can't move after the pack goes out." (Daniel)
+
+          Closed months are published as frozen snapshots by the 3rd business day after the AX close. The current month is
+          labelled provisional. Yet the world keeps changing: credit notes arrive after close, and a source correction can
+          reach into a frozen month. A number that was wrong has to be correctable without anyone being able to rewrite history
+          quietly. Rebecca says who may approve that.
         acceptance_criteria:
-          - "Snapshot per closed month"
+          - "Snapshot per closed month, published by the 3rd business day after the AX close"
+          - "Re-running the pipelines never changes a frozen month (tested)"
           - "Restatement log with reason and approver"
           - "Scorecard reads snapshots for closed months"
           - *git
@@ -583,10 +847,10 @@ stories:
         type: Task
         summary: "KPI owner commentary"
         estimate_hours: 2
-        due_day: 10
+        due_day: 16
         priority: Low
         components: [Modeling]
-        labels: [executive]
+        labels: [executive, level-3]
         description: |
           Daniel wants one line of owner commentary per KPI per month. Capture it without introducing a new tool.
         acceptance_criteria:
@@ -594,135 +858,6 @@ stories:
           - "Shown on the scorecard"
           - *git
         depends_on: [P8.S4.T3]
-
-  # ---------------------------------------------------------------- S5
-  - id: P8.S5
-    summary: "Performance and cost optimization across the platform"
-    type: Story
-    reporter: daniel.reyes
-    priority: High
-    story_points: 5
-    sprint: 2
-    due_day: 16
-    components: [Platform, Performance]
-    labels: [finops, performance, free-tier]
-    description: |
-      > "Rebecca asked me what the data platform costs us each month and I didn't have an answer. Also, a couple of the
-      > dashboards feel slow." (Daniel)
-
-      You've built eight projects' worth of pipelines and dashboards. Now make them fast and cheap.
-      - Find the slowest and most expensive jobs and queries.
-      - Fix the physical layout of the largest tables (≈ 20 M ledger rows and ≈ 7 M order lines at Large size).
-      - Right-size compute and scheduling. Databricks Free Edition allows 5 concurrent job tasks and one 2X-Small
-        warehouse; on Snowflake, warehouse size and auto-suspend are the levers.
-      - Switch full rebuilds to incremental where it pays off.
-
-      **Talk to:** Sam Okafor (platform budget), Daniel and Rebecca (cost reporting).
-
-      **Definition of Done**
-      - All sub-tasks done; before and after numbers recorded
-      - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
-      - Cost report and performance notes in the repo; CHANGELOG entry
-    acceptance_criteria:
-      - "Baseline and after measurements for the top 20 jobs and queries"
-      - "Every dashboard from projects 1–8 meets P95 < 3 s, or has a documented exception that Sam accepts"
-      - "Monthly cost per project and per pipeline reported, with a paid-tier projection"
-      - "Top 3 savings implemented with measured impact"
-    depends_on: [P1.S6]
-    tasks:
-      - id: P8.S5.T1
-        type: Task
-        summary: "Baseline: the slowest and most expensive work"
-        estimate_hours: 4
-        due_day: 12
-        priority: High
-        components: [Performance]
-        labels: [baseline]
-        description: |
-          Measure the top 20 jobs and queries by duration and cost, and the load times of every dashboard from projects 1–8.
-        acceptance_criteria:
-          - "Baseline table committed"
-          - "Top candidates for improvement ranked by expected gain"
-          - *git
-        depends_on: []
-      - id: P8.S5.T2
-        type: Task
-        summary: "Physical layout of the largest tables"
-        estimate_hours: 5
-        due_day: 14
-        priority: High
-        components: [Performance]
-        labels: [layout, performance]
-        description: |
-          Improve the physical layout (partitioning, clustering, file sizes) of the largest tables based on how they're
-          actually queried. Show before and after.
-        acceptance_criteria:
-          - "Before and after query times and data scanned for the affected queries"
-          - "Maintenance scheduled where the layout needs it"
-          - *git
-        depends_on: [P8.S5.T1]
-      - id: P8.S5.T3
-        type: Task
-        summary: "Compute sizing and scheduling"
-        estimate_hours: 3
-        due_day: 15
-        priority: Medium
-        components: [Platform]
-        labels: [finops, free-tier]
-        description: |
-          Review warehouse and compute settings (size, auto-stop or auto-suspend) and the job schedule. Consolidate where
-          jobs compete for the same limits.
-        acceptance_criteria:
-          - "Settings changes with their measured effect on cost and latency"
-          - "No job schedule exceeds your tier's concurrency limit"
-          - *git
-        depends_on: [P8.S5.T1]
-      - id: P8.S5.T4
-        type: Task
-        summary: "Incremental where it pays"
-        estimate_hours: 4
-        due_day: 15
-        priority: Medium
-        components: [Performance, Modeling]
-        labels: [incremental]
-        description: |
-          Find the models that fully rebuild every run and switch them to incremental where the saving justifies the complexity.
-        acceptance_criteria:
-          - "At least two models switched, with run time and cost before and after"
-          - "Results identical to the full rebuild (tested)"
-          - *git
-        depends_on: [P8.S5.T1]
-      - id: P8.S5.T5
-        type: Task
-        summary: "Dashboard performance pass (projects 1–8)"
-        estimate_hours: 3
-        due_day: 16
-        priority: High
-        components: [Performance, Dashboards]
-        labels: [performance]
-        description: |
-          Re-measure every dashboard you've built and fix the slow ones.
-        acceptance_criteria:
-          - "P95 < 3 s for every dashboard, or a documented exception accepted by Sam"
-          - *git
-        depends_on: [P8.S5.T2]
-      - id: P8.S5.T6
-        type: Task
-        summary: "Platform cost report and FinOps tile"
-        estimate_hours: 3
-        due_day: 16
-        priority: High
-        components: [Platform]
-        labels: [finops]
-        description: |
-          Report monthly cost per project, pipeline and dashboard, with a projection at paid-tier prices, and feed a cost
-          KPI to the executive scorecard.
-        acceptance_criteria:
-          - "Cost report generated monthly"
-          - "Paid-tier projection with assumptions"
-          - "Cost KPI available to the scorecard"
-          - *git
-        depends_on: [P8.S5.T3]
 
   # ---------------------------------------------------------------- S6
   - id: P8.S6
@@ -734,13 +869,14 @@ stories:
     sprint: 2
     due_day: 20
     components: [Dashboards, Documentation]
-    labels: [dashboards, brand-kit, readout, portfolio]
+    labels: [dashboards, brand-kit, readout, portfolio, level-5]
     attachments: [wireframes/P8-D1.svg, wireframes/P8-D2.svg]
     description: |
-      There are two dashboards, specified in **P8-D1 Client Portal** (owner Omar) and **P8-D2 Executive Scorecard**
-      (owner Daniel). Wireframes are attached. After that comes the final readout of the whole program.
-
       > "Show me the portal as if I were the client, then show me the company on one page. Then tell me what you'd do next." (Daniel)
+
+      There are two dashboards, specified in **P8-D1 Client Portal** (owner Omar) and **P8-D2 Executive Scorecard**
+      (owner Daniel). Wireframes are attached. One of them is the first thing you've built that leaves the building. The
+      other goes to the board. After that comes the final readout of the whole program.
 
       Definitions will conflict. Is "ship on time" measured from receipt or from release, and is it judged against the
       contract SLA or the Ops target? Is "billed this month" accrued or invoiced? Is gross margin calculated before or
@@ -748,10 +884,10 @@ stories:
 
       **Requirements (both dashboards)**
       - KPIs, filters and visuals as specified; conflicts resolved and recorded
-      - Refresh SLA: portal hourly during business hours; scorecard current month-to-date daily, with closed months frozen
+      - Refresh SLA: portal hourly from 06:00 to 22:00 in the client's primary site time zone and daily otherwise; scorecard current month-to-date daily, with closed months frozen
       - Access: the portal enforces row-level security and Mei's PII rule; the scorecard is for executives only, contains no PII, and is classified Confidential
       - Every interaction < 3 s
-      - Harborline brand kit from `brand/`: Executive accent for the scorecard; for the portal, the Harborline brand with the client's name shown, but never another client's logo
+      - Harborline brand kit from `brand/`: Executive accent for the scorecard; for the portal, the Client Success accent and the Harborline brand with the client's name shown, and no client logo
       - 5-minute stakeholder readouts, then a final 15-minute executive readout with architecture, results and next steps
 
       **Portfolio package:** an architecture diagram covering all 8 projects, a 3-minute demo video, and a write-up of
@@ -766,8 +902,8 @@ stories:
       - "Filters work: period, entity, site and vertical (scorecard); site, date, order type and SKU (portal)"
       - "Refresh SLA met; freshness and the as-of month visible"
       - "Access: portal passes Mei's security UAT; scorecard restricted to executives; no PII on either"
-      - "P95 interaction < 3 s measured"
-      - "Brand kit applied (Executive accent, background, palette, number formats)"
+      - "P95 interaction < 3 s measured, on the secured datasets"
+      - "Brand kit applied (department accent, background, palette, number formats)"
       - "5-minute readouts to Omar and Daniel, and the final executive readout, delivered; feedback logged"
       - "Portfolio package published: architecture diagram, demo video, write-up"
       - "Release v1.0.0 tagged with CHANGELOG"
@@ -778,17 +914,28 @@ stories:
         type: Task
         summary: "Finalize P8-D1 / P8-D2 specs and KPI definitions"
         estimate_hours: 2
-        due_day: 14
+        due_day: 16
         priority: High
         components: [Dashboards]
-        labels: [needs-clarification, definitions]
+        labels: [needs-clarification, definitions, level-5]
         description: |
-          Walk Omar and Mei through P8-D1, and Daniel through P8-D2. Settle each KPI conflict in the specs and record the decisions.
+          > "A client sees ship on time against their contract. The board sees OTIF. One day a client will quote their number at
+          > me in a room where Daniel is quoting his, and they won't match." (Omar)
+
+          Most of the scorecard's arguments were settled when you built the model. What's left only shows up once the pages
+          are real. Client-facing numbers use the contract clock, and Omar confirms that. Alan Brooks says accrued isn't
+          invoiced, so the billing tile has to say so in words he and Omar both accept, and in words a client won't take as a
+          promise.
+
+          Walk Omar and Mei through P8-D1, and Daniel through P8-D2, before you build. Expect questions the specs don't answer.
+          Leave with answers from whoever owns them, and with something a CSM can say when a client asks why the two numbers differ.
         acceptance_criteria:
           - "Specs updated with decisions and KPI owners"
           - "Metric catalog updated"
+          - "On-time and billing wording agreed by Omar and Alan and recorded"
+          - "A short explanation of how portal numbers relate to scorecard numbers, reviewed by Omar"
           - *docs
-        depends_on: []
+        depends_on: [P8.S2.T1, P8.S4.T2]
       - id: P8.S6.T2
         type: Task
         summary: "Build the Client Portal (P8-D1)"
@@ -796,49 +943,26 @@ stories:
         due_day: 17
         priority: Highest
         components: [Dashboards, Security]
-        labels: [dashboards, client-portal, brand-kit]
+        labels: [dashboards, client-portal, brand-kit, level-5]
         description: |
-          Build the portal from the spec and wireframe on the row-level-secured datasets. It shows orders, SLA performance
-          against the client's contract, inventory, receipts, returns and month-to-date billing.
+          > "Picture a client's ops manager opening this first thing on a Monday, with a late truck on her mind. She doesn't care
+          > about our data model. Where are my orders, did you hit the contract, what will I be billed? And if she sees one thing
+          > that isn't hers, I'm the one who gets the call." (Omar)
+
+          Build the portal to the P8-D1 spec and wireframe on the secured datasets. Every dashboard so far had colleagues
+          as its audience, and colleagues forgive things. Clients don't. Think about what a client sees on a site with nothing
+          happening this month, and what a small client's page looks like beside a big one's.
+
+          Show it to Omar as each pilot client. If a number is going to embarrass us, hear it from him and not from a client.
+          Whatever isn't in the spec, settle with him.
         acceptance_criteria:
           - "All spec visuals and filters present"
           - "Each pilot identity sees only its own data (negative tests green)"
-          - "Freshness shown; P95 < 3 s"
+          - "Consignee PII follows Mei's rule everywhere, including drill-through and exports"
+          - "Freshness shown; P95 < 3 s measured as each pilot identity"
+          - "Omar reviewed it as each pilot client; his decisions are logged"
           - *git
         depends_on: [P8.S6.T1]
-      - id: P8.S6.T3
-        type: Task
-        summary: "Build the Executive Scorecard (P8-D2)"
-        estimate_hours: 6
-        due_day: 18
-        priority: Highest
-        components: [Dashboards]
-        labels: [dashboards, executive, brand-kit]
-        description: |
-          Build a one-page scorecard of KPI tiles with targets, variances, sparklines and owner commentary, with drill
-          links to each project's dashboard.
-        acceptance_criteria:
-          - "All spec visuals and filters present"
-          - "Every number matches its source dashboard for the last closed month"
-          - "P95 < 3 s; PDF export for the board pack"
-          - *git
-        depends_on: [P8.S6.T1]
-      - id: P8.S6.T4
-        type: Task
-        summary: "Security UAT with Mei"
-        estimate_hours: 3
-        due_day: 18
-        priority: Highest
-        components: [Security]
-        labels: [security, uat]
-        description: |
-          Walk Mei through the portal as each pilot identity. Let her try to break it with cross-client access, exports,
-          URL manipulation and PII exposure.
-        acceptance_criteria:
-          - "UAT checklist executed and results recorded"
-          - "Findings fixed or accepted by Mei in writing"
-          - *docs
-        depends_on: [P8.S6.T2]
       - id: P8.S6.T5
         type: Bug
         reporter: mei.tanaka
@@ -847,7 +971,7 @@ stories:
         due_day: 17
         priority: Highest
         components: [Security, Serving]
-        labels: [incident, security, rls, postmortem]
+        labels: [incident, security, rls, postmortem, level-5]
         description: |
           **Reported by Mei Tanaka (InfoSec):**
           > "Omar forwarded me an email from the pilot client's analyst. Yesterday's delivery contains a few hundred rows with
@@ -857,6 +981,10 @@ stories:
           **Impact:** a possible disclosure of another client's data and consumer PII, with contractual and legal exposure.
 
           **Expected:** isolation holds on every delivery path, and we can prove what was and wasn't exposed.
+
+          Everything else you're doing today waits. What the other client is told, and when, is for Mei and Omar to decide, and
+          they'll decide on the facts you give them. So don't guess, and don't round. If the report turns out to be wrong, you
+          still have to prove it.
         acceptance_criteria:
           - "Containment first: the affected delivery is revoked or withdrawn, and the timeline is logged"
           - "Exposure assessment: exact rows, clients and PII fields delivered, from your delivery logs (or proof that none were)"
@@ -864,6 +992,56 @@ stories:
           - "Blameless postmortem in docs/postmortems/, reviewed by Mei"
           - &fix "Fix merged via PR from a fix/DATA-<n>-… branch with a regression test; Conventional Commits carry the key; CI green"
         depends_on: [P8.S3.T3]
+      - id: P8.S6.T3
+        type: Task
+        summary: "Build the Executive Scorecard (P8-D2)"
+        estimate_hours: 6
+        due_day: 18
+        priority: Highest
+        components: [Dashboards]
+        labels: [dashboards, executive, brand-kit, level-5]
+        description: |
+          > "One page. If I have to scroll, I've stopped reading. Tell me what's wrong before I ask, and where to look
+          > deeper. And if Iris hasn't signed a number off, it doesn't go to the board." (Daniel)
+
+          Build the scorecard to the P8-D2 spec and wireframe, from the model you've tied out. Its readers own the numbers on
+          it, and they'll read it critically. Some details only matter once it's real, and they're yours to settle: what a tile says
+          when a month was restated or has no commentary, whether red means the same thing on a KPI where lower is better, and
+          what happens when a drill link leads an executive to a dashboard they aren't allowed to open.
+
+          The board pack PDF leaves the page's access controls behind, so think about what it carries with it.
+        acceptance_criteria:
+          - "All spec visuals and filters present, with target, variance, sparkline and owner commentary on the tiles"
+          - "Every number matches its source dashboard for the last closed month"
+          - "Closed months come from frozen snapshots; month-to-date is marked provisional"
+          - "Restricted to the executives in the spec; no PII; Confidential marking on screen and in the PDF"
+          - "P95 < 3 s; PDF export for the board pack, and each export logged"
+          - *git
+        depends_on: [P8.S6.T1]
+      - id: P8.S6.T4
+        type: Task
+        summary: "Security UAT with Mei"
+        estimate_hours: 3
+        due_day: 18
+        priority: Highest
+        components: [Security]
+        labels: [security, uat, level-5]
+        description: |
+          > "Don't walk me through what works. Give me the identities and leave me alone with it. I'll try another client's
+          > data, exports, URLs and consumer names. When I find something, I'll ask what else it means." (Mei)
+
+          The portal doesn't go live without Mei. She also reviews the access rules, the masking and the access audit, and this
+          is the same project that just had an incident, so she'll be reading your evidence closely.
+
+          She was a penetration tester before this, and she may well find something. A fix is yours. Accepting a risk isn't:
+          only she can do that.
+        acceptance_criteria:
+          - "UAT checklist executed as each pilot identity and results recorded"
+          - "Findings fixed or accepted by Mei in writing"
+          - "Access rules, masking and access audit reviewed by Mei"
+          - "Mei's go or no-go for the portal recorded"
+          - *docs
+        depends_on: [P8.S6.T2, P8.S6.T5]
       - id: P8.S6.T6
         type: Task
         summary: "Architecture diagram, portfolio write-up and demo video"
@@ -871,14 +1049,22 @@ stories:
         due_day: 19
         priority: High
         components: [Documentation]
-        labels: [portfolio, architecture]
+        labels: [portfolio, architecture, level-4]
         description: |
-          Package the program for your portfolio. Draw one architecture diagram covering sources, ingestion, CDC, layers,
-          the semantic layer, serving, governance and dashboards. Write up the problem, approach, results and lessons. Record a 3-minute demo video.
+          This program has to make sense to someone who has never heard of Harborline: a hiring manager with three minutes, or
+          an engineer who has to take it over. They won't read eight projects. You decide what they see.
+
+          One architecture diagram has to carry sources, ingestion, CDC, layers, the semantic layer, serving, governance and
+          dashboards, and still be readable. The write-up covers problem, approach, results and lessons, where results means
+          numbers you measured. Three minutes of video is one story, not eight.
+
+          A careful reader will ask what was real and what you emulated on your tier, so say it first. Mei's rule covers this
+          too: nothing she wouldn't allow out of the building belongs in a screenshot, a frame of the video or a public repo.
         acceptance_criteria:
           - "Architecture diagram committed (source file plus exported image)"
-          - "Write-up published in the repo README or docs site"
-          - "Demo video linked from the README"
+          - "Write-up published in the repo README or docs site, with measured results and what was emulated"
+          - "Demo video, 3 minutes or less, linked from the README"
+          - "No secrets or clear consumer PII in anything published (checked)"
           - *docs
         depends_on: [P8.S6.T2, P8.S6.T3]
       - id: P8.S6.T7
@@ -889,20 +1075,21 @@ stories:
         priority: Highest
         reporter: iris.novak
         components: [Dashboards, Data Quality]
-        labels: [uat, sign-off, reconciliation]
+        labels: [uat, sign-off, reconciliation, level-5]
         description: |
-          Nothing goes to Daniel, Omar and Mei until Iris Novak (Business Performance Manager) has signed it off. She ties
-          your numbers back to the source systems herself, checks every KPI against your metric catalog and the
-          dashboard spec, and writes up numbered findings with a verdict.
+          > "Nothing goes to Daniel, Omar or Mei until I have tied it out. It's probably fine is not a verdict." (Iris)
 
-          For each dashboard: stop the stream, refresh, download the source extract from the Control Center, and put
-          a submission in `uat/<dashboard id>/round-1/` as the team page describes (Dashboard sign-off). Attach the
-          package zip, the zipped submission and the extract to a chat with Iris (or ask her in your coding agent).
-          Fix or answer every finding, and resubmit as round 2, 3 and so on until she signs off. Blockers and Majors
-          must be fixed before the readout; Minors can become tickets if she agrees.
+          Iris Novak (Business Performance Manager) ties your numbers back to the source systems herself, checks every KPI
+          against your metric catalog and the dashboard spec, and writes up numbered findings with a verdict. You know the
+          routine by now. The team page's *Dashboard sign-off* section still has what each round needs, under
+          `uat/<dashboard id>/round-<n>/`.
 
-          Iris checks the portal's numbers as two different client identities. Mei Tanaka's security UAT is a separate
-          task and still needed.
+          The stakes are what's new. She checks the portal's numbers as two different client identities. The scorecard sits on
+          top of every earlier project, in frozen months, and her extract is a fresh read of the sources, so anything restated
+          has to be explained before she finds it. Fix or answer every finding and resubmit until she signs off. Blockers and
+          Majors must be fixed before the readout; Minors can become tickets if she agrees.
+
+          Mei Tanaka's security UAT is a separate task and still needed. Day 20 doesn't move, so leave room for more than one round.
         acceptance_criteria:
           - "A submission for each dashboard: every page as PNG, CSV exports of the headline visuals and the end tables behind them, data-as-of and sim clock, a copy of the metric catalog, bridge.csv and the matching source extract"
           - "Iris's review report committed under uat/ for every round"
@@ -916,12 +1103,37 @@ stories:
         due_day: 20
         priority: Highest
         components: [Documentation]
-        labels: [readout, executive]
+        labels: [readout, executive, level-5]
         description: |
-          Give a 15-minute readout to Daniel, Rebecca, Luis, Omar, Mei and Sam. Show the portal as a client, then the
-          company on one page, then what you'd do next with costs and risks. Rehearse it once with the team channel.
+          > "Fifteen minutes. Show me the portal the way a client sees it, then the company on one page. Then tell me what you'd
+          > do next, what it costs and what could go wrong. I want a recommendation, not a menu." (Daniel)
+          >
+          > "I will ask where each number comes from, and I will check. If something does not reconcile, I would rather hear it
+          > from you in the first five minutes than find it myself in the fifteenth. Whatever you propose needs a cost I can put
+          > in next year's budget, with the assumptions written down." (Rebecca)
+
+          This is the last meeting of the program, and you run it. Daniel Reyes and Rebecca Lindqvist are the two people you have
+          to convince. Luis Moreno, Omar Haddad, Mei Tanaka and Sam Okafor are in the room as well. Each of them owns something
+          you'll show, so nothing on the page should surprise them on the day. Mei isn't on P8-D2's access list, so settle how
+          that works before the meeting, not in it.
+
+          Thirty-two weeks of work won't fit, and nobody there wants a tour. What can the company do now that it couldn't
+          before, and what can you prove? Some of it isn't comfortable: an incident in this very project, numbers that moved once
+          they were tied out, what you emulated because the tier wouldn't allow it, findings still open. Decide what you raise,
+          and raise it before someone else does.
+
+          The ask is the hard part. Harborline stayed on free tools to show value first, and any spend needs a business case.
+          What's next, what would it cost at real prices, what does the company risk if the answer is no, and what would you
+          stop doing? Daniel will push you to one recommendation and Rebecca will test what's under it. They may disagree in
+          front of you, so know where you stand.
+
+          Nadia Petrov will want to hear it once before they do.
         acceptance_criteria:
-          - "Readout delivered with live data"
+          - "Delivered in 15 minutes to Daniel, Rebecca, Luis, Omar, Mei and Sam with live data: the portal as a client, the scorecard, then what's next"
+          - "Iris's sign-off and Mei's security UAT recorded before the meeting"
+          - "Every number shown traces to a KPI owner and, where financial, to the ledger"
+          - "One recommendation with its cost, assumptions, the risk of a no and what would stop; Daniel's decision or his question back is logged"
+          - "The incident, open findings and emulated pieces raised by you, in the readout"
           - "Next-steps backlog created as tickets"
           - "Slides or notes committed"
         depends_on: [P8.S6.T6, P8.S6.T7]
@@ -932,15 +1144,23 @@ stories:
         due_day: 20
         priority: High
         components: [Documentation]
-        labels: [release, handover]
+        labels: [release, handover, level-4]
         description: |
-          Tag v1.0.0 and finish the CHANGELOG. Write a handover runbook a new engineer could use to operate the platform
+          > "The morning you're on holiday and the 07:00 check is red, someone who has never met you opens this document. It has
+          > to get them through the day. Cheers." (Sam)
+
+          Tag v1.0.0 and finish the CHANGELOG. Then write the handover runbook a new engineer could use to operate the platform
           without you: schedules, alerts, runbooks, owners and costs.
+
+          The hard part is what you've stopped noticing: the manual step you do without thinking, the secret that's going to
+          expire, the free-tier limit that's nearly reached, the thing that only works because you know about it. A version 1.0.0
+          is also a claim, so be plain about what it doesn't cover.
         acceptance_criteria:
           - "v1.0.0 tagged on main; CHANGELOG complete since v0.1.0"
-          - "Handover runbook reviewed against the alert catalog"
+          - "Handover runbook reviewed against the alert catalog: every alert has an owner and a first action"
+          - "Manual steps, expiring secrets, tier limits and emulated pieces are listed"
           - *docs
-        depends_on: [P8.S6.T6]
+        depends_on: [P8.S6.T6, P8.S6.T8]
       - id: P8.S6.T10
         type: Task
         summary: "Program retrospective and tech-debt register"
@@ -948,11 +1168,18 @@ stories:
         due_day: 20
         priority: Medium
         components: [Documentation]
-        labels: [retro]
+        labels: [retro, level-4]
         description: |
-          Look back over all 8 projects. What would you do differently, what debt did you knowingly take on, and what would
-          you prioritize next?
+          > "What would you do differently, what did you knowingly leave behind, and what's next? Not a highlights reel. I can
+          > read the CHANGELOG." (Nadia)
+
+          Look back over all 8 projects. Some of your ADRs were wrong, and some were right for reasons that no longer hold. Which
+          would you reverse today, and what would that cost? Not every debt deserves paying, so say which you'd live with and why.
+
+          Then check this against what you just told Daniel and Rebecca. If the worst thing in your register isn't in your
+          next-steps backlog, you owe them a reason.
         acceptance_criteria:
-          - "Retro document committed"
+          - "Retro document committed, naming the decisions you'd reverse and citing their ADRs"
           - "Tech-debt register with severity and owner, linked from the README"
+          - "Each high-severity item is in the next-steps backlog or has a written reason it isn't"
         depends_on: [P8.S6.T9]

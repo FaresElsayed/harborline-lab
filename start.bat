@@ -21,9 +21,11 @@ if errorlevel 1 (
   exit /b 1
 )
 
-if not exist ".env" (
-  copy /Y ".env.example" ".env" >nul
-  echo Created .env from .env.example ^(edit it to change ports or passwords^).
+rem Makes the passwords and keys in .env the first time, and never changes them after that.
+powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0setup\fill-env.ps1"
+if errorlevel 1 (
+  pause
+  exit /b 1
 )
 if not exist "landing" mkdir "landing"
 

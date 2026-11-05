@@ -128,7 +128,7 @@ foreach ($f in @('docker-compose.yml', '.env.example', 'db\init\00_roles_and_dat
     if (-not (Test-Path (Join-Path $PSScriptRoot $f))) { Report 'FAIL' 'Files' ("{0} is missing" -f $f) 'Unzip the whole simulator folder again.' }
 }
 if (Test-Path (Join-Path $PSScriptRoot '.env')) { Report 'PASS' 'Settings' '.env exists' '' }
-else { Report 'INFO' 'Settings' '.env not created yet (start.bat copies .env.example)' '' }
+else { Report 'INFO' 'Settings' '.env not created yet (start.bat creates it, with your own passwords and keys)' '' }
 
 Write-Host ''
 if ($script:fails -gt 0) {

@@ -19,6 +19,7 @@
 <article class="hb-content">
 
 <h1>Getting started</h1>
+<p class="hb-noprint" style="margin:-8px 0 16px;font-size:.875rem"><a href="http://localhost:8080/start" data-hb-app="/start">&larr; Back to Start here in the app</a></p>
 <p class="hb-lead">One setup file gets your machine ready, on Windows or Mac. After that come the parts that are yours:
 trying each source system, choosing a cloud platform and opening your first pull request. Your ticks are saved.</p>
 <p class="hb-meta"><span>About 40 minutes of setup, with the data build running behind it</span><span>Needs admin rights on the machine</span></p>
@@ -36,7 +37,9 @@ trying each source system, choosing a cloud platform and opening your first pull
 <section data-section="setup">
 <h2 id="setup-file">Run the setup file</h2>
 <p>One file installs and connects everything. It skips whatever is already there, fixes the problems it knows about,
-and stops only when it needs you. You can run it again at any time: it carries on where it stopped.</p>
+and stops only when it needs you. You can run it again at any time: it carries on where it stopped. It also checks
+for a new version each time and asks before updating. Your data, settings and progress are kept, and your passwords and
+keys, which setup makes just for your install, never change.</p>
 
 <div class="task">
 <label class="task-head"><input type="checkbox" data-track="getting-started:setup.run"><span class="task-title">Run it on your computer</span><span class="task-time">About 40 minutes, then the data build finishes by itself</span></label>
@@ -121,7 +124,7 @@ PostgreSQL</strong>:</p>
 <dt>Port</dt><dd><code>5432</code> (or your <code>HL_PG_PORT</code>)</dd>
 <dt>Database</dt><dd><code>wms</code>, <code>ax2012</code>, <code>iot</code> or <code>tracker</code></dd>
 <dt>Username</dt><dd><code>etl_reader</code></dd>
-<dt>Password</dt><dd><code>etl-reader-2026</code> (your <code>HL_ETL_PASSWORD</code>)</dd>
+<dt>Password</dt><dd>Yours is on <a href="http://localhost:8080/control/connections" data-hb-app="/control/connections">Connections</a> in the Control Center (<code>HL_ETL_PASSWORD</code> in <code>.env</code>). Setup made it just for this install.</dd>
 </dl>
 <p>The first time, let DBeaver download its PostgreSQL driver. <code>sim_internal</code> refuses you: it is the
 simulator’s private store and off limits.</p>
@@ -164,11 +167,12 @@ script from <code>ax2012</code>, or switch the toolbar’s database box (<kbd>Ct
 <label class="task-head"><input type="checkbox" data-track="getting-started:connect.salesforce"><span class="task-title">Call the Salesforce API</span><span class="task-time">10 min</span></label>
 <div class="task-body">
 <p>Get a token with the client-credentials flow, then run a SOQL query. <code>Invoke-RestMethod</code> sends a hashtable
-body as a form, which is what the token endpoint expects.</p>
+body as a form, which is what the token endpoint expects. Setup made your client id and secret just for this install:
+copy them from Connections in the Control Center.</p>
 <pre data-shell="PowerShell">$token = Invoke-RestMethod -Method Post -Uri "http://localhost:8080/sfdc/services/oauth2/token" -Body @{
   grant_type    = "client_credentials"
-  client_id     = "3MVG9harborline.etl.client"
-  client_secret = "hl-sf-secret-7c41"
+  client_id     = "PASTE-YOUR-SF_CLIENT_ID"
+  client_secret = "PASTE-YOUR-SF_CLIENT_SECRET"
 }
 $headers = @{ Authorization = "Bearer $($token.access_token)" }
 $soql = "SELECT Id, Name, WMS_Owner_Code__c, ERP_Account_Number__c FROM Account WHERE Type = 'Customer - Direct' LIMIT 5"
@@ -191,7 +195,8 @@ systems).</dd>
 <div class="task">
 <label class="task-head"><input type="checkbox" data-track="getting-started:connect.carrier"><span class="task-title">Call the carrier tracking API</span><span class="task-time">5 min</span></label>
 <div class="task-body">
-<pre data-shell="PowerShell">$carrier = @{ "X-API-Key" = "hl-carrier-live-5e2a9d" }
+<p>Setup made your API key just for this install: copy it from Connections in the Control Center.</p>
+<pre data-shell="PowerShell">$carrier = @{ "X-API-Key" = "PASTE-YOUR-CARRIER_API_KEY" }
 $since = (Get-Date).ToUniversalTime().AddDays(-3).ToString("yyyy-MM-ddTHH:mm:ssZ")
 $page = Invoke-RestMethod -Headers $carrier -Uri "http://localhost:8080/carrier/v1/tracking-events?since=$since&amp;limit=5"
 $page.events | Format-Table
@@ -784,9 +789,10 @@ again.</p></div>
 <div class="task">
 <label class="task-head"><span class="task-title">Create your .env</span><span class="task-time">3 min</span></label>
 <div class="task-body">
-<p><code>start.bat</code> creates it for you the first time, but look at it before you start so you know what is
-there.</p>
-<pre data-shell="PowerShell">Copy-Item .env.example .env
+<p><code>start.bat</code> creates it for you the first time, with passwords and keys made just for this install, but
+look at it before you start so you know what is there. Copying <code>.env.example</code> by hand won’t do: its passwords
+are blank, and nothing starts until they are filled in.</p>
+<pre data-shell="PowerShell">powershell -ExecutionPolicy Bypass -File .\setup\fill-env.ps1
 code .env</pre>
 <div class="hb-table-wrap"><table class="hb-table hb-table--dense">
 <thead><tr><th>Setting</th><th>Default</th><th>Change it when</th></tr></thead>
@@ -794,10 +800,10 @@ code .env</pre>
 <tr><td><code>HL_PG_PORT</code></td><td><code>5432</code></td><td>Another Postgres already uses 5432 (try <code>5433</code>)</td></tr>
 <tr><td><code>HL_APP_PORT</code></td><td><code>8080</code></td><td>Something else uses 8080 (then every <code>localhost:8080</code> URL in this handbook changes too)</td></tr>
 <tr><td><code>HL_BIND_ADDR</code></td><td><code>127.0.0.1</code></td><td>Keep it: only this computer can reach the databases and APIs</td></tr>
-<tr><td><code>HL_ETL_PASSWORD</code></td><td><code>etl-reader-2026</code></td><td>Your <code>etl_reader</code> password; takes effect only before the first start</td></tr>
-<tr><td><code>HL_REVIEWER_PASSWORD</code></td><td><code>uat-review-2026</code></td><td>Never; it is Iris Novak’s <code>uat_reviewer</code> login for dashboard reviews, not yours</td></tr>
-<tr><td><code>SF_CLIENT_ID</code>, <code>SF_CLIENT_SECRET</code></td><td>see file</td><td>Never; they are the Salesforce connected-app credentials</td></tr>
-<tr><td><code>CARRIER_API_KEY</code></td><td>see file</td><td>Never; it is the tracking API key</td></tr>
+<tr><td><code>HL_ETL_PASSWORD</code></td><td>made by setup</td><td>Your <code>etl_reader</code> password; takes effect only before the first start</td></tr>
+<tr><td><code>HL_REVIEWER_PASSWORD</code></td><td>made by setup</td><td>Never; it is Iris Novak’s <code>uat_reviewer</code> login for dashboard reviews, not yours</td></tr>
+<tr><td><code>SF_CLIENT_ID</code>, <code>SF_CLIENT_SECRET</code></td><td>made by setup</td><td>Never; they are the Salesforce connected-app credentials</td></tr>
+<tr><td><code>CARRIER_API_KEY</code></td><td>made by setup</td><td>Never; it is the tracking API key</td></tr>
 <tr><td><code>HL_DEFAULT_PRESET</code></td><td><code>large</code></td><td>Your machine has 8 GB of RAM (use <code>medium</code>)</td></tr>
 <tr><td><code>HL_SEED</code></td><td><code>20261031</code></td><td>You want a different but reproducible dataset</td></tr>
 <tr><td><code>HL_OFFLINE</code></td><td><code>0</code></td><td>No internet during a build (uses bundled FX and weather series)</td></tr>
@@ -977,7 +983,7 @@ moves them to the latest.</p>
 pre-commit autoupdate
 pre-commit run --all-files</pre>
 <div class="verify"><p class="verify-title">How to verify</p><p>Every hook reports <em>Passed</em> or <em>(no files to
-check) Skipped</em>. Put a fake key such as <code>AKIAIOSFODNN7EXAMPLE</code> in a file and try to commit it: gitleaks
+check) Skipped</em>. Put a made-up key such as <code>AKIAIOSFODNN7EXAMPLE</code> in a file and try to commit it: gitleaks
 should block the commit. Delete the file afterwards.</p></div>
 <details class="errors"><summary>Common problems</summary><div><dl>
 <dt>pre-commit : The term 'pre-commit' is not recognized</dt><dd>Either it isn’t installed or uv’s tools folder isn’t
@@ -988,6 +994,12 @@ open a new one in your repository and run <code>pre-commit --version</code>.</dd
 </div>
 
 </div></details>
+</section>
+
+<section data-section="update" data-no-progress>
+<h2 id="update">Update to a new version</h2>
+<p>When a new version is out, a quiet note appears at the bottom of the app’s sidebar. Run the setup file again, the same
+way you ran it the first time. It updates the app and keeps your data, your Tracker and your ticks.</p>
 </section>
 
 <section data-section="troubleshooting" data-no-progress>
@@ -1069,6 +1081,12 @@ and run a new build.</p>
 <h2 id="summary">Done and still to do</h2>
 <div data-hb-summary></div>
 </section>
+
+<nav class="callout hb-noprint" aria-label="What to do next" style="margin-top:40px">
+<p class="callout-title">What next?</p>
+<p>Connected and signed up? Tick both on Start here. Next comes meeting your team lead and starting your first ticket.</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"><a class="hb-btn hb-btn--primary" href="http://localhost:8080/start" data-hb-app="/start">Back to Start here</a> <a class="hb-btn" href="http://localhost:8080/team/nadia-petrov" data-hb-app="/team/nadia-petrov">Next: Meet Nadia Petrov</a></div>
+</nav>
 
 </article>
 <aside class="hb-toc" data-hb-toc></aside>

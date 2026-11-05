@@ -2,10 +2,11 @@
 
 Start a database once (pick your own port), then point the tests at it::
 
-    docker run -d --name hl-pg-<you> -p <port>:5432 -e POSTGRES_PASSWORD=pw postgres:17 -c wal_level=logical
+    export HL_TEST_PG_PASSWORD="$(openssl rand -hex 16)"
+    docker run -d --name hl-pg-<you> -p <port>:5432 -e POSTGRES_PASSWORD="$HL_TEST_PG_PASSWORD" postgres:17 -c wal_level=logical
     HL_TEST_PG_PORT=<port> .venv/bin/python -m pytest tests/<yours>
 
-Optional: HL_TEST_PG_HOST (localhost), HL_TEST_PG_PASSWORD (pw). Landing / answer-key folders go to a temp dir,
+Optional: HL_TEST_PG_HOST (localhost). Landing / answer-key folders go to a temp dir,
 public APIs are never called (HL_OFFLINE=1) and the history ends on ``TEST_HISTORY_END``, so runs are deterministic.
 
 Stable API::
@@ -23,6 +24,7 @@ Stable API::
 from __future__ import annotations
 
 import os
+import secrets
 import shutil
 import tempfile
 from collections.abc import Iterable
@@ -50,6 +52,7 @@ from .signals import Signals
 
 TEST_SEED = 20261031
 TEST_HISTORY_END = date(2026, 10, 1)
+GENERATED_KEYS = ("HL_APP_PASSWORD", "HL_ETL_PASSWORD", "HL_REVIEWER_PASSWORD", "SF_CLIENT_ID", "SF_CLIENT_SECRET", "CARRIER_API_KEY")
 
 _state: dict[str, Any] = {"configured": False, "tmp": None}
 
@@ -64,6 +67,9 @@ def use_test_database() -> Settings:
         raise RuntimeError("HL_TEST_PG_PORT is not set (see harborline/sim/testing.py)")
     if _state["configured"]:
         return get_settings()
+    password = os.environ.get("HL_TEST_PG_PASSWORD")
+    if not password:
+        raise RuntimeError("HL_TEST_PG_PASSWORD is not set (see harborline/sim/testing.py)")
     tmp = Path(os.environ.get("HL_TEST_TMP") or tempfile.mkdtemp(prefix="harborline-test-"))
     landing, answer_key = tmp / "landing", tmp / "answer_key"
     landing.mkdir(parents=True, exist_ok=True)
@@ -75,7 +81,9 @@ def use_test_database() -> Settings:
         "HL_PG_HOST": os.environ.get("HL_TEST_PG_HOST", "localhost"),
         "HL_PG_PORT": os.environ["HL_TEST_PG_PORT"],
         "POSTGRES_USER": "postgres",
-        "POSTGRES_PASSWORD": os.environ.get("HL_TEST_PG_PASSWORD", "pw"),
+        "POSTGRES_PASSWORD": password,
+        # The test database gets its own keys each run, like an install does: nothing here may depend on their values.
+        **{name: os.environ.get(name) or secrets.token_hex(24) for name in GENERATED_KEYS},
         "HL_OFFLINE": "1",
         "HL_LANDING_DIR": str(landing),
         "HL_ANSWER_KEY_DIR": str(answer_key),

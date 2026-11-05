@@ -1,10 +1,12 @@
 import { useState, type ReactNode } from 'react';
+import { Link } from 'react-router';
 import { Eye, EyeOff } from 'lucide-react';
 import { useConnections } from '@/api/queries';
 import type { Connections } from '@/api/types';
 import { IconButton } from '@/components/ui/button';
 import { CopyButton, ErrorNote, PageHeader, Skeleton } from '@/components/ui/misc';
 import { Segmented } from '@/components/ui/field';
+import { handbookUrl } from '@/lib/base';
 
 const DEMO_NOTE = import.meta.env.VITE_DEMO === '1' ? ' In this demo nothing answers at these addresses: they work when you install it.' : '';
 
@@ -99,6 +101,21 @@ export default function ConnectionsPage() {
           />
         }
       />
+      <p className="-mt-2 mb-4 text-base text-muted">
+        First time?{' '}
+        <a href={handbookUrl('getting-started.html#connect')} target="_blank" rel="noreferrer" className="font-medium text-accent-strong hover:underline">
+          Try each source system
+        </a>{' '}
+        walks you through a first query.{' '}
+        <a href={handbookUrl('source-systems.html')} target="_blank" rel="noreferrer" className="font-medium text-accent-strong hover:underline">
+          Source systems
+        </a>{' '}
+        says how each one behaves. Can’t connect? Ask{' '}
+        <Link to="/team/kevin-ohara" className="font-medium text-accent-strong hover:underline">
+          Kevin O’Hara
+        </Link>
+        .
+      </p>
       {q.isError ? <ErrorNote error={q.error} onRetry={() => void q.refetch()} what="connection details" /> : null}
       {q.isLoading ? (
         <div className="flex flex-col gap-3">

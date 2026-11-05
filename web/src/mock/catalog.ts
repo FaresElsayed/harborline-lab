@@ -462,7 +462,7 @@ const PROJECTS: ProjectSpec[] = [
           ['On-time rate by carrier and service', 5],
           ['Transit-time distributions', 4],
           ['Storm days from Open-Meteo', 6],
-          ['Fuel surcharge against the EIA diesel index', 5],
+          ['Fuel surcharge against the weekly diesel file', 5],
         ],
       },
       {

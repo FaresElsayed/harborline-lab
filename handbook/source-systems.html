@@ -19,6 +19,7 @@
 <article class="hb-content">
 
 <h1>Source systems</h1>
+<p class="hb-noprint" style="margin:-8px 0 16px;font-size:.875rem"><a href="http://localhost:8080/start" data-hb-app="/start">&larr; Back to Start here in the app</a></p>
 <p class="hb-lead">Eight places where Harborline’s data lives. Each section says what the system is, who owns it, how
 you connect, and how it behaves, written the way the vendor documentation would put it. The full data dictionary is at
 the end.</p>
@@ -34,10 +35,10 @@ the end.</p>
 <tr><td><a href="#ax">AX 2012</a></td><td>Customers, invoices, AR, carrier bills, general ledger, FX rates, workers</td><td>Priya Raman</td><td>Postgres <code>ax2012</code>, schema <code>dbo</code></td><td>Inserts, settlement updates, deletes of drafts and reversals</td></tr>
 <tr><td><a href="#salesforce">Salesforce</a></td><td>Accounts, contacts, pipeline, contracts, rate cards, cases, activities</td><td>Dana Whitfield</td><td>REST API (OAuth)</td><td>Inserts, updates, merges, deletes (15-day recycle bin)</td></tr>
 <tr><td><a href="#carrier">Carrier tracking</a></td><td>Tracking events for every package, from every carrier</td><td>Tomás Ortega</td><td>REST API (API key)</td><td>New events, corrections, late and duplicate events</td></tr>
-<tr><td><a href="#iot">IoT gateway</a></td><td>Temperature and humidity readings, dock-door events</td><td>Grace Liu</td><td>Postgres <code>iot</code>, schema <code>telemetry</code></td><td>Append-only, late flushes</td></tr>
+<tr><td><a href="#iot">IoT gateway</a></td><td>Temperature and humidity readings, dock-door events</td><td>Grace Liu</td><td>Postgres <code>iot</code>, schema <code>telemetry</code></td><td>Append-only readings, late flushes; sensor list updated when a probe is recalibrated</td></tr>
 <tr><td><a href="#edi">EDI</a></td><td>Orders and ship notices from trading partners; our acks and shipping advices</td><td>Tomás Ortega</td><td>Files in <code>landing/edi</code></td><td>New files, resends</td></tr>
-<tr><td><a href="#files">Business files</a></td><td>Carrier rate cards, budget, warehouse master, client item masters, tracking history</td><td>Beth, Alan, Luis, clients</td><td>Files in <code>landing/files</code></td><td>New versions over time</td></tr>
-<tr><td><a href="#public">Public APIs</a></td><td>FX rates, holidays, weather, diesel prices</td><td>Outside world</td><td>HTTPS</td><td>Daily or weekly</td></tr>
+<tr><td><a href="#files">Business files</a></td><td>Carrier rate cards, diesel price, budget, warehouse master, client item masters, tracking history</td><td>Beth, Alan, Luis, clients</td><td>Files in <code>landing/files</code></td><td>New versions over time</td></tr>
+<tr><td><a href="#public">Public APIs</a></td><td>FX rates, holidays, weather; real diesel prices as a stretch</td><td>Outside world</td><td>HTTPS</td><td>Daily or weekly</td></tr>
 </tbody>
 </table>
 </div>
@@ -86,7 +87,7 @@ locations, license plates, tasks). <strong>Owner:</strong> Marcus Bell, WMS Appl
 <dl class="hb-dl">
 <dt>Host</dt><dd><code>localhost</code>, port <code>5432</code> (or <code>HL_PG_PORT</code>)</dd>
 <dt>Database / schema</dt><dd><code>wms</code> / <code>wms</code></dd>
-<dt>Login</dt><dd><code>etl_reader</code>, password <code>HL_ETL_PASSWORD</code> in <code>.env</code> (default <code>etl-reader-2026</code>). The other read-only login you may see in the database’s activity, <code>uat_reviewer</code>, is Iris Novak’s for dashboard reviews.</dd>
+<dt>Login</dt><dd><code>etl_reader</code>, password <code>HL_ETL_PASSWORD</code> in <code>.env</code> (setup makes it for your install; see Connections in the Control Center). The other read-only login you may see in the database’s activity, <code>uat_reviewer</code>, is Iris Novak’s for dashboard reviews.</dd>
 <dt>Change capture</dt><dd>Logical replication; publication <code>hl_wms_cdc</code> covers every table in the schema</dd>
 </dl>
 <h3 id="wms-behaviour">Behaviour reference</h3>
@@ -356,7 +357,9 @@ readings mean for product.</p>
 <code>ingested_at</code> can be hours after the reading. Duplicate sends happen.</li>
 <li>Limits by zone type: cooler 2–8 °C, freezer −25 to −18 °C, ambient 10–32 °C, humidity under 70% RH. A cooler or
 freezer is in excursion after 30 minutes out of range, ambient after 240.</li>
-<li>Each sensor has a <code>calibration_due</code> date.</li>
+<li>Each sensor has a <code>calibration_due</code> date. Probes are recalibrated about once a year, and the row is
+updated in place when one is, so keep your own history if you want status over time. A few percent are overdue at any
+moment. A build made before this programme existed brings its dates up to date in its next batch.</li>
 </ul>
 <h3 id="iot-erd">ER diagram</h3>
 <figure class="hb-figure hb-figure--er">
@@ -450,10 +453,12 @@ with a changed layout.</p>
 <thead><tr><th>File</th><th>Owner</th><th>What to expect</th></tr></thead>
 <tbody>
 <tr><td>Carrier rate cards (.xlsx)</td><td>Beth Kowalczyk</td><td>One workbook per carrier and version: zones, weight breaks, surcharges, fuel tables</td></tr>
+<tr><td>Diesel reference (.csv)</td><td>Beth Kowalczyk</td><td>The weekly diesel price carrier bills are rated from, in <code>reference/diesel_weekly.csv</code>: rewritten in full with one more row each Monday. It’s the price to use with the rate cards’ fuel tables</td></tr>
 <tr><td>Budget (.xlsx)</td><td>Alan Brooks</td><td>Wide layout, months across, merged header rows, one block per warehouse</td></tr>
 <tr><td>Warehouse master (.xlsx)</td><td>Luis Moreno</td><td>Sites, capacity, dock doors, shifts and cutoffs as Operations maintains them</td></tr>
 <tr><td>Client item masters (.csv)</td><td>Each client</td><td>Mixed delimiters, Windows-1252 encoding, several date formats</td></tr>
 <tr><td>Tracking history (.csv.gz)</td><td>Tomás Ortega</td><td>Carrier events older than the API’s 90 days, in <code>carrier/history_export</code></td></tr>
+<tr><td>Signal sources (.csv)</td><td>Nadia Petrov</td><td>Where this build’s FX, weather, holidays and diesel came from, in <code>reference/signal_sources.csv</code>. See <a href="#public">Public APIs</a></td></tr>
 </tbody>
 </table>
 </div>
@@ -470,6 +475,12 @@ with a changed layout.</p>
 <!-- END GENERATED: er-files-finance -->
 <figcaption>Warehouse master and budget workbooks. Legal Entity is upper case (US01) where AX has us01, and the budget Account is the AX main account. The tracking-history export is drawn with the carrier API.</figcaption>
 </figure>
+<figure class="hb-figure hb-figure--er">
+<!-- BEGIN GENERATED: er-files-reference -->
+<svg viewBox="0 0 484 274" role="img" aria-label="Reference files: the diesel series carrier bills are rated from, and where the build&#x27;s signals came from" xmlns="http://www.w3.org/2000/svg" style="max-width:484px;margin:0 auto"><title>Reference files: the diesel series carrier bills are rated from, and where the build&#x27;s signals came from</title><path class="dg-line dg-line--dash" d="M220 60.5H242V41.5H264"/><circle class="dg-arrow" cx="220" cy="60.5" r="2.6"/><circle class="dg-arrow" cx="264" cy="41.5" r="2.6"/><g class="dg-entity"><rect class="dg-box" x="8" y="0" width="212" height="76" rx="8"/><path class="dg-head" d="M9 30V8a7 7 0 0 1 7-7H212a7 7 0 0 1 7 7V30z"/><text class="dg-title" x="20" y="20">diesel_weekly.csv</text><text class="dg-mono" x="20" y="45.5">week_start</text><text class="dg-mono" x="20" y="64.5">diesel_usd_per_gal</text><text class="dg-small" x="208" y="64.5" text-anchor="end">FK</text></g><g class="dg-entity"><rect class="dg-box" x="8" y="114" width="212" height="152" rx="8"/><path class="dg-head" d="M9 144V122a7 7 0 0 1 7-7H212a7 7 0 0 1 7 7V144z"/><text class="dg-title" x="20" y="134">signal_sources.csv</text><text class="dg-mono" x="20" y="159.5">signal</text><text class="dg-mono" x="20" y="178.5">key</text><text class="dg-mono" x="20" y="197.5">source</text><text class="dg-mono" x="20" y="216.5">real_from</text><text class="dg-mono" x="20" y="235.5">real_to</text><text class="dg-mono" x="20" y="254.5">note</text></g><g class="dg-entity"><rect class="dg-box" x="264" y="0" width="212" height="133" rx="8"/><path class="dg-head" d="M265 30V8a7 7 0 0 1 7-7H468a7 7 0 0 1 7 7V30z"/><text class="dg-title" x="276" y="20">rate card · Fuel Surcharge</text><text class="dg-mono" x="276" y="45.5">Diesel from (USD/gal)</text><text class="dg-mono" x="276" y="64.5">Diesel to (USD/gal)</text><text class="dg-mono" x="276" y="83.5">Ground %</text><text class="dg-mono" x="276" y="102.5">Air %</text><text class="dg-mono" x="276" y="121.5">LTL %</text></g></svg>
+<!-- END GENERATED: er-files-reference -->
+<figcaption>Reference files. A carrier’s fuel surcharge is the band its table gives for a week’s price in diesel_weekly.csv; which week applies is the carrier’s effective-date rule. A build made before these files existed gets them at its next batch.</figcaption>
+</figure>
 <ul class="checklist">
 <li><label><input type="checkbox" data-track="source-systems:files.read"><span>Opened the budget workbook and one
 item-master CSV and listed what would break a naive loader</span></label></li>
@@ -478,8 +489,9 @@ item-master CSV and listed what would break a naive loader</span></label></li>
 
 <section data-section="public">
 <h2 id="public">Public APIs</h2>
-<p>Real, free services on the internet. The simulator uses the same signals (exchange rates, holidays, weather, diesel
-prices), so joins against them find real effects in the data.</p>
+<p>Real, free services on the internet. How well each one lines up with the data depends on the signal and on your
+build, so read the second table before you trust a join. <code>landing/files/reference/signal_sources.csv</code> says
+what your build used and for which dates.</p>
 <div class="hb-table-wrap">
 <table class="hb-table">
 <thead><tr><th>Service</th><th>Use it for</th><th>Example</th></tr></thead>
@@ -487,12 +499,23 @@ prices), so joins against them find real effects in the data.</p>
 <tr><td>Frankfurter</td><td>ECB reference exchange rates</td><td><code>https://api.frankfurter.dev/v1/2026-01-02?base=EUR&amp;symbols=USD,GBP,CAD,MXN</code></td></tr>
 <tr><td>Nager.Date</td><td>Public holidays for US, CA, MX</td><td><code>https://date.nager.at/api/v3/PublicHolidays/2026/US</code></td></tr>
 <tr><td>Open-Meteo archive</td><td>Daily weather at each warehouse</td><td><code>https://archive-api.open-meteo.com/v1/archive?latitude=41.49&amp;longitude=-88.13&amp;start_date=2026-01-01&amp;end_date=2026-01-31&amp;daily=temperature_2m_max,snowfall_sum&amp;timezone=America%2FChicago</code></td></tr>
-<tr><td>EIA (free key)</td><td>Weekly US diesel retail price</td><td><code>https://api.eia.gov/v2/petroleum/pri/gnd/data/?api_key=KEY&amp;frequency=weekly&amp;data[0]=value&amp;facets[series][]=EMD_EPD2D_PTE_NUS_DPG</code></td></tr>
+<tr><td>EIA (free key)</td><td>Weekly US diesel retail price, a stretch comparison only</td><td><code>https://api.eia.gov/v2/petroleum/pri/gnd/data/?api_key=KEY&amp;frequency=weekly&amp;data[0]=value&amp;facets[series][]=EMD_EPD2D_PTE_NUS_DPG</code></td></tr>
 </tbody>
 </table>
 </div>
-<p>Register for an EIA key at <a href="https://www.eia.gov/opendata/register.php">eia.gov/opendata</a>. Keep it in your
-own <code>.env</code>, never in Git.</p>
+<div class="hb-table-wrap">
+<table class="hb-table">
+<thead><tr><th>Signal</th><th>What the simulator used</th><th>What lines up</th></tr></thead>
+<tbody>
+<tr><td>FX</td><td>Real ECB rates, fetched once when the build ran. If the build could not reach the service, a bundled approximation. After the build date, a generated walk from the last rate</td><td>Frankfurter, between <code>real_from</code> and <code>real_to</code>. Outside that range, or with source <code>fallback</code>, the simulator’s rates sit a few percent from the real ones, more than any gap you’d be measuring. Compare inside the range, or rebuild while online</td></tr>
+<tr><td>Weather</td><td>Real daily archive up to two days before the build ran. Other days, and every day if the build could not reach the service, are generated from each site’s climate normals</td><td>Open-Meteo, between <code>real_from</code> and <code>real_to</code>. Outside that range, real weather won’t explain anything in the data</td></tr>
+<tr><td>Holidays</td><td>National calendars, the same in every build, online or not. Regional holidays never close a site</td><td>The US matches Nager.Date’s <code>global</code> rows exactly. Canada closes only on New Year’s Day, Good Friday, Canada Day, Labour Day and Christmas Day. Mexico closes on its seven statutory days, not Holy Thursday or Good Friday. Nager.Date’s other <code>global</code> rows there have no effect on the data</td></tr>
+<tr><td>Diesel</td><td>Its own generated weekly series, the same in every build, online or not</td><td><code>reference/diesel_weekly.csv</code>, exactly: it is what carrier bills were rated from. The real EIA series moves differently and won’t match, so never rate bills from it. Charting the two side by side is a good stretch exercise</td></tr>
+</tbody>
+</table>
+</div>
+<p>Register for an EIA key at <a href="https://www.eia.gov/opendata/register.php">eia.gov/opendata</a> if you take the
+stretch comparison. Keep it in your own <code>.env</code>, never in Git.</p>
 <ul class="checklist">
 <li><label><input type="checkbox" data-track="source-systems:public.called"><span>Called each public API once and
 saved the response shape</span></label></li>
@@ -1581,6 +1604,12 @@ column opens its table.</p>
 <tr><td><code>Description</code></td><td class="dd-type">textarea</td><td></td><td></td></tr></tbody></table></div></details></div>
 <!-- END GENERATED: dictionary-salesforce -->
 </section>
+
+<nav class="callout hb-noprint" aria-label="What to do next" style="margin-top:40px">
+<p class="callout-title">What next?</p>
+<p>Reached every source? The next step on Start here is signing up for a cloud platform to load them into.</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"><a class="hb-btn hb-btn--primary" href="http://localhost:8080/start" data-hb-app="/start">Back to Start here</a> <a class="hb-btn" href="getting-started.html#cloud">Next: Sign up for a cloud platform</a></div>
+</nav>
 
 </article>
 <aside class="hb-toc" data-hb-toc></aside>

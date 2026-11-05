@@ -116,6 +116,7 @@
 <article class="hb-content">
 
 <h1>Brand kit and dashboard style guide</h1>
+<p class="hb-noprint" style="margin:-8px 0 16px;font-size:.875rem"><a href="http://localhost:8080/start" data-hb-app="/start">&larr; Back to Start here in the app</a></p>
 <p class="hb-lead">Every dashboard you ship is a Harborline document. This kit makes the fifteen of them look like they come from one
 company: the logo and colours, a data-viz palette that colour-blind readers can use, two typefaces that keep numbers aligned,
 a page grid with ready-made backgrounds per department, and themes for Power BI, Streamlit, Databricks AI/BI and Snowsight.</p>
@@ -392,6 +393,12 @@ take it from the categorical list in slot order.</p>
 <p>Run through this before every readout. The per-dashboard “brand kit applied” box on the <a href="dashboards.html">dashboard specs</a> page means all of these are ticked.</p>
 <ul class="checklist"><li><label><input type="checkbox" data-track="brand:checklist.theme"><span>The Harborline theme is applied (Power BI theme JSON, Streamlit config, or the Databricks theme).</span></label></li><li><label><input type="checkbox" data-track="brand:checklist.background"><span>The page uses the department background, and every visual sits inside the 12-column grid.</span></label></li><li><label><input type="checkbox" data-track="brand:checklist.title"><span>The title says what the page answers; the subtitle says the scope and currency.</span></label></li><li><label><input type="checkbox" data-track="brand:checklist.data-as-of"><span>The footer shows Data as of with a time zone, and it comes from the load table, not NOW().</span></label></li><li><label><input type="checkbox" data-track="brand:checklist.kpis"><span>KPI tiles as the spec lists them, in one row; each has a label with the period, a value, and a comparison.</span></label></li><li><label><input type="checkbox" data-track="brand:checklist.one-axis"><span>No chart has two y-axes; bars start at zero.</span></label></li><li><label><input type="checkbox" data-track="brand:checklist.slots"><span>Series colours follow the slot order and stay with their entity on every page.</span></label></li><li><label><input type="checkbox" data-track="brand:checklist.other"><span>No more than 8 series (3 for scatter and maps); the rest is folded into Other.</span></label></li><li><label><input type="checkbox" data-track="brand:checklist.status"><span>Status colour always comes with an icon and a word.</span></label></li><li><label><input type="checkbox" data-track="brand:checklist.formats"><span>Numbers and dates follow the format table: $ only for USD, ISO codes otherwise, pp for rate changes.</span></label></li><li><label><input type="checkbox" data-track="brand:checklist.labels"><span>Direct labels or a table view exist wherever a colour is below 3:1 (slot 4 Brass).</span></label></li><li><label><input type="checkbox" data-track="brand:checklist.dark"><span>The page was checked in the dark theme too, or the report states it is light only.</span></label></li><li><label><input type="checkbox" data-track="brand:checklist.alt-text"><span>Every visual has alt text, and tab order follows the reading order.</span></label></li><li><label><input type="checkbox" data-track="brand:checklist.performance"><span>Each page renders in under 3 seconds on the published dataset.</span></label></li></ul>
 </section>
+
+<nav class="callout hb-noprint" aria-label="What to do next" style="margin-top:40px">
+<p class="callout-title">What next?</p>
+<p>Back to the ticket that sent you here? Your next ticket and its due date are in the app.</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"><a class="hb-btn hb-btn--primary" href="http://localhost:8080/tracker/my-work" data-hb-app="/tracker/my-work">Open My work</a> <a class="hb-btn" href="http://localhost:8080/start" data-hb-app="/start">Start here</a></div>
+</nav>
 
 </article>
 <aside class="hb-toc" data-hb-toc></aside>

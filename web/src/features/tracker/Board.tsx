@@ -21,20 +21,22 @@ import { toast } from 'sonner';
 import { compareRank, useMoveIssue } from '@/api/queries';
 import type { Issue, StatusName } from '@/api/types';
 import { Button, buttonClasses } from '@/components/ui/button';
-import { Input, Select } from '@/components/ui/field';
+import { Input, Segmented, Select } from '@/components/ui/field';
 import { Empty, ErrorNote, Skeleton } from '@/components/ui/misc';
 import { Tooltip } from '@/components/ui/overlay';
-import { addDays, dueState, fmtDay, inThisWeek, isWeekend, parseDay, today, workWeek } from '@/lib/dates';
+import { dueState, fmtDay, inThisWeek, workWeek } from '@/lib/dates';
 import { fmtHours, plural } from '@/lib/format';
 import { ui, usePersisted } from '@/lib/store';
-import { Avatar, DueBadge, Estimate, IssueKey, PriorityIcon, TypeIcon } from './atoms';
+import { Avatar, DueBadge, Estimate, IssueKey, LevelChip, PriorityIcon, TypeIcon } from './atoms';
 import { CompleteSprintDialog } from './SprintDialogs';
-import { epicShort, isWorkItem, useIssueParam, useTracker } from './data';
-import { containerCollision } from './dnd';
+import { compareDue, epicShort, insertByDue, isWorkItem, levelOf, useIssueParam, useTracker, workingDaysLeft } from './data';
+import { containerCollision, holdStill } from './dnd';
+import { YouAreHere } from './here';
 import { useIssueNav } from './nav';
 
 const COLUMNS: StatusName[] = ['To Do', 'In Progress', 'In Review', 'Done'];
 type GroupBy = 'none' | 'epic' | 'story';
+type CardOrder = 'rank' | 'due';
 
 interface Lane {
   id: string;
@@ -49,24 +51,19 @@ const parseCid = (id: string) => {
   return { lane, status: status as StatusName };
 };
 
-function workingDaysLeft(end: string | null) {
-  if (!end) return null;
-  let n = 0;
-  for (let d = today(); d <= parseDay(end); d = addDays(d, 1)) if (!isWeekend(d)) n += 1;
-  return n;
-}
-
 // ---------------------------------------------------------------- card
 
 function CardBody({ issue, epicName }: { issue: Issue; epicName?: string }) {
   const t = useTracker();
   const due = dueState(issue.due_date, issue.status === 'Done');
+  const level = levelOf(issue);
   return (
     <>
       <p className={clsx('line-clamp-3 text-base leading-5 [overflow-wrap:anywhere]', issue.status === 'Done' ? 'text-muted' : 'text-ink')}>{issue.summary}</p>
-      {epicName || (due !== 'none' && due !== 'done') ? (
+      {epicName || level || (due !== 'none' && due !== 'done') ? (
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           {epicName ? <span className="max-w-full truncate rounded-s bg-active px-1.5 text-xs leading-5 text-muted">{epicName}</span> : null}
+          <LevelChip issue={issue} />
           {due !== 'none' && due !== 'done' ? <DueBadge issue={issue} compact /> : null}
         </div>
       ) : null}
@@ -115,7 +112,7 @@ function SortableCard({ issue, container, epicName, onOpen }: { issue: Issue; co
   );
 }
 
-function Column({ id, status, items, epicNames, onOpen, showHeader, wip }: { id: string; status: StatusName; items: Issue[]; epicNames: Map<string, string>; onOpen: (k: string) => void; showHeader: boolean; wip: number }) {
+function Column({ id, status, items, epicNames, onOpen, showHeader, wip, byDue }: { id: string; status: StatusName; items: Issue[]; epicNames: Map<string, string>; onOpen: (k: string) => void; showHeader: boolean; wip: number; byDue: boolean }) {
   const { setNodeRef, isOver } = useDroppable({ id, data: { container: id } });
   return (
     <section aria-label={`${status}, ${plural(items.length, 'issue')}`} className={clsx('flex min-w-0 flex-col rounded-l bg-raised transition-colors duration-150', isOver && 'bg-active')}>
@@ -125,7 +122,7 @@ function Column({ id, status, items, epicNames, onOpen, showHeader, wip }: { id:
           <span className="num text-sm text-muted">{wip}</span>
         </header>
       ) : null}
-      <SortableContext id={id} items={items.map((i) => i.key)} strategy={verticalListSortingStrategy}>
+      <SortableContext id={id} items={items.map((i) => i.key)} strategy={byDue ? holdStill : verticalListSortingStrategy}>
         <ul ref={setNodeRef} className={clsx('flex min-h-[88px] flex-1 flex-col gap-2 px-2 pb-2', !showHeader && 'pt-2')}>
           {items.map((i) => (
             <SortableCard key={i.key} issue={i} container={id} epicName={epicNames.get(i.key)} onOpen={onOpen} />
@@ -143,11 +140,14 @@ export default function BoardPage() {
   const { open } = useIssueParam();
   const move = useMoveIssue();
   const [groupBy, setGroupBy] = usePersisted<GroupBy>('harborline.board.group', 'none');
+  const [cardOrder, setCardOrder] = usePersisted<CardOrder>('harborline.board.order', 'rank');
+  const byDue = cardOrder === 'due';
   const [mine, setMine] = useState(false);
   const [overdue, setOverdue] = useState(false);
   const [week, setWeek] = useState(false);
   const [type, setType] = useState('all');
   const [epic, setEpic] = useState('all');
+  const [level, setLevel] = useState('all');
   const [text, setText] = useState('');
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [completeOpen, setCompleteOpen] = useState(false);
@@ -162,9 +162,10 @@ export default function BoardPage() {
       .filter((i) => !week || (inThisWeek(i.due_date) && i.status !== 'Done'))
       .filter((i) => type === 'all' || i.type === type)
       .filter((i) => epic === 'all' || i.epic_key === epic)
+      .filter((i) => level === 'all' || levelOf(i) === Number(level))
       .filter((i) => !q || i.summary.toLowerCase().includes(q) || i.key.toLowerCase().includes(q))
-      .sort(compareRank);
-  }, [sprintIssues, mine, overdue, week, type, epic, text, t.me]);
+      .sort(byDue ? compareDue : compareRank);
+  }, [sprintIssues, mine, overdue, week, type, epic, level, text, t.me, byDue]);
 
   // The epic tag only helps when the sprint spans more than one epic.
   const epicNames = useMemo(() => {
@@ -239,6 +240,7 @@ export default function BoardPage() {
     setDraft((prev) => {
       const p = prev ?? base;
       const src = p[from].filter((k) => k !== active.id);
+      if (byDue) return { ...p, [from]: src, [to]: insertByDue(p[to], String(active.id), t.byKey) };
       const dst = [...p[to]];
       const overIdx = dst.indexOf(String(over.id));
       dst.splice(overIdx < 0 ? dst.length : overIdx, 0, String(active.id));
@@ -252,6 +254,12 @@ export default function BoardPage() {
     setDragging(null);
     if (!over || !container) {
       setDraft(null);
+      return;
+    }
+    // In due-date order the date decides where a card sits: only its status can change, and the rank stays as it was.
+    if (byDue && t.byKey.get(key)?.status === parseCid(container).status) {
+      setDraft(null);
+      if (over !== key) toast.message('These cards are in due-date order', { description: 'Switch the order to Manual to rank them by hand.' });
       return;
     }
     const list = [...(cols[container] ?? [])];
@@ -273,7 +281,7 @@ export default function BoardPage() {
     if (!statusChanged && !rankChanged) return;
     const previous = issue?.status;
     move.mutate(
-      { key, before, after, patch: statusChanged ? { status } : undefined },
+      { key, before: byDue ? undefined : before, after: byDue ? undefined : after, patch: statusChanged ? { status } : undefined },
       {
         onSuccess: () => {
           if (!statusChanged || !previous) return;
@@ -297,7 +305,18 @@ export default function BoardPage() {
 
   if (t.issuesQ.isError) return <div className="p-6"><ErrorNote error={t.issuesQ.error} onRetry={() => void t.issuesQ.refetch()} what="the board" /></div>;
 
-  const filtersOn = mine || overdue || week || type !== 'all' || epic !== 'all' || !!text;
+  const filtersOn = mine || overdue || week || type !== 'all' || epic !== 'all' || level !== 'all' || !!text;
+  const clearFilters = () => {
+    setMine(false);
+    setOverdue(false);
+    setWeek(false);
+    setType('all');
+    setEpic('all');
+    setLevel('all');
+    setText('');
+  };
+  const levels = [...new Set(sprintIssues.map(levelOf).filter((l): l is number => l != null))].sort();
+  const allDone = sprintIssues.length > 0 && sprintIssues.every((i) => i.status === 'Done');
   const doneH = sprintIssues.filter((i) => isWorkItem(i) && i.status === 'Done').reduce((s, i) => s + (i.estimate_hours ?? 0), 0);
   const allH = sprintIssues.filter(isWorkItem).reduce((s, i) => s + (i.estimate_hours ?? 0), 0);
   const overdueCount = sprintIssues.filter((i) => dueState(i.due_date, i.status === 'Done') === 'overdue').length;
@@ -337,6 +356,16 @@ export default function BoardPage() {
           </div>
           {sprint ? (
             <div className="flex items-center gap-2">
+              <span className="text-sm text-muted">Order</span>
+              <Segmented
+                ariaLabel="Order cards by"
+                value={cardOrder}
+                onValueChange={setCardOrder}
+                options={[
+                  { value: 'rank', label: 'Manual', title: 'The order you ranked them in' },
+                  { value: 'due', label: 'Due date', title: 'Overdue and soonest first, no due date last' },
+                ]}
+              />
               <Select
                 ariaLabel="Swimlanes"
                 value={groupBy}
@@ -356,6 +385,8 @@ export default function BoardPage() {
           ) : null}
         </div>
 
+        <YouAreHere className="mt-4" />
+
         {!t.issuesQ.data ? (
           <div className="mt-6 grid grid-cols-4 gap-3">
             {COLUMNS.map((c) => (
@@ -371,7 +402,7 @@ export default function BoardPage() {
         ) : (
           <>
             <div className="mt-5 flex flex-wrap items-center gap-2" role="toolbar" aria-label="Quick filters">
-              <div className="w-52">
+              <div className="w-44">
                 <Input leading={<Search aria-hidden />} value={text} onChange={(e) => setText(e.target.value)} placeholder="Search this board" aria-label="Search this board" />
               </div>
               <button type="button" aria-pressed={mine} className={chip(mine)} onClick={() => setMine((v) => !v)}>
@@ -395,22 +426,14 @@ export default function BoardPage() {
                 ariaLabel="Epic"
                 value={epic}
                 onValueChange={setEpic}
-                className="w-52"
+                className="w-44"
                 options={[{ value: 'all', label: 'All epics' }, ...sprintEpics.map((k) => ({ value: k, label: epicShort(t.byKey.get(k)?.summary ?? k) }))]}
               />
+              {levels.length ? (
+                <Select ariaLabel="Level" value={level} onValueChange={setLevel} className="w-32" options={[{ value: 'all', label: 'All levels' }, ...levels.map((l) => ({ value: String(l), label: `Level ${l}` }))]} />
+              ) : null}
               {filtersOn ? (
-                <Button
-                  variant="quiet"
-                  icon={<X aria-hidden />}
-                  onClick={() => {
-                    setMine(false);
-                    setOverdue(false);
-                    setWeek(false);
-                    setType('all');
-                    setEpic('all');
-                    setText('');
-                  }}
-                >
+                <Button variant="quiet" icon={<X aria-hidden />} onClick={clearFilters}>
                   Clear
                 </Button>
               ) : null}
@@ -444,7 +467,9 @@ export default function BoardPage() {
               ) : null}
               {visible.length === 0 ? (
                 <div className="mt-4">
-                  <Empty>No issues in this sprint match the filters.</Empty>
+                  <Empty action={filtersOn ? <Button size="sm" onClick={clearFilters}>Clear filters</Button> : <Button size="sm" variant="primary" icon={<Plus aria-hidden />} onClick={() => ui.set({ createIssue: { sprint_id: sprint.id } })}>Create issue</Button>}>
+                    {filtersOn ? 'No issues in this sprint match the filters.' : 'This sprint has no issues yet. Drag some in from the backlog, or create one.'}
+                  </Empty>
                 </div>
               ) : (
                 <div className={clsx('flex flex-col', groupBy === 'none' ? 'mt-4' : 'gap-4')}>
@@ -483,7 +508,7 @@ export default function BoardPage() {
                             {COLUMNS.map((s) => {
                               const id = cid(lane.id, s);
                               const items = (cols[id] ?? []).map((k) => t.byKey.get(k)).filter((x): x is Issue => !!x);
-                              return <Column key={s} id={id} status={s} items={items} epicNames={epicNames} onOpen={open} showHeader={groupBy === 'none'} wip={items.length} />;
+                              return <Column key={s} id={id} status={s} items={items} epicNames={epicNames} onOpen={open} showHeader={groupBy === 'none'} wip={items.length} byDue={byDue} />;
                             })}
                           </div>
                         ) : null}
@@ -503,9 +528,15 @@ export default function BoardPage() {
                 ) : null}
               </DragOverlay>
             </DndContext>
+            {allDone ? (
+              <div className="mt-4">
+                <Empty action={<Button size="sm" onClick={() => setCompleteOpen(true)}>Complete sprint</Button>}>Every issue in this sprint is done. Complete it, then start the next one from the backlog.</Empty>
+              </div>
+            ) : null}
             <p className="mt-4 text-sm text-muted">
-              Drag cards between columns to change status, or within a column to rank. With the keyboard: J and K move, Space picks up and drops, Enter opens.
+              {byDue ? 'Ordered by due date: overdue and soonest first, no due date last. Drag cards between columns to change status; switch to Manual to rank by hand.' : 'Drag cards between columns to change status, or within a column to rank.'} With the keyboard: J and K move, Space picks up and drops, Enter opens.
             </p>
+            {levels.length ? <p className="mt-1 text-sm text-muted">Tickets start easy and get harder: Level 1 is the easiest, Level 5 the hardest.</p> : null}
           </>
         )}
       </div>

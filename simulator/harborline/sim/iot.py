@@ -5,6 +5,10 @@ stream window after it. A row is INSERTED only when the gateway lands it (``inge
 gateway outages and the late-data-dump scenario buffer readings in the world and flush them late.
 Planted: CHI1 cooler excursions when dock door 14 stays open > 20 min on hot afternoons (the WMS holds the lots,
 see ``cold_excursions``) and the stuck sensor CHI1-CLR-03-T.
+
+Calibration (``sensor_calibration`` in the rules): each probe gets visited around its due date and its
+``calibration_due`` moves on in place. Visits come from a hash of the seed, probe and cycle, not from a window's random
+stream, so the dates don't depend on how time was cut into windows and no other generated value moves.
 """
 
 from __future__ import annotations
@@ -112,7 +116,7 @@ class IotModule:
 
     def bootstrap(self, ctx: Ctx) -> None:
         st = {"sensors": None, "buffer": {k: np.zeros(0, dtype=object if k == "sensor_id" else (np.int64 if k != "value" else float))
-                                          for k in BUF_COLS}, "dumps": [], "done_wh": set()}
+                                          for k in BUF_COLS}, "dumps": [], "done_wh": set(), "calibration": _no_probes()}
         st["buffer"]["dq"] = np.zeros(0, dtype=object)
         ctx.world[NAME] = st
         self._ensure_sensors(ctx, st, int(ctx.history_start.timestamp()))
@@ -127,6 +131,7 @@ class IotModule:
             st["done_wh"].add(wh["code"])
             rng = np.random.default_rng(derive_seed(ctx.seed, "sensors", wh["code"]))
             opened = geo.epoch_day(date.fromisoformat(str(wh["opened"]))) if wh.get("opened") else now_utc // DAY - 40
+            first_due = ctx.rules["sensor_calibration"]["first_due_days"]
             for z in wh["zones"]:
                 for typ, n in (("TEMP", TEMP_SENSORS.get(z, 1)), ("HUMIDITY", HUM_SENSORS.get(z, 0))):
                     for k in range(1, n + 1):
@@ -134,7 +139,7 @@ class IotModule:
                         rows.append({"sensor_id": f"{wh['code']}-{ABBR.get(z, z[:3])}-{k:02d}-{typ[0]}", "warehouse_code": wh["code"],
                                      "zone_code": f"{wh['code']}-{z}", "sensor_type": typ, "unit": "C" if typ == "TEMP" else "%RH",
                                      "model": MODELS[typ], "installed_date": geo.day_date(inst),
-                                     "calibration_due": geo.day_date(now_utc // DAY + int(rng.integers(20, 360))), "is_active": True,
+                                     "calibration_due": geo.day_date(now_utc // DAY + int(rng.integers(first_due[0], first_due[1]))), "is_active": True,
                                      "_zone": z, "_wi": wi, "_off": float(rng.normal(0, 0.35)), "_drift": float(rng.normal(0, 1.2)),
                                      "_phase": int(rng.integers(0, CADENCE)), "_batt": float(rng.uniform(40, 100))})
             for door in range(1, wh["dock_doors"] + 1):
@@ -148,6 +153,8 @@ class IotModule:
         geo.copy_fast(ctx, "iot", "telemetry.sensor", df[[c for c in df.columns if not c.startswith("_")]])
         keep = df[df["sensor_type"] != "DOOR"]
         st["sensors"] = keep if st["sensors"] is None else pd.concat([st["sensors"], keep], ignore_index=True)
+        if "calibration" in st:     # an older build has none yet: _roll_calibrations reads these rows back
+            _add_probes(ctx, st["calibration"], zip(keep["sensor_id"], keep["calibration_due"], strict=True))
 
     def step(self, ctx: Ctx, win: Window) -> None:
         st = ctx.world.setdefault(NAME, None)
@@ -156,6 +163,7 @@ class IotModule:
             st = ctx.world[NAME]
         ws, we = int(win.start.timestamp()), int(win.end.timestamp())
         self._ensure_sensors(ctx, st, ws)
+        _roll_calibrations(ctx, st, we)
         iot_days = int(ctx.rules["size_presets"][ctx.preset]["iot_days"])
         start = int(ctx.history_end.timestamp()) - iot_days * DAY if ctx.mode == "build" else -1
         rng = ctx.rng(NAME, win, "readings")
@@ -178,6 +186,63 @@ class IotModule:
         for c in pick:
             st["dumps"].append((c, now, now + hours * 3600))
         return f"gateways at {', '.join(pick)} buffer readings for {hours} h and flush them in one dump"
+
+
+# --------------------------------------------------------------------------------------------- calibration programme
+def _no_probes() -> dict[str, Any]:
+    return {"probes": {}, "next": None}     # probes: sensor_id -> [due day, cycle, visit time (UTC seconds)]
+
+
+def _calibration_visit(ctx: Ctx, sensor_id: str, cycle: int, due_day: int) -> int:
+    """When a technician reaches this probe for this due date: usually a little early, sometimes late, on a weekday."""
+    cfg = ctx.rules["sensor_calibration"]
+    rng = np.random.default_rng(derive_seed(ctx.seed, "calibration", sensor_id, cycle))
+    if rng.random() < float(cfg["late_share"]):
+        day = due_day + int(rng.integers(cfg["late_days"][0], cfg["late_days"][1] + 1))
+    else:
+        day = due_day - int(rng.integers(cfg["early_days"][0], cfg["early_days"][1] + 1))
+    while (day + 3) % 7 >= 5:
+        day += 1
+    visit = day * DAY + int(rng.integers(14 * 3600, 22 * 3600))
+    stuck = _stuck_window(ctx)
+    if stuck and sensor_id == stuck[2] and stuck[0] <= visit < stuck[1]:    # a visit would have ended the stuck period
+        visit = stuck[1] + DAY
+    return visit
+
+
+def _add_probes(ctx: Ctx, cal: dict[str, Any], rows: Any) -> None:
+    for sensor_id, due in rows:
+        due_day = geo.epoch_day(due)
+        cal["probes"][sensor_id] = [due_day, 0, _calibration_visit(ctx, sensor_id, 0, due_day)]
+    cal["next"] = min((p[2] for p in cal["probes"].values()), default=None)
+
+
+def _roll_calibrations(ctx: Ctx, st: dict[str, Any], we: int) -> None:
+    """Carry out every visit before ``we``. A build made before the programme existed starts it here, from the due dates
+    in its sensor list: its first window brings those dates to where a new build with the same seed has them."""
+    cal = st.get("calibration")
+    if cal is None:
+        cal = st["calibration"] = _no_probes()
+        rows = ctx.conn("iot").execute(
+            "SELECT sensor_id, calibration_due FROM telemetry.sensor WHERE calibration_due IS NOT NULL ORDER BY sensor_id"
+        ).fetchall()
+        _add_probes(ctx, cal, rows)
+        ctx.log(f"Probe calibration programme started for this build: {len(rows)} probes")
+    if cal["next"] is None or cal["next"] >= we:
+        return
+    interval = int(ctx.rules["sensor_calibration"]["interval_days"])
+    updates = []
+    for sensor_id, (due, cycle, visit) in cal["probes"].items():
+        if visit >= we:
+            continue
+        while visit < we:
+            due, cycle = visit // DAY + interval, cycle + 1
+            visit = _calibration_visit(ctx, sensor_id, cycle, due)
+        cal["probes"][sensor_id] = [due, cycle, visit]
+        updates.append((geo.day_date(due), sensor_id))
+    cal["next"] = min(p[2] for p in cal["probes"].values())
+    with ctx.conn("iot").cursor() as cur:
+        cur.executemany("UPDATE telemetry.sensor SET calibration_due = %s WHERE sensor_id = %s", updates)
 
 
 def _readings(ctx: Ctx, st: dict[str, Any], ws: int, we: int, rng: np.random.Generator) -> None:

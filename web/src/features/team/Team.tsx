@@ -7,6 +7,7 @@ import { useTeamLinks } from '@/api/queries';
 import { Button, buttonClasses } from '@/components/ui/button';
 import { Input } from '@/components/ui/field';
 import { copyText, CopyButton, Empty } from '@/components/ui/misc';
+import { handbookUrl } from '@/lib/base';
 import team from './people.generated.json';
 
 /** Written by simulator/harborline/tools/build_team_page.py from team/personas.yaml, so this page and the prompts agree. */
@@ -78,6 +79,12 @@ function Roster({ selected, onlyOnWide }: { selected: Person; onlyOnWide: boolea
       <div className="px-4 pb-3 pt-6">
         <h1 className="figure text-[1.75rem] font-semibold leading-8 tracking-[-0.01em] text-ink">Team</h1>
         <p className="mt-1 text-md text-muted">Who does what, and what to ask them.</p>
+        <p className="mt-1 text-sm text-muted">
+          Each colleague is an AI chat on the site you chose: open <em>Your chat</em> if setup saved one, or copy their prompt into a new chat.{' '}
+          <a href={handbookUrl('team.html')} target="_blank" rel="noreferrer" className="font-medium text-accent-strong hover:underline">
+            How the chats work
+          </a>
+        </p>
         <div className="mt-3">
           <Input
             type="search"
@@ -274,12 +281,21 @@ function Profile({ person, savedChat, hiddenOnNarrow }: { person: Person; savedC
 export default function TeamPage() {
   const id = useParams()['*'];
   const person = (id && byId.get(id)) || everyone[0];
+  const unknown = !!id && !byId.has(id);
   const links = useTeamLinks();
 
   return (
     <div className="grid h-full min-h-0 grid-cols-[320px_minmax(0,1fr)] max-[900px]:grid-cols-[minmax(0,1fr)]">
-      <Roster selected={person} onlyOnWide={!!id} />
-      <Profile key={person.id} person={person} savedChat={links.data?.links[person.id]} hiddenOnNarrow={!id} />
+      <Roster selected={person} onlyOnWide={!!id && !unknown} />
+      {unknown ? (
+        <div className="px-8 pt-6 max-[900px]:order-first max-sm:px-4">
+          <Empty>
+            Nobody on the team page goes by “{id}”. Pick someone from the list, or ask <Link to="/team/channel" className="underline">#data-help</Link>.
+          </Empty>
+        </div>
+      ) : (
+        <Profile key={person.id} person={person} savedChat={links.data?.links[person.id]} hiddenOnNarrow={!id} />
+      )}
     </div>
   );
 }

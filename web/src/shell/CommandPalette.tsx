@@ -8,9 +8,12 @@ import {
   ChartGantt,
   ChartLine,
   CornerDownLeft,
+  Flag,
   Gauge,
   Hammer,
+  Hash,
   History,
+  LifeBuoy,
   ListFilter,
   ListTodo,
   Monitor,
@@ -33,7 +36,7 @@ import { useAllIssues, useMeta, useStatus } from '@/api/queries';
 import { useSimActions } from '@/features/control/actions';
 import { TypeIcon } from '@/features/tracker/atoms';
 import { Kbd } from '@/components/ui/overlay';
-import { withBase } from '@/lib/base';
+import { handbookUrl, withBase } from '@/lib/base';
 import { setTheme } from '@/lib/theme';
 import { ui } from '@/lib/store';
 
@@ -122,6 +125,9 @@ export function CommandPalette() {
         ) : null}
 
         <Command.Group heading="Go to" className={groupClass}>
+          <Item onSelect={() => go('/start')} icon={<Flag aria-hidden />} keywords={['begin', 'first', 'next', 'what do i do', 'onboarding']}>
+            Start here
+          </Item>
           <Item onSelect={() => go('/control')} icon={<Gauge aria-hidden />} keywords={['status', 'home', 'dashboard']}>
             Control Center
           </Item>
@@ -169,6 +175,24 @@ export function CommandPalette() {
               API docs
             </Item>
           )}
+        </Command.Group>
+
+        <Command.Group heading="Lost?" className={groupClass}>
+          <Item value="lost start here" onSelect={() => go('/start')} icon={<Flag aria-hidden />} keywords={['help', 'stuck', 'what do i do', 'next']}>
+            Start here
+          </Item>
+          <Item value="lost ask data-help" onSelect={() => go('/team/channel')} icon={<Hash aria-hidden />} keywords={['help', 'stuck', 'who', 'ask', 'channel']}>
+            Ask #data-help who can help
+          </Item>
+          <Item value="lost known issues" onSelect={() => run(() => window.open(handbookUrl('known-issues.html'), '_blank'))} icon={<LifeBuoy aria-hidden />} keywords={['help', 'error', 'broken', 'setup', 'troubleshooting']}>
+            Known issues
+          </Item>
+          <Item value="lost it help kevin" onSelect={() => go('/team/kevin-ohara')} icon={<LifeBuoy aria-hidden />} keywords={['help', 'error', 'broken', 'setup', 'docker', 'connect']}>
+            IT help: Kevin O’Hara
+          </Item>
+          <Item value="lost team lead nadia" onSelect={() => go('/team/nadia-petrov')} icon={<UsersRound aria-hidden />} keywords={['help', 'stuck', 'coach', 'review', 'manager']}>
+            Your team lead: Nadia Petrov
+          </Item>
         </Command.Group>
 
         <Command.Group heading="Simulator" className={groupClass}>

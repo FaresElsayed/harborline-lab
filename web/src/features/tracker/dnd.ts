@@ -1,4 +1,8 @@
 import { closestCenter, closestCorners, getFirstCollision, pointerWithin, rectIntersection, type CollisionDetection } from '@dnd-kit/core';
+import type { SortingStrategy } from '@dnd-kit/sortable';
+
+/** While a list is in due-date order its cards hold still: the date decides the position, not the drag. */
+export const holdStill: SortingStrategy = () => null;
 
 /**
  * Collision for lists of cards in several containers (board columns, backlog sprints).

@@ -23,7 +23,7 @@
     - name: Duplicate charges
       definition: Count and amount of packages billed more than once across invoices and weeks.
     - name: Fuel surcharge variance
-      definition: Applied fuel % − expected fuel % for the week (carrier table, EIA diesel price, carrier effective-date rule), by carrier.
+      definition: Applied fuel % − expected fuel % for the week (carrier table, diesel reference file, carrier effective-date rule), by carrier.
   filters:
     - Carrier
     - Mode (parcel / LTL)

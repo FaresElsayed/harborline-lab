@@ -7,6 +7,7 @@ import {
   Braces,
   ChartGantt,
   ChartLine,
+  Flag,
   Gauge,
   History,
   ListFilter,
@@ -22,13 +23,14 @@ import {
 } from 'lucide-react';
 import lockupLight from '@brand/logo/harborline-lockup-light.svg';
 import lockupDark from '@brand/logo/harborline-lockup-dark.svg';
-import { useAllIssues, useMeta } from '@/api/queries';
+import { useAllIssues, useMeta, useUpdateAvailable } from '@/api/queries';
 import { IconButton } from '@/components/ui/button';
-import { withBase } from '@/lib/base';
+import { useStartPath } from '@/features/start/path';
+import { handbookUrl, withBase } from '@/lib/base';
 import { dueState } from '@/lib/dates';
 import { toggleNavCollapsed, ui } from '@/lib/store';
 
-function Item({ to, icon, children, end, count, countLabel }: { to: string; icon: ReactNode; children: ReactNode; end?: boolean; count?: number; countLabel?: string }) {
+function Item({ to, icon, children, end, count, countLabel, note, noteLabel }: { to: string; icon: ReactNode; children: ReactNode; end?: boolean; count?: number; countLabel?: string; note?: string; noteLabel?: string }) {
   return (
     <NavLink
       to={to}
@@ -46,6 +48,11 @@ function Item({ to, icon, children, end, count, countLabel }: { to: string; icon
       {count ? (
         <span className="num rounded-full bg-bad-bg px-1.5 text-xs font-semibold leading-5 text-bad" aria-label={countLabel}>
           {count}
+        </span>
+      ) : null}
+      {note ? (
+        <span className="num text-xs text-muted" aria-label={noteLabel}>
+          {note}
         </span>
       ) : null}
     </NavLink>
@@ -79,10 +86,43 @@ function Group({ label, children }: { label?: ReactNode; children: ReactNode }) 
 
 export function Logo() {
   return (
-    <NavLink to="/control" className="flex h-12 items-center rounded-m px-2" aria-label="Harborline home">
+    <NavLink to="/" className="flex h-12 items-center rounded-m px-2" aria-label="Harborline home">
       <img src={lockupLight} alt="Harborline Logistics" className="logo-light h-[30px] w-auto" />
       <img src={lockupDark} alt="" aria-hidden className="logo-dark h-[30px] w-auto" />
     </NavLink>
+  );
+}
+
+/** Quiet by design: it appears only when GitHub has a newer version, and any failure on the way shows nothing. */
+function UpdateNote() {
+  const latest = useUpdateAvailable();
+  if (!latest) return null;
+  return <p className="mb-2 rounded-m bg-active px-2.5 py-2 text-sm leading-[1.3rem] text-ink">New version {latest}. Run the setup file again to update, your data is kept.</p>;
+}
+
+function Lost() {
+  const link = 'rounded-s text-sm text-muted hover:text-ink hover:underline';
+  return (
+    <div className="px-2.5">
+      <p className="text-sm font-medium text-ink">Lost?</p>
+      <ul className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5">
+        <li>
+          <NavLink to="/start" onClick={() => ui.set({ navOpen: false })} className={link}>
+            Start here
+          </NavLink>
+        </li>
+        <li>
+          <NavLink to="/team/channel" onClick={() => ui.set({ navOpen: false })} className={link}>
+            #data-help
+          </NavLink>
+        </li>
+        <li>
+          <a href={handbookUrl('known-issues.html')} target="_blank" rel="noreferrer" className={link}>
+            Known issues
+          </a>
+        </li>
+      </ul>
+    </div>
   );
 }
 
@@ -90,6 +130,7 @@ export function Sidebar({ inDrawer = false }: { inDrawer?: boolean }) {
   const meta = useMeta();
   const issues = useAllIssues(!!meta.data?.configured);
   const me = meta.data?.me ?? 'me';
+  const start = useStartPath();
   const overdue = (issues.data ?? []).filter((i) => i.assignee === me && i.type !== 'Epic' && dueState(i.due_date, i.status === 'Done') === 'overdue').length;
 
   return (
@@ -104,6 +145,17 @@ export function Sidebar({ inDrawer = false }: { inDrawer?: boolean }) {
       </div>
 
       <div className="scroll-thin -mx-2 min-h-0 flex-1 overflow-y-auto px-2">
+        <Group>
+          <Item
+            to="/start"
+            icon={<Flag aria-hidden />}
+            note={start.finished || start.allDone ? undefined : `${start.doneCount}/${start.total}`}
+            noteLabel={`${start.doneCount} of ${start.total} steps done`}
+          >
+            Start here
+          </Item>
+        </Group>
+
         <Group label="Simulator">
           <Item to="/control" end icon={<Gauge aria-hidden />}>
             Control Center
@@ -174,6 +226,11 @@ export function Sidebar({ inDrawer = false }: { inDrawer?: boolean }) {
             </External>
           )}
         </Group>
+      </div>
+
+      <div className="-mx-2 border-t border-line px-2 pt-2.5">
+        {import.meta.env.VITE_DEMO === '1' ? null : <UpdateNote />}
+        <Lost />
       </div>
     </nav>
   );

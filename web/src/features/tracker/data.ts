@@ -2,8 +2,95 @@ import { useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 import { compareRank, useAllIssues, useMeta, useSprints } from '@/api/queries';
 import type { Issue, Person, Sprint } from '@/api/types';
+import { addDays, isWeekend, parseDay, today } from '@/lib/dates';
 
 export const isWorkItem = (i: Issue) => i.type === 'Task' || i.type === 'Bug' || i.type === 'Spike';
+
+/** Earliest due first, so overdue work leads; no due date goes last; ties keep their rank order. */
+export function compareDue(a: Issue, b: Issue): number {
+  const da = a.due_date?.slice(0, 10);
+  const db = b.due_date?.slice(0, 10);
+  if (da !== db) {
+    if (!da) return 1;
+    if (!db) return -1;
+    return da < db ? -1 : 1;
+  }
+  return compareRank(a, b);
+}
+
+/** Where a card lands in a list kept in due-date order. */
+export function insertByDue(list: string[], key: string, byKey: Map<string, Issue>): string[] {
+  const issue = byKey.get(key);
+  const out = [...list];
+  const at = issue ? list.findIndex((k) => {
+    const other = byKey.get(k);
+    return !!other && compareDue(issue, other) < 0;
+  }) : -1;
+  out.splice(at < 0 ? out.length : at, 0, key);
+  return out;
+}
+
+const LEVEL_LABEL = /^level-([1-5])$/i;
+
+/** Difficulty comes from one `level-1` to `level-5` label. Null when a ticket has none yet. */
+export function levelOf(issue: Pick<Issue, 'labels'>): number | null {
+  for (const l of issue.labels) {
+    const m = LEVEL_LABEL.exec(l);
+    if (m) return Number(m[1]);
+  }
+  return null;
+}
+
+/** The level shows as a chip, so label lists leave it out. */
+export const plainLabels = (labels: string[]) => labels.filter((l) => !LEVEL_LABEL.test(l));
+
+export function progressOf(items: Issue[]) {
+  const work = items.filter(isWorkItem);
+  const total = work.reduce((t, i) => t + (i.estimate_hours ?? 0), 0);
+  const done = work.filter((i) => i.status === 'Done').reduce((t, i) => t + (i.estimate_hours ?? 0), 0);
+  return { done, total };
+}
+
+export function workingDaysLeft(end: string | null | undefined) {
+  if (!end) return null;
+  let n = 0;
+  for (let d = today(); d <= parseDay(end); d = addDays(d, 1)) if (!isWeekend(d)) n += 1;
+  return n;
+}
+
+/** Reporter ids in tickets are the Team page ids with a dot for the dash: luis.moreno is /team/luis-moreno. */
+export const teamPath = (personKey: string) => `/team/${personKey.replace(/\./g, '-')}`;
+
+const SOURCE_PAGES: Array<[label: string, anchor: string, name: string]> = [
+  ['wms', 'wms', 'WMS'],
+  ['ax2012', 'ax', 'AX 2012'],
+  ['salesforce', 'salesforce', 'Salesforce'],
+  ['carrier-api', 'carrier', 'carrier API'],
+  ['iot', 'iot', 'IoT sensors'],
+  ['edi', 'edi', 'EDI'],
+  ['files', 'files', 'business files'],
+  ['public-api', 'public', 'public APIs'],
+];
+
+/** The handbook page most likely to unstick someone on this ticket, when there is an obvious one. */
+export function handbookFor(issue: Issue): { page: string; label: string } | null {
+  const has = (...labels: string[]) => labels.some((l) => issue.labels.includes(l));
+  const inComponent = (c: string) => issue.components.includes(c);
+  if (issue.type === 'Epic') return { page: 'project-brief.html#projects', label: 'The eight projects' };
+  if (has('sign-off', 'uat')) return { page: 'team.html#reviewer', label: 'Dashboard sign-off' };
+  if (has('dashboard', 'dashboards') || inComponent('Dashboards'))
+    return { page: issue.project_no ? `dashboards.html#project-${issue.project_no}` : 'dashboards.html', label: issue.project_no ? `Dashboard specs, Project ${issue.project_no}` : 'Dashboard specs' };
+  if (has('brand', 'brand-kit')) return { page: 'brand.html', label: 'Brand kit' };
+  for (const [label, anchor, name] of SOURCE_PAGES) if (has(label)) return { page: `source-systems.html#${anchor}`, label: `Source systems: ${name}` };
+  if (has('cloud', 'free-tier')) return { page: 'getting-started.html#cloud', label: 'Your cloud platform' };
+  if (has('setup')) return { page: 'getting-started.html#setup-file', label: 'Run the setup file' };
+  if (has('git') || inComponent('CI/CD') || inComponent('Platform') || inComponent('Orchestration')) return { page: 'project-brief.html#engineering', label: 'Git and engineering standards' };
+  if (inComponent('Security') || inComponent('Governance')) return { page: 'project-brief.html#rules', label: 'Rules of engagement' };
+  if (inComponent('Data Quality')) return { page: 'answer-key.html#scoring', label: 'Score your data-quality findings' };
+  if (inComponent('Ingestion') || inComponent('CDC') || inComponent('Streaming')) return { page: 'source-systems.html', label: 'Source systems' };
+  if (inComponent('Modeling')) return { page: 'source-systems.html#keys', label: 'How the systems join' };
+  return null;
+}
 
 /** Everything most tracker screens need, derived once from meta + the full issue list. */
 export function useTracker() {
@@ -59,6 +146,20 @@ export const SPRINT_CAPACITY_HOURS = 80;
 
 export function sprintHours(issues: Issue[]) {
   return issues.filter(isWorkItem).reduce((t, i) => t + (i.estimate_hours ?? 0), 0);
+}
+
+/** The earliest-due open ticket that is yours. A story sharing a date with its tasks waits behind them, since the tasks are the work. */
+export function nextTicket(issues: Issue[], me: string): Issue | null {
+  const open = issues.filter((i) => i.type !== 'Epic' && i.status !== 'Done' && (i.assignee === me || i.assignee == null));
+  return (
+    [...open].sort((a, b) => {
+      const da = a.due_date?.slice(0, 10) ?? '9999';
+      const db = b.due_date?.slice(0, 10) ?? '9999';
+      if (da !== db) return da < db ? -1 : 1;
+      if (isWorkItem(a) !== isWorkItem(b)) return isWorkItem(a) ? -1 : 1;
+      return compareRank(a, b);
+    })[0] ?? null
+  );
 }
 
 /** Mirrors the backend: fix/ for bugs, feat/ for everything else. */

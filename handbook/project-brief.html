@@ -42,6 +42,7 @@
 <article class="hb-content">
 
 <h1>Project brief</h1>
+<p class="hb-noprint" style="margin:-8px 0 16px;font-size:.875rem"><a href="http://localhost:8080/start" data-hb-app="/start">&larr; Back to Start here in the app</a></p>
 <p class="hb-lead">You are Harborline Logistics’ first data engineer. Over eight projects and about 32 weeks you
 build the company’s data platform and, on top of it, the dashboards each department has been asking for. This page is
 the brief you would get on day one.</p>
@@ -207,7 +208,7 @@ not on chat; go through Hannah or Omar.</p>
 <path class="dg-line" d="M524 251H552" marker-end="url(#land-arrow)"/>
 <rect class="dg-box dg-box--tint" x="552" y="60" width="188" height="62" rx="8"/>
 <text class="dg-title" x="566" y="84">Public APIs</text>
-<text class="dg-small" x="566" y="104">FX, holidays, weather, diesel</text>
+<text class="dg-small" x="566" y="104">FX, holidays, weather</text>
 <path class="dg-line" d="M646 122V154" marker-end="url(#land-arrow)"/>
 <rect class="dg-box" x="552" y="156" width="188" height="190" rx="8"/>
 <text class="dg-title" x="566" y="180">Databricks or Snowflake</text>
@@ -258,6 +259,41 @@ and will work within them</span></label></li>
 </ul>
 </section>
 
+<section data-section="ramp" data-no-progress>
+<h2 id="ramp">How the work gets harder</h2>
+<p>The tickets start easy and get harder on purpose. In your first week you run one query and open one small pull
+request. By Project 8 someone describes a business problem and the method is entirely yours. The help fades as you
+learn, the way a good team brings a new engineer up to speed.</p>
+<p>Every story, task, spike and bug carries one label, <code>level-1</code> to <code>level-5</code>. To see them in the
+Tracker, search <code>labels = level-1</code>.</p>
+<div class="hb-table-wrap">
+<table class="hb-table">
+<thead><tr><th>Level</th><th>What the ticket asks</th><th>What it gives you</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Follow a clear instruction in one system</td><td>The exact thing to do, a known result, and a
+<em>Where to start</em>: the table or page to open first, and who to ask</td></tr>
+<tr><td>2</td><td>Build something small to a clear spec</td><td>The spec, and a <em>Where to start</em></td></tr>
+<tr><td>3</td><td>Join two or three systems and make a choice</td><td>The goal and who to talk to. The method is mostly
+yours</td></tr>
+<tr><td>4</td><td>Design something with trade-offs and failure modes, such as change data capture, re-runs and late
+data</td><td>The problem and the constraints. You defend the design</td></tr>
+<tr><td>5</td><td>Own a business outcome end to end, including security, stakeholders and the readout</td><td>A
+stakeholder’s ask, often with people who disagree. You work out what done means, with them</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Less detail later on is deliberate.</strong> When a level-5 ticket leaves things out, it isn’t badly written and
+you haven’t missed a page. Senior work arrives that way: a person with a problem, definitions that conflict, edge cases
+nobody has thought about. Ask whoever owns the decision, write down what they said, and defend the rest yourself.
+Acceptance criteria stay checkable at every level, so you can always tell when you’re done.</p>
+<p>Project 1 stays between levels 1 and 3, and its first sprint is mostly levels 1 and 2. Projects 2 to 4 sit mostly at
+levels 2 and 3, Projects 5 and 6 mostly at levels 3 and 4, and Projects 7 and 8 mostly at level 4, with more and more of
+level 5. Each project starts a little
+easier than the last one finished, because it opens a new part of the business, and then climbs. If you’re stuck, take
+it to <a href="team.html#nadia-petrov">Nadia</a> before you’ve lost a day. She will challenge your thinking; asking is
+part of the job at every level.</p>
+</section>
+
 <section data-section="projects">
 <h2 id="projects">The eight projects</h2>
 <p>Each project is one epic in the Tracker with six stories. The last story always delivers the dashboards, built to
@@ -267,14 +303,15 @@ deliverables as you ship them.</p>
 <div class="proj" id="p1">
 <h3>Project 1 · Data Platform Foundation</h3>
 <p class="proj-meta"><span>Weeks 1–4</span><span>Requester: Sam Okafor, Director of IT</span><span>Epic DATA-1</span></p>
-<p>A platform cheap and boring enough to carry the next seven projects: environments, ingestion from the WMS with
-incremental loads and hard-delete handling, a layered model with data-quality checks, orchestration, CI/CD, and a way
-to see that all of it is healthy.</p>
+<p>A platform cheap and boring enough to carry the next seven projects. It starts small: a first connection, a first
+table, a first number and a first pull request. Then come environments, the whole WMS with incremental loads and
+hard-delete handling, a layered model with data-quality checks, orchestration, CI/CD, and a way to see that all of it
+is healthy.</p>
 <ul class="proj-stories">
-<li>Workstation, repository and engineering standards</li>
+<li>Workstation, first connection and first pull request</li>
 <li>Cloud platform and environments</li>
-<li>WMS batch ingestion with incremental loads and hard-delete handling</li>
-<li>Bronze/silver framework and data-quality framework</li>
+<li>First WMS tables, a first number and a first silver layer</li>
+<li>Every change captured, and data quality you can see</li>
 <li>Orchestration and CI/CD</li>
 <li>Data Platform Health dashboard</li>
 </ul>
@@ -346,9 +383,9 @@ the client paid, and how each warehouse did against budget.</p>
 <p>Stop paying carrier bills on trust: check every bill line against the shipment and the rate card, and rank carriers
 on delivered performance by lane.</p>
 <ul class="proj-stories">
-<li>Carrier tracking API ingestion: cursor, rate limits, late events, history backfill</li>
-<li>EDI 940/945 parsing: envelopes, control numbers, duplicates</li>
 <li>Carrier rate cards and diesel price for fuel surcharge</li>
+<li>EDI 940/945 parsing: envelopes, control numbers, duplicates</li>
+<li>Carrier tracking API ingestion: cursor, rate limits, late events, history backfill</li>
 <li>Freight audit model: bill lines vs shipments vs rate cards</li>
 <li>Carrier performance: on-time delivery and exceptions by lane</li>
 <li>Freight Audit and Carrier Scorecard dashboards</li>
@@ -369,11 +406,11 @@ on delivered performance by lane.</p>
 <p>One trusted view of every client from pipeline to health, with a nightly health score and churn risk written back
 into Salesforce where the account team works.</p>
 <ul class="proj-stories">
+<li>EDI order reconciliation and item-master onboarding checks</li>
 <li>Salesforce at scale: full history, hard deletes, merges, schema drift</li>
 <li>Client master and crosswalk across WMS, AX and Salesforce</li>
 <li>Link cases to the orders and shipments they are about</li>
 <li>Client health score, written back to Salesforce nightly</li>
-<li>EDI order reconciliation and item-master onboarding checks</li>
 <li>Sales Pipeline and Client Health 360 dashboards</li>
 </ul>
 <ul class="checklist">
@@ -442,11 +479,11 @@ far as they deserve, and trace a recalled lot to every order and ship-to in minu
 <p>Share data safely with clients, each seeing only their own with consumer data masked, and run the company on one
 page. Ends with the final readout to the executive team.</p>
 <ul class="proj-stories">
+<li>Performance and cost optimization</li>
 <li>Governance: PII classification, masking, roles, audit</li>
 <li>Row-level security per client</li>
 <li>Data sharing to clients</li>
 <li>Executive scorecard model on the semantic layer</li>
-<li>Performance and cost optimization</li>
 <li>Client Portal, Executive Scorecard and final readout</li>
 </ul>
 <ul class="checklist">
@@ -531,16 +568,16 @@ roles and grants, jobs. No click-ops that cannot be recreated.</li>
 
 <h3 id="eng-release">Releases, CHANGELOG and ADRs</h3>
 <ul>
-<li>Each project ends with a release: tag <code>v&lt;project&gt;.0.0</code> (v1.0.0 after Project 1), patch tags for
-fixes. Create a GitHub release whose notes come from the CHANGELOG.</li>
+<li>Each project ends with a release: tag <code>v0.&lt;project&gt;.0</code> (v0.1.0 after Project 1, v1.0.0 after
+Project 8), patch tags for fixes. Create a GitHub release whose notes come from the CHANGELOG.</li>
 <li><code>CHANGELOG.md</code> in <a href="https://keepachangelog.com/">Keep a Changelog</a> style: an
 <em>Unreleased</em> section you add to in every PR, moved under the version at release.</li>
 <li>Architecture decision records in <code>docs/adr/NNNN-title.md</code>: context, options considered, decision,
 consequences. Accepted ADRs are not edited; a new ADR supersedes them.</li>
 </ul>
-<pre data-shell="PowerShell">git tag -a v1.0.0 -m "Project 1: data platform foundation"
-git push origin v1.0.0
-gh release create v1.0.0 --title "v1.0.0 · Data Platform Foundation" --notes-file release-notes.md</pre>
+<pre data-shell="PowerShell">git tag -a v0.1.0 -m "Project 1: data platform foundation"
+git push origin v0.1.0
+gh release create v0.1.0 --title "v0.1.0 · Data Platform Foundation" --notes-file release-notes.md</pre>
 <ul class="checklist">
 <li><label><input type="checkbox" data-track="project-brief:engineering.read"><span>Standards read; repository
 set up to enforce them (see Getting started)</span></label></li>
@@ -563,13 +600,16 @@ Jira export they become sub-tasks.)</dd>
 then complete it; unfinished tickets move to the next sprint.</dd>
 <dt>Backlog</dt><dd>Every ticket not yet in a sprint, in priority order.</dd>
 <dt>Board</dt><dd>The current sprint’s tickets in columns: To Do, In Progress, In Review (your PR is open), Done
-(merged and verified). Drag cards across as you work.</dd>
+(merged and verified). Drag cards across as you work. The Order switch shows each column by due date, overdue and soonest
+first.</dd>
 <dt>Timeline</dt><dd>The eight epics laid out over 32 weeks.</dd>
 <dt>Story points vs hours</dt><dd>Points size a story relative to other stories (an 8 is about twice a 3); they are for
 planning how much fits in a sprint. Hours estimate individual tasks. Your velocity is the points you complete per
 sprint; compare it with the plan.</dd>
 <dt>Due date</dt><dd>Counted in working days from the start date you set. An overdue badge is the Tracker telling
 you to re-plan, not a failure.</dd>
+<dt>Level</dt><dd>How hard a ticket is, shown as a small chip. Tickets start easy and get harder: Level 1 is the easiest,
+Level 5 the hardest.</dd>
 <dt>Work log and comments</dt><dd>Log the hours you spend on each ticket and use comments as your engineering notes:
 decisions, dead ends, links. They become your case-study material.</dd>
 </dl>
@@ -670,6 +710,12 @@ views or Snowflake semantic views).</li>
 <li>A delivery-metrics dashboard built from the Tracker’s own database.</li>
 </ul>
 </section>
+
+<nav class="callout hb-noprint" aria-label="What to do next" style="margin-top:40px">
+<p class="callout-title">What next?</p>
+<p>Read it? Tick <em>Read the project brief</em> on Start here. The next step is connecting to the data.</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"><a class="hb-btn hb-btn--primary" href="http://localhost:8080/start" data-hb-app="/start">Back to Start here</a> <a class="hb-btn" href="http://localhost:8080/control/connections" data-hb-app="/control/connections">Next: Connect to the data</a></div>
+</nav>
 
 </article>
 <aside class="hb-toc" data-hb-toc></aside>

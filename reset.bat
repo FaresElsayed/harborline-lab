@@ -22,6 +22,11 @@ if errorlevel 1 (
   exit /b 1
 )
 docker compose down -v
+if errorlevel 1 (
+  echo [FAIL] docker compose could not delete the data, so nothing else was deleted. See the message above.
+  pause
+  exit /b 1
+)
 if exist "landing" (
   rmdir /s /q "landing"
   mkdir "landing"

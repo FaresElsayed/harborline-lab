@@ -10,7 +10,7 @@ set -euo pipefail
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname postgres <<-EOSQL
   CREATE ROLE harborline_app LOGIN PASSWORD '${HL_APP_PASSWORD}';
   CREATE ROLE etl_reader LOGIN REPLICATION PASSWORD '${HL_ETL_PASSWORD}';
-  CREATE ROLE uat_reviewer LOGIN PASSWORD '${HL_REVIEWER_PASSWORD:-uat-review-2026}';
+  CREATE ROLE uat_reviewer LOGIN PASSWORD '${HL_REVIEWER_PASSWORD}';
   CREATE DATABASE wms          OWNER harborline_app;
   CREATE DATABASE ax2012       OWNER harborline_app;
   CREATE DATABASE iot          OWNER harborline_app;

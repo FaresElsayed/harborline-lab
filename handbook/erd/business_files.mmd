@@ -43,6 +43,22 @@ erDiagram
         number LTL_pct "LTL %: LTL cards"
     }
 
+    %% diesel_weekly.csv: landing/files/reference/diesel_weekly.csv: the weekly price carrier bills are rated from, rewritten in full with one more row each Monday. A build made before this file existed gets it at its next batch
+    diesel_weekly {
+        date week_start "the Monday the price applies from; one row per week"
+        number diesel_usd_per_gal FK "find its band on the rate card's Fuel Surcharge sheet; references rate_card_fuel.Diesel_from_USD_gal"
+    }
+
+    %% signal_sources.csv: landing/files/reference/signal_sources.csv: where this build's FX, weather, holidays and diesel came from, written once per build
+    signal_sources {
+        string signal "fx, weather, holidays or diesel"
+        string key "currency, warehouse code, or the countries"
+        string source "frankfurter or fallback; open-meteo or synthetic; python-holidays; simulator"
+        date real_from "empty when no real data was used"
+        date real_to "later days are generated, so stop comparing here"
+        string note "what this means for joins to the public API"
+    }
+
     %% rate card · Accessorials: landing/files/carriers/rate_cards/<SCAC>_rates_<yyyymmdd>.xlsx, sheet Accessorials
     rate_card_accessorials {
         string Code "RESI, AHS, DAS on parcel cards; LIFTGATE, RESI on LTL cards"
@@ -226,6 +242,7 @@ erDiagram
     wms_material |o..o{ item_master_csv : "sku"
     wms_material |o..o{ item_master_csv : "upc"
     item_master_csv |o..o{ item_file_spec : "same client folder"
+    rate_card_fuel |o..o{ diesel_weekly : "price falls in a band"
     wms_warehouse |o..o{ warehouse_master_sites : "Site_Code = warehouse_code"
     ax2012_dataarea |o..o{ warehouse_master_sites : "Legal_Entity = id"
     warehouse_master_sites |o..o{ warehouse_master_zones : "Site_Code"

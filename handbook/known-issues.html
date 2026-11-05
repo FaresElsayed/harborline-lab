@@ -26,7 +26,7 @@
 <main class="hb-sheet" id="main"><div class="hb-page hb-page--single">
 <article class="hb-content">
 <h1>Known issues</h1>
-<p class="hb-lead">Every error we know of, for every setup step. Paste part of yours below. Of these 129, the setup file fixes 63
+<p class="hb-lead">Every error we know of, for every setup step. Paste part of yours below. Of these 135, the setup file fixes 67
 by itself; for the rest it stops and says what to do. Whatever it is, you can always run the setup file again: it carries
 on where it stopped.</p>
 <label class="ki-search"><span class="visually-hidden">Search known issues</span>
@@ -54,6 +54,15 @@ on where it stopped.</p>
 <tr><td><code>no such file or directory: bash/, is a directory, cannot execute binary file</code><br><span class="muted">Mac</span></td><td>A typing or dragging slip: no space after bash, or the folder or zip was dragged in.</td><td><span class="hb-chip hb-chip--warn">You do this</span> Type bash, a space, then drag in SETUP-MAC.command itself.</td></tr>
 <tr><td><code>Started with zsh or sh, or from a Rosetta Terminal</code><br><span class="muted">Mac</span></td><td>Parts of the script need bash, and Homebrew refuses Rosetta on Apple Silicon.</td><td><span class="hb-chip hb-chip--good">Setup fixes this</span> Setup restarts itself the right way.</td></tr>
 <tr><td><code>Resource deadlock avoided</code><br><span class="muted">Mac</span></td><td>The folder is in iCloud and some files aren&#x27;t on this Mac yet.</td><td><span class="hb-chip hb-chip--warn">You do this</span> Extract the zip outside iCloud, for example in your home folder. <a href="https://awesome.ecosyste.ms/projects/github.com%2Ficanhasjonas%2Ficloud-tools" rel="noopener">Source</a></td></tr>
+</tbody></table></div>
+</section>
+
+<section data-section="updating" data-no-progress data-ki-group>
+<h2 id="updating">Checking for a new version</h2>
+<div class="hb-table-wrap"><table class="hb-table hb-table--dense"><thead><tr><th>What you see</th><th>Why</th><th>What happens</th></tr></thead><tbody>
+<tr><td><code>No update offered, and setup.log says: Update check skipped</code><br><span class="muted">Both</span></td><td>No internet, a captive network, or a proxy or firewall blocks raw.githubusercontent.com. The check waits 10 seconds at most and never stops setup.</td><td><span class="hb-chip hb-chip--good">Setup fixes this</span> Nothing to do: setup carries on with the version you have. To get updates behind a company firewall, ask IT to allow raw.githubusercontent.com, github.com and codeload.github.com, or try another network, then run the file again. <a href="https://docs.github.com/en/get-started/using-github/troubleshooting-connectivity-problems" rel="noopener">Source</a></td></tr>
+<tr><td><code>The update did not work, so setup is carrying on with version</code><br><span class="muted">Both</span></td><td>The download was cut off, blocked or damaged, or the new version was released a moment ago and its files don&#x27;t match yet. The reason is in setup.log.</td><td><span class="hb-chip hb-chip--good">Setup fixes this</span> Nothing was changed. Run the file again later to try again.</td></tr>
+<tr><td><code>This file is version, but version is already installed</code><br><span class="muted">Both</span></td><td>An old zip was run after a newer version had been installed.</td><td><span class="hb-chip hb-chip--good">Setup fixes this</span> Setup never copies old files over new ones. It carries on with the installed copy, so you can delete the old zip.</td></tr>
 </tbody></table></div>
 </section>
 
@@ -198,6 +207,9 @@ on where it stopped.</p>
 <section data-section="copying" data-no-progress data-ki-group>
 <h2 id="copying">Settings, ports and files</h2>
 <div class="hb-table-wrap"><table class="hb-table hb-table--dense"><thead><tr><th>What you see</th><th>Why</th><th>What happens</th></tr></thead><tbody>
+<tr><td><code>Your settings file (.env) and its backup are both gone, but your simulator data is still here</code><br><span class="muted">Both</span></td><td>Postgres keeps its first password inside the Docker volume, and that password was only in .env. A new one would not open your data, so setup stops and deletes nothing.</td><td><span class="hb-chip hb-chip--warn">You do this</span> Put your old .env back and run the file again to keep your data. To start fresh instead, delete the harborline-lab containers and the harborline-lab_pgdata volume in Docker Desktop, then run the file again. That deletes your simulator data and tracker progress. <a href="https://hub.docker.com/_/postgres" rel="noopener">Source</a></td></tr>
+<tr><td><code>Your settings file was missing, so setup restored it from its backup</code><br><span class="muted">Both</span></td><td>.env was deleted. Setup keeps a copy in its own folder, so your passwords and keys stay the same.</td><td><span class="hb-chip hb-chip--good">Setup fixes this</span> Nothing to do.</td></tr>
+<tr><td><code>required variable POSTGRES_PASSWORD is missing a value</code><br><span class="muted">Both</span></td><td>docker compose was run before setup made your passwords and keys. No key ships with the package, so there is no default to fall back on.</td><td><span class="hb-chip hb-chip--warn">You do this</span> Run the setup file, or start.bat or start.sh, which make them. They never change a key that is already in .env.</td></tr>
 <tr><td><code>ports are not available, forbidden by its access permissions</code><br><span class="muted">Windows</span></td><td>Windows reserved that port for Hyper-V or WinNAT, with nothing listening on it.</td><td><span class="hb-chip hb-chip--good">Setup fixes this</span> Setup tests by binding, and picks a free port. <a href="https://github.com/docker/for-win/issues/9272" rel="noopener">Source</a></td></tr>
 <tr><td><code>port is already allocated, address already in use, Only one usage of each socket</code><br><span class="muted">Both</span></td><td>A local PostgreSQL, IIS or Postgres.app has the port.</td><td><span class="hb-chip hb-chip--good">Setup fixes this</span> Setup moves its own port in .env and never stops your service. <a href="https://docs.docker.com/desktop/troubleshoot-and-support/troubleshoot/topics/" rel="noopener">Source</a></td></tr>
 <tr><td><code>no configuration file provided: not found</code><br><span class="muted">Both</span></td><td>docker compose was run outside the simulator folder.</td><td><span class="hb-chip hb-chip--warn">You do this</span> Change to the simulator folder first.</td></tr>

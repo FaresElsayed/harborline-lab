@@ -52,7 +52,7 @@ stories:
     sprint: 1
     due_day: 5
     components: [Ingestion, Modeling]
-    labels: [ax2012, finance, incremental]
+    labels: [ax2012, finance, incremental, level-3]
     description: |
       **From Alan Brooks, Controller:**
       > "AX is our book of record, and it's old. Priya Raman is the person who knows where the bodies are buried."
@@ -90,17 +90,41 @@ stories:
         due_day: 1
         priority: High
         components: [Ingestion, Documentation]
-        labels: [ax2012, stakeholder]
+        labels: [ax2012, stakeholder, level-2]
         description: |
-          Map which AX tables Finance needs and how they relate: `RECID` references, company vs shared tables, posted
-          (immutable) vs editable documents. Priya Raman can explain AX conventions; Alan Brooks can tell you which
-          numbers Finance reconciles to today.
+          Map which AX tables Finance needs and how they relate: `recid` references, company vs shared tables, posted
+          (immutable) vs editable documents. Cover at least customers, invoices, the customer ledger with settlements,
+          vendor invoices, the general ledger and exchange rates.
+
+          **Where to start:** Source systems → *Microsoft Dynamics AX 2012* has the conventions and the ER diagrams. Priya Raman can explain
+          AX conventions; Alan Brooks can tell you which numbers Finance reconciles to today.
         acceptance_criteria:
           - "Entity map (diagram and table) of in-scope AX tables, with relations and company scope"
           - "Each table's change signal, delete behaviour and immutability recorded"
           - "Finance's reconciliation targets listed (the balances your models must tie to)"
           - &docs "Committed via PR (docs/DATA-<n>-… branch, Conventional Commit with the key) and linked from this ticket"
         depends_on: []
+      - id: P3.S1.T3
+        type: Task
+        summary: "Decode AX enums"
+        estimate_hours: 3
+        due_day: 2
+        priority: High
+        components: [Modeling]
+        labels: [ax2012, reference-data, level-2]
+        description: |
+          AX stores enums as integers (`transtype`, `postingtype`, `blocked`, `accounttype` and more). `srsanalysisenums`
+          has labels for some of them, but not all. Build one reusable decode for silver. Where an enum is missing, find
+          the value meanings from a trustworthy source (Priya Raman, Microsoft's documentation) and record where each came from.
+
+          **Where to start:** Query `srsanalysisenums` in the `ax2012` database, then compare it with *Enum values you will need* in
+          Source systems → AX 2012. Priya Raman confirms anything neither of them covers.
+        acceptance_criteria:
+          - "Every enum column used in silver decoded to a label"
+          - "Values missing from srsanalysisenums seeded with a cited source"
+          - "Unknown values raise a DQ warning instead of becoming nulls"
+          - &git "Merged via PR from a feat/DATA-<n>-… branch; Conventional Commits carry the key; PR self-review done; CI green"
+        depends_on: [P3.S1.T1]
       - id: P3.S1.T2
         type: Task
         summary: "Incremental AX ingestion"
@@ -108,7 +132,7 @@ stories:
         due_day: 3
         priority: Highest
         components: [Ingestion]
-        labels: [ax2012, incremental, deletes]
+        labels: [ax2012, incremental, deletes, level-3]
         description: |
           Land the in-scope AX tables with the Project 1 ingestion framework. `MODIFIEDDATETIME` is UTC. Unposted journal
           lines (`ledgerjournaltrans`) are edited and deleted freely, reversed settlements (`custsettlement`) are deleted,
@@ -118,26 +142,31 @@ stories:
           - "Incremental wherever a change signal exists; otherwise the choice is justified"
           - "Deletes detected for ledgerjournaltrans and custsettlement"
           - "Re-runs idempotent; counts reconciled per table per run"
-          - &git "Merged via PR from a feat/DATA-<n>-… branch; Conventional Commits carry the key; PR self-review done; CI green"
-        depends_on: [P3.S1.T1]
-      - id: P3.S1.T3
-        type: Task
-        summary: "Decode AX enums"
-        estimate_hours: 3
-        due_day: 3
-        priority: High
-        components: [Modeling]
-        labels: [ax2012, reference-data]
-        description: |
-          AX stores enums as integers (`transtype`, `postingtype`, `blocked`, `accounttype` and more). `srsanalysisenums`
-          has labels for some of them, but not all. Build one reusable decode for silver. Where an enum is missing, find
-          the value meanings from a trustworthy source (Priya Raman, Microsoft's documentation) and record where each came from.
-        acceptance_criteria:
-          - "Every enum column used in silver decoded to a label"
-          - "Values missing from srsanalysisenums seeded with a cited source"
-          - "Unknown values raise a DQ warning instead of becoming nulls"
           - *git
         depends_on: [P3.S1.T1]
+      - id: P3.S1.T5
+        type: Task
+        summary: "Handle AX sentinel dates and numeric conventions"
+        estimate_hours: 2
+        due_day: 4
+        priority: Medium
+        components: [Modeling, Data Quality]
+        labels: [ax2012, conventions, level-2]
+        description: |
+          AX uses 1900-01-01 for an empty date and 2154-12-31 for "forever"; amounts are numeric(32,16); exchange rates are
+          stored ×100, with a display factor on the currency pair; general-journal credits are negative. Handle these once,
+          consistently, so nobody downstream has to remember them.
+
+          **Where to start:** Source systems → AX 2012 → *Conventions* covers the sentinel dates, the ×100 rates and negative credits;
+          `exchangeratecurrencypair.exchangeratedisplayfactor` holds the display factor. Priya Raman can confirm anything
+          that looks odd.
+        acceptance_criteria:
+          - "Sentinel dates become nulls (or a documented equivalent) in silver"
+          - "Amounts keep full precision; rounding happens only at presentation"
+          - "Conventions documented"
+          - "DQ checks catch values that break the conventions"
+          - *git
+        depends_on: [P3.S1.T2]
       - id: P3.S1.T4
         type: Task
         summary: "Customers, names and date-effective addresses"
@@ -145,7 +174,7 @@ stories:
         due_day: 4
         priority: High
         components: [Modeling]
-        labels: [ax2012, scd2, date-effective]
+        labels: [ax2012, scd2, date-effective, level-3]
         description: |
           `custtable` has no name: the name lives on `dirpartytable` via `party`. Addresses go through `dirpartylocation`,
           `logisticslocation` and `logisticspostaladdress`, which is date-effective (a change closes `validto` and inserts
@@ -158,25 +187,6 @@ stories:
           - "As-of join on invoice date demonstrated on a customer whose address changed"
           - *git
         depends_on: [P3.S1.T2]
-      - id: P3.S1.T5
-        type: Task
-        summary: "Handle AX sentinel dates and numeric conventions"
-        estimate_hours: 2
-        due_day: 4
-        priority: Medium
-        components: [Modeling, Data Quality]
-        labels: [ax2012, conventions]
-        description: |
-          AX uses 1900-01-01 for an empty date and 2154-12-31 for "forever"; amounts are numeric(32,16); exchange rates are
-          stored ×100, with a display factor on the currency pair; general-journal credits are negative. Handle these once,
-          consistently, so nobody downstream has to remember them.
-        acceptance_criteria:
-          - "Sentinel dates become nulls (or a documented equivalent) in silver"
-          - "Amounts keep full precision; rounding happens only at presentation"
-          - "Conventions documented"
-          - "DQ checks catch values that break the conventions"
-          - *git
-        depends_on: [P3.S1.T2]
       - id: P3.S1.T6
         type: Task
         summary: "Finance silver models"
@@ -184,7 +194,7 @@ stories:
         due_day: 5
         priority: Highest
         components: [Modeling]
-        labels: [ax2012, finance, gl]
+        labels: [ax2012, finance, gl, level-3]
         description: |
           Model invoices (header and lines; credit notes are invoices with negative amounts), the customer ledger
           (`custtrans`, updated when settled) with settlements, vendor invoices, and the general ledger
@@ -204,7 +214,7 @@ stories:
         due_day: 5
         priority: High
         components: [Data Quality]
-        labels: [reconciliation, ax2012]
+        labels: [reconciliation, ax2012, level-3]
         description: |
           Reconcile your models to the AX general ledger, the book of record: invoice totals by entity and month, the AR
           balance (account 1200) by entity, and revenue by account (4000-4030). Differences must be explained to the cent
@@ -222,9 +232,9 @@ stories:
         due_day: 5
         priority: High
         components: [Modeling, Data Quality]
-        labels: [crosswalk, billing]
+        labels: [crosswalk, billing, level-3]
         description: |
-          Billing assurance joins Salesforce rate cards, WMS billing and AX invoices per client. P1.S4.T7 measured how well
+          Billing assurance joins Salesforce rate cards, WMS billing and AX invoices per client. P1.S4.T6 measured how well
           the three systems' client keys line up. Build the mapping Finance needs now: each billed client's WMS owner, its
           AX customer account in each legal entity, and its Salesforce Account, with manual overrides Alan approves.
 
@@ -234,7 +244,7 @@ stories:
           - "Overrides stored as data, with who approved them and when"
           - "Mapping coverage reported daily in the DQ results table"
           - *git
-        depends_on: [P1.S4.T7, P3.S1.T4]
+        depends_on: [P1.S4.T6, P3.S1.T4]
 
   # ---------------------------------------------------------------- S2
   - id: P3.S2
@@ -246,7 +256,7 @@ stories:
     sprint: 1
     due_day: 9
     components: [Ingestion, Modeling]
-    labels: [salesforce, api, oauth, deletes, contracts]
+    labels: [salesforce, api, oauth, deletes, contracts, level-2]
     description: |
       The contract is the truth about what a client should pay, and contracts live in Salesforce: `Contract`, plus the
       custom `Rate_Card__c` and `Rate_Card_Line__c` objects (one rate card per contract version, one line per charge
@@ -261,6 +271,9 @@ stories:
       - Deleted records stay in the recycle bin for **15 days**, and merged accounts leave a `MasterRecordId` trail. Miss
         a fortnight and you've missed deletes.
       - Admins add custom fields without telling anyone.
+
+      **Where to start:** Source systems → *Salesforce (CRM)* has the token URL, the endpoints and a behaviour reference, and its ER diagram
+      shows the rate-card objects. Take P3.S2.T1 first. Dana Whitfield answers anything about API limits.
 
       **Definition of Done**
       - All sub-tasks done; in-scope objects in bronze incrementally, with deletes and merges handled
@@ -283,11 +296,14 @@ stories:
         due_day: 6
         priority: High
         components: [Ingestion, Security]
-        labels: [salesforce, oauth, security]
+        labels: [salesforce, oauth, security, level-2]
         description: |
-          Authenticate with the connected app's client credentials (from the Control Center's Links page, kept in your
-          secret store) and explore the org with the describe and limits endpoints. Confirm with Dana Whitfield how she
+          Authenticate with the connected app's client credentials (`SF_CLIENT_ID` and `SF_CLIENT_SECRET` in `.env`, kept in
+          your secret store) and explore the org with the describe and limits endpoints. Confirm with Dana Whitfield how she
           wants the budget split between backfill days and normal days.
+
+          **Where to start:** You already got a token and followed pagination in P1.S3.T7, so start from that code. Source systems → Salesforce
+          lists the describe and `/limits` endpoints. Dana Whitfield decides the budget split.
         acceptance_criteria:
           - "Token obtained, and re-obtained on expiry or a 401"
           - "Credentials only in the secret store"
@@ -302,11 +318,15 @@ stories:
         due_day: 7
         priority: Highest
         components: [Ingestion]
-        labels: [salesforce, incremental, pagination]
+        labels: [salesforce, incremental, pagination, level-2]
         description: |
           Extract the in-scope objects incrementally using a reliable change signal, following `nextRecordsUrl` until the
           result is done. Handle `REQUEST_LIMIT_EXCEEDED` and transient errors gracefully. Datetimes come back like
           `2026-01-05T14:03:22.000+0000`; keep them in UTC.
+
+          **Where to start:** Start from your P1.S3.T7 extract and widen it to `Account`, `Contract`, `Rate_Card__c`, `Rate_Card_Line__c` and
+          `Product2`. Source systems → Salesforce → *Behaviour reference* explains `SystemModstamp` and `LastModifiedDate`;
+          pick your watermark from those. Ask Dana Whitfield if you're unsure.
         acceptance_criteria:
           - "All in-scope objects extracted incrementally with persisted watermarks"
           - "Pagination complete: landed counts match totalSize"
@@ -314,14 +334,75 @@ stories:
           - "API calls per run recorded"
           - *git
         depends_on: [P3.S2.T1]
+      - id: P3.S2.T5
+        type: Task
+        summary: "Detect Salesforce schema drift"
+        estimate_hours: 2
+        due_day: 8
+        priority: Medium
+        components: [Ingestion]
+        labels: [salesforce, schema-drift, level-2]
+        description: |
+          Dana's admins add custom fields without warning, and the simulator can too (Control Center → Scenarios →
+          schema-drift release). New fields shouldn't break loads, and you should hear about them the same day.
+
+          **Where to start:** Compare against the describe output you saved in P3.S2.T1; `/sobjects/{Object}/describe` shows the current fields.
+          Test with Control Center → Scenarios → Schema-drift release. Dana Whitfield can tell you how her admins add fields.
+        acceptance_criteria:
+          - "Describe output compared with the last known schema on every run"
+          - "New fields landed (or deliberately ignored) and reported"
+          - "Removed or retyped fields fail loudly with a clear message"
+          - *git
+        depends_on: [P3.S2.T2]
+      - id: P3.S2.T7
+        type: Task
+        summary: "Monitor Salesforce API usage"
+        estimate_hours: 2
+        due_day: 8
+        priority: Medium
+        components: [Orchestration]
+        labels: [salesforce, observability, api-limits, level-2]
+        description: |
+          Other integrations share the org's daily limit, and Dana will notice before you do if the data team overspends.
+          Track your usage from the response headers or the limits endpoint and alert before it becomes a problem.
+
+          **Where to start:** Every API response carries `Sforce-Limit-Info: api-usage=n/15000`, and `/limits` shows the day's total. Agree the
+          alert threshold with Dana Whitfield, then add the usage to P1-D1.
+        acceptance_criteria:
+          - "API calls recorded per run and per day"
+          - "Alert at a threshold agreed with Dana"
+          - "Usage visible on P1-D1"
+          - *git
+        depends_on: [P3.S2.T2]
+      - id: P3.S2.T4
+        type: Task
+        summary: "Initial backfill with Bulk API 2.0"
+        estimate_hours: 4
+        due_day: 8
+        priority: Medium
+        components: [Ingestion]
+        labels: [salesforce, bulk-api, backfill, level-2]
+        description: |
+          Paging through years of history with REST queries burns the call budget. Use a bulk method for the first load and
+          for full key comparisons.
+
+          **Where to start:** Source systems → Salesforce, the *Bulk 2.0* row: `POST /jobs/query`, poll `GET /jobs/query/{id}` until
+          `JobComplete`, then read `/results` page by page with the `Sforce-Locator` header. Dana Whitfield will ask how many
+          calls it used.
+        acceptance_criteria:
+          - "Bulk query jobs created, polled and downloaded page by page with locators until done"
+          - "Backfill of every in-scope object completed; calls used recorded"
+          - "Re-runnable without duplicates"
+          - *git
+        depends_on: [P3.S2.T2]
       - id: P3.S2.T3
         type: Task
         summary: "Deletes, merges and the 15-day recycle bin"
         estimate_hours: 5
-        due_day: 8
+        due_day: 9
         priority: Highest
         components: [Ingestion]
-        labels: [salesforce, deletes, merges]
+        labels: [salesforce, deletes, merges, level-3]
         description: |
           Accounts get merged, rate cards drafted in error get deleted, duplicates get cleaned up. Billing assurance must not
           keep counting deleted records. The recycle bin only remembers 15 days, so design for the day your pipeline was off
@@ -332,41 +413,7 @@ stories:
           - "A gap longer than 15 days is detected and triggers a full key comparison"
           - "Tested with the simulator's account-merge scenario"
           - *git
-        depends_on: [P3.S2.T2]
-      - id: P3.S2.T4
-        type: Task
-        summary: "Initial backfill with Bulk API 2.0"
-        estimate_hours: 4
-        due_day: 8
-        priority: Medium
-        components: [Ingestion]
-        labels: [salesforce, bulk-api, backfill]
-        description: |
-          Paging through years of history with REST queries burns the call budget. Use a bulk method for the first load and
-          for full key comparisons.
-        acceptance_criteria:
-          - "Bulk query jobs created, polled and downloaded page by page with locators until done"
-          - "Backfill of every in-scope object completed; calls used recorded"
-          - "Re-runnable without duplicates"
-          - *git
-        depends_on: [P3.S2.T2]
-      - id: P3.S2.T5
-        type: Task
-        summary: "Detect Salesforce schema drift"
-        estimate_hours: 2
-        due_day: 9
-        priority: Medium
-        components: [Ingestion]
-        labels: [salesforce, schema-drift]
-        description: |
-          Dana's admins add custom fields without warning, and the simulator can too (Control Center → Scenarios →
-          schema-drift release). New fields shouldn't break loads, and you should hear about them the same day.
-        acceptance_criteria:
-          - "Describe output compared with the last known schema on every run"
-          - "New fields landed (or deliberately ignored) and reported"
-          - "Removed or retyped fields fail loudly with a clear message"
-          - *git
-        depends_on: [P3.S2.T2]
+        depends_on: [P3.S2.T2, P3.S2.T4]
       - id: P3.S2.T6
         type: Task
         summary: "Contracts and rate cards in silver"
@@ -374,7 +421,7 @@ stories:
         due_day: 9
         priority: Highest
         components: [Modeling]
-        labels: [salesforce, contracts, rate-cards, scd2]
+        labels: [salesforce, contracts, rate-cards, scd2, level-3]
         description: |
           Model contracts and rate cards so Finance can ask what rate applied to client X for charge code Y on date Z. Rate
           cards have effective and end dates and a status (Draft, Active, Superseded, Expired), and only some of them should
@@ -387,23 +434,6 @@ stories:
           - "Monthly minimum available per contract version"
           - *git
         depends_on: [P3.S2.T3]
-      - id: P3.S2.T7
-        type: Task
-        summary: "Monitor Salesforce API usage"
-        estimate_hours: 2
-        due_day: 9
-        priority: Medium
-        components: [Orchestration]
-        labels: [salesforce, observability, api-limits]
-        description: |
-          Other integrations share the org's daily limit, and Dana will notice before you do if the data team overspends.
-          Track your usage from the response headers or the limits endpoint and alert before it becomes a problem.
-        acceptance_criteria:
-          - "API calls recorded per run and per day"
-          - "Alert at a threshold agreed with Dana"
-          - "Usage visible on P1-D1"
-          - *git
-        depends_on: [P3.S2.T2]
 
   # ---------------------------------------------------------------- S3
   - id: P3.S3
@@ -415,7 +445,7 @@ stories:
     sprint: 1
     due_day: 10
     components: [Ingestion, Modeling]
-    labels: [fx, currency, public-api, ax2012]
+    labels: [fx, currency, public-api, ax2012, level-3]
     description: |
       Harborline invoices in USD, CAD, MXN, EUR and GBP across three legal entities whose books are in USD, CAD and MXN,
       and the board pack is in USD. Every number in this project needs a currency policy, and right now the policy lives
@@ -449,13 +479,16 @@ stories:
         due_day: 6
         priority: High
         components: [Ingestion]
-        labels: [fx, public-api]
+        labels: [fx, public-api, level-2]
         description: |
-          Load daily reference rates for USD, CAD, MXN, EUR and GBP for the full history and keep them current. The ECB
-          doesn't publish at weekends or on its holidays, and publishes once a day. Decide, and write down, which rate a
-          Sunday transaction gets.
+          Load daily reference rates for USD, CAD, MXN, EUR and GBP, back to your earliest AX invoice date, and keep them
+          current. The ECB doesn't publish at weekends or on its holidays, and publishes once a day. Decide, and write down,
+          which rate a Sunday transaction gets.
+
+          **Where to start:** Source systems → *Public APIs* has a working Frankfurter URL; call one date by hand first and look at the base
+          currency. Ask Rebecca Lindqvist if the Sunday rule needs a Finance view.
         acceptance_criteria:
-          - "Daily rates for the full history plus daily increments"
+          - "Daily rates from your earliest AX invoice date, plus a daily increment"
           - "Non-publication days handled per the documented rule"
           - "Cross rates derivable for every currency pair; base-currency handling documented"
           - *git
@@ -467,17 +500,41 @@ stories:
         due_day: 7
         priority: High
         components: [Modeling]
-        labels: [fx, ax2012]
+        labels: [fx, ax2012, level-2]
         description: |
           AX keeps month-end accounting rates in `exchangerate` (stored ×100), linked to `exchangeratecurrencypair` (which
           has a display factor) and `exchangeratetype`. Turn them into a rate you can look up for any date and pair, in the
           same shape as the ECB table.
+
+          **Where to start:** Open `exchangerate`, then `exchangeratecurrencypair` and `exchangeratetype`, in the `ax2012` database. Source
+          systems → AX 2012 gives a worked example to test against (135.2 means 1 EUR = 1.352 USD). Priya Raman knows the
+          tables; Alan Brooks keys the rates.
         acceptance_criteria:
           - "Daily AX rate per currency pair and rate type for the full history"
           - "×100 storage and display factor handled and tested against a value you can verify by hand"
           - "Gaps or overlaps in validity periods flagged by DQ"
           - *git
         depends_on: [P3.S1.T5]
+      - id: P3.S3.T6
+        type: Task
+        summary: "Currency data-quality checks"
+        estimate_hours: 2
+        due_day: 8
+        priority: Medium
+        components: [Data Quality]
+        labels: [fx, dq, level-2]
+        description: |
+          Invalid currency codes, missing rates and implausible jumps quietly corrupt every converted number. Catch them.
+
+          **Where to start:** Check `billing_rate.currency` and `billing_record.currency` in the WMS, `custinvoicejour.currencycode` and
+          `custtrans.currencycode` in AX, and `CurrencyIsoCode` on Salesforce rate cards against the five billing currencies.
+          Ask Rebecca Lindqvist what size of daily jump she would want to hear about.
+        acceptance_criteria:
+          - "Invalid or unexpected currency codes on WMS, AX and Salesforce money columns flagged"
+          - "Missing rates for any date and pair in use flagged"
+          - "Day-over-day jumps beyond a documented threshold flagged"
+          - *git
+        depends_on: [P3.S3.T2]
       - id: P3.S3.T3
         type: Task
         summary: "Agree the currency policy with Alan"
@@ -485,13 +542,14 @@ stories:
         due_day: 8
         priority: Highest
         components: [Documentation]
-        labels: [fx, policy, stakeholder]
+        labels: [fx, policy, stakeholder, level-3]
         description: |
           Ask Alan Brooks which rate Finance uses for what: invoices in billing currency translated to entity currency, entity
           P&L translated to USD for the board, budget comparisons (at budget rates or actual?), and how realized FX on
           settlement is booked. Write the policy down with examples, and get his sign-off.
         acceptance_criteria:
           - "Policy per purpose (transaction, entity, reporting, budget) with worked examples"
+          - "Alan's and Rebecca's views on the gap between AX and market rates both recorded"
           - "Alan's sign-off recorded"
           - "Open questions he couldn't answer listed, with who owns them"
           - *docs
@@ -503,7 +561,7 @@ stories:
         due_day: 10
         priority: Highest
         components: [Modeling]
-        labels: [fx, reusable]
+        labels: [fx, reusable, level-3]
         description: |
           Every finance model in this project and later ones converts money the same way, per the policy. Build it once,
           test it once, reuse it everywhere.
@@ -520,32 +578,17 @@ stories:
         due_day: 10
         priority: Medium
         components: [Modeling]
-        labels: [fx, analysis]
+        labels: [fx, analysis, level-3]
         description: |
           Rebecca wants to know how far Harborline's booked rates are from the market, and what that is worth. Compare AX
           rates with ECB rates by currency and month, and size the effect on revenue booked in foreign currencies.
+          Check `landing/files/reference/signal_sources.csv` first: only months inside its real ECB range mean anything.
         acceptance_criteria:
           - "Difference (%) by currency pair and month"
           - "Revenue impact in USD by currency and month"
           - "Available for P3-D1"
           - *git
         depends_on: [P3.S3.T4]
-      - id: P3.S3.T6
-        type: Task
-        summary: "Currency data-quality checks"
-        estimate_hours: 2
-        due_day: 10
-        priority: Medium
-        components: [Data Quality]
-        labels: [fx, dq]
-        description: |
-          Invalid currency codes, missing rates and implausible jumps quietly corrupt every converted number. Catch them.
-        acceptance_criteria:
-          - "Invalid or unexpected currency codes on WMS, AX and Salesforce money columns flagged"
-          - "Missing rates for any date and pair in use flagged"
-          - "Day-over-day jumps beyond a documented threshold flagged"
-          - *git
-        depends_on: [P3.S3.T2]
 
   # ---------------------------------------------------------------- S4
   - id: P3.S4
@@ -557,32 +600,39 @@ stories:
     sprint: 2
     due_day: 15
     components: [Modeling, Data Quality]
-    labels: [billing, assurance, scd2, finance]
+    labels: [billing, assurance, scd2, finance, level-4]
     description: |
       **From Alan Brooks, Controller:**
-      > "Any break between the contract and the invoice is either lost revenue or an angry client."
+      > "Any break between the contract and the invoice is either lost revenue or an angry client. Rebecca wants to know
+      > how much before the auditors ask. I want to know why, client by client."
 
-      How a dollar flows today: Sales negotiates a rate card in Salesforce → a billing analyst keys the rates into the WMS
-      `billing_rate` table → the WMS accrues `billing_record` rows daily as work happens → at month-end the accruals go
-      to AX and become invoice lines (`custinvoicetrans.itemid` is the charge code).
+      A rate is negotiated in Salesforce, keyed into the WMS by a billing analyst, accrued daily as work happens, and
+      invoiced from AX at month-end. Alan wants, per client, charge code and month: what Harborline **should** have billed
+      under the contract, what the WMS **accrued**, and what AX **invoiced**, with every difference explained. P3-D1 and
+      the audit will both stand on this.
 
-      Alan wants, per client, charge code and month: what Harborline **should** have billed under the contract, what the
-      WMS **accrued**, and what AX **invoiced**, with every difference explained.
-
-      **What makes it hard**
-      - WMS `billing_rate` is overwritten in place, with no history. Your snapshots are the only history there will ever
-        be; before them you'll have to infer it.
-      - Salesforce rate cards are versioned (annual increases on contract anniversaries), and amendments can land mid-month.
+      **What the business has settled**
+      - What should have been billed is billable activity × the contract rate in effect on the activity date.
+      - Rate cards are versioned, and amendments can land mid-month.
       - Clients are billed in their own currency.
-      - Monthly minimums: if a client's activity is below the contracted minimum, they owe the difference.
+      - Below the contracted monthly minimum, a client owes the difference.
+      - The WMS overwrites rates in place and keeps no history. Your snapshots are the only history there will ever be;
+        anything before them is inferred and has to say so.
+
+      **What nobody has settled**
+      - Which month a difference belongs to when the activity, the accrual, the invoice and a credit note fall in different months.
+      - What is worth a person's time and what is noise. Alan signs that threshold.
+      - How much to trust the months that rest on inferred history, and how to show it.
+
+      How you build it is yours. What Alan needs is a reason to believe every number.
 
       **Definition of Done**
       - All sub-tasks done; billing assurance fact with expected, accrued and invoiced amounts and variance reasons, tested
       - Results walked through with Alan on three clients he picks
       - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
     acceptance_criteria:
-      - "Type-2 rate history for WMS billing_rate from your snapshots; inferred history before them clearly labelled"
-      - "Expected billing computed from activity × the contract rate in effect on the activity date"
+      - "A WMS rate history exists from your snapshots onward, with anything inferred before them clearly labelled"
+      - "Expected billing follows the contract rate in effect on the activity date"
       - "Per client, charge code, warehouse and month: expected, accrued and invoiced in billing currency and USD"
       - "Every variance categorized (rate mismatch, missing charge, unbilled minimum, accrued not invoiced, invoiced without accrual, FX or rounding)"
       - "Materiality threshold agreed with Alan; immaterial variances grouped, not hidden"
@@ -596,11 +646,14 @@ stories:
         due_day: 11
         priority: High
         components: [Documentation]
-        labels: [stakeholder, billing]
+        labels: [stakeholder, billing, level-2]
         description: |
           Before modeling, ask Alan Brooks to walk you through a month: who keys rates and when, how accruals become invoices,
           what gets corrected before invoicing, how credit notes are issued, and what he checks today. Ask Hannah Price how
           contract amendments reach Salesforce.
+
+          **Where to start:** Take the *Billing* ER diagram from Source systems → WMS to your chat with Alan Brooks: it shows where a rate comes
+          from and where a billing record ends up. Priya Raman owns the import into AX.
         acceptance_criteria:
           - "Process diagram from contract to cash, with an owner at each step"
           - "Manual steps and existing controls listed"
@@ -614,7 +667,7 @@ stories:
         due_day: 12
         priority: Highest
         components: [Modeling]
-        labels: [scd2, wms, billing]
+        labels: [scd2, wms, billing, level-3]
         description: |
           `billing_rate` is updated in place. From your first Project 1 snapshot onwards you can build true history; before
           that, the rate actually charged is recorded on each `billing_record`. Build a rate history that is honest about
@@ -633,7 +686,7 @@ stories:
         due_day: 12
         priority: High
         components: [Modeling]
-        labels: [crosswalk, billing]
+        labels: [crosswalk, billing, level-3]
         description: |
           Salesforce rate-card lines are per Account and charge code; WMS rates are per owner, optional warehouse and charge
           code; AX invoice lines are per AX customer and item. Line them up using the billing client mapping (P3.S1.T8) and
@@ -651,16 +704,26 @@ stories:
         due_day: 13
         priority: Highest
         components: [Modeling]
-        labels: [billing, assurance]
+        labels: [billing, assurance, level-4]
         description: |
-          Build the fact Finance will live in: client × charge code × warehouse × month, with expected (activity × contract
-          rate on the activity date), accrued (WMS `billing_record`) and invoiced (AX) amounts, plus variance amounts and
-          reasons. Handle voided and re-rated accruals, credit notes and late invoices.
+          **From Alan Brooks:**
+          > "This is the table I'll live in before every close. Client by charge code by warehouse by month: what we should
+          > have billed, what the WMS accrued, what AX invoiced, how far apart they are and why. If I can't get from a month
+          > to the records behind it, I won't believe it."
+
+          The P3-D1 spec defines expected, accrued and invoiced, and the currency policy says how they convert. The rest of
+          the real world doesn't line up as neatly. Accruals get voided or re-rated before invoicing. The invoice for a month
+          posts in the next one. Credit notes arrive long after the month they correct. A month Alan has already reviewed can
+          still change.
+
+          Nobody has decided which month each of those belongs in, or what happens to a variance when the evidence arrives
+          late. Decide, write it down, and be ready to show Alan why a number moved or why it didn't.
         acceptance_criteria:
-          - "Expected, accrued and invoiced amounts in billing currency and USD, per the currency policy"
-          - "Variance reason categories as agreed with Alan"
-          - "Drill-down from a month to individual billing records and invoice lines"
+          - "Expected, accrued and invoiced per client, charge code, warehouse and month, in billing currency and USD, matching the P3-D1 definitions and the currency policy"
+          - "Every variance carries a reason from the categories agreed with Alan"
+          - "From any month, a person can reach the individual billing records and invoice lines behind it"
           - "Invoiced totals reconcile to AX invoiced revenue by entity and month"
+          - "Voided and re-rated accruals, credit notes and late invoices each have a documented treatment and a test"
           - *git
         depends_on: [P3.S4.T2, P3.S4.T3, P3.S3.T4]
       - id: P3.S4.T5
@@ -670,7 +733,7 @@ stories:
         due_day: 14
         priority: High
         components: [Modeling]
-        labels: [billing, minimums]
+        labels: [billing, minimums, level-3]
         description: |
           Contracts include a monthly minimum. When a client's billable activity in a month is below it, a minimum adjustment
           (`MIN-ADJ`) should be invoiced. Check every client-month. Ask Alan how partial months (onboarding, offboarding)
@@ -682,32 +745,15 @@ stories:
           - "Alan's partial-month rule documented and applied"
           - *git
         depends_on: [P3.S4.T4]
-      - id: P3.S4.T6
-        type: Task
-        summary: "Quantify leakage and agree materiality"
-        estimate_hours: 3
-        due_day: 14
-        priority: High
-        components: [Modeling]
-        labels: [billing, assurance]
-        description: |
-          Rebecca will ask one question: how much? Roll variances up to client, charge code, entity and month in billing
-          currency and USD, and agree a materiality threshold with Alan so the dashboard focuses on what matters.
-        acceptance_criteria:
-          - "Leakage totals by client, charge code, entity and month, with trend"
-          - "Materiality threshold documented with Alan's approval"
-          - "Over-billing reported as prominently as under-billing"
-          - *git
-        depends_on: [P3.S4.T4]
       - id: P3.S4.T7
         type: Bug
         reporter: alan.brooks
         summary: "Bug: assurance shows every EUR- and GBP-billed client as under-billed"
         estimate_hours: 3
-        due_day: 15
+        due_day: 14
         priority: Highest
         components: [Modeling]
-        labels: [bug, fx]
+        labels: [bug, fx, level-3]
         description: |
           **Reported by Alan Brooks:**
           > "I opened the draft assurance numbers. Every single EUR client is under-billed, by small amounts, every month,
@@ -723,6 +769,32 @@ stories:
           - "Affected months recomputed"
           - &fix "Fix merged via PR from a fix/DATA-<n>-… branch with a regression test; Conventional Commits carry the key; CI green"
         depends_on: [P3.S4.T4]
+      - id: P3.S4.T6
+        type: Task
+        summary: "Quantify leakage and agree materiality"
+        estimate_hours: 3
+        due_day: 15
+        priority: High
+        components: [Modeling]
+        labels: [billing, assurance, level-4]
+        description: |
+          **From Rebecca Lindqvist:**
+          > "How much? That is the first thing I will ask. By client, by charge code, by entity and by month, in their
+          > currency and in mine."
+
+          Alan decides what is material, and his threshold drives the billing accuracy figure on P3-D1. It has to work across
+          clients whose monthly bills are many times apart, in five currencies. Too tight and Alan drowns in rounding. Too
+          loose and real money drops out of view. Nothing below the line may vanish.
+
+          Over-billing is as serious as under-billing here: an angry client is still a finding, and Rebecca won't accept a net
+          figure that hides either side. Bring Alan a threshold with the numbers behind it, and defend it.
+        acceptance_criteria:
+          - "Leakage totals by client, charge code, entity and month, with trend, in billing currency and USD"
+          - "Materiality threshold documented with Alan's approval, including what it applies to and why"
+          - "Over-billing reported as prominently as under-billing, never netted away"
+          - "Variances below the threshold stay visible as a group"
+          - *git
+        depends_on: [P3.S4.T4, P3.S4.T5, P3.S4.T7]
       - id: P3.S4.T8
         type: Task
         summary: "Walk three clients through with Alan"
@@ -730,7 +802,7 @@ stories:
         due_day: 15
         priority: Medium
         components: [Documentation]
-        labels: [stakeholder, validation]
+        labels: [stakeholder, validation, level-3]
         description: |
           Ask Alan to pick three clients he knows well: a big one, a multi-currency one, and one he's suspicious of. Walk him
           through their numbers from contract to invoice. His confidence is the acceptance test.
@@ -750,7 +822,7 @@ stories:
     sprint: 2
     due_day: 17
     components: [Modeling, Ingestion]
-    labels: [ar, dso, budget, ax2012, files]
+    labels: [ar, dso, budget, ax2012, files, level-3]
     description: |
       > "Two things go to the board every month: how much cash is tied up in receivables and who's slow, and how each
       > warehouse did against budget. Both are built by hand today." (Rebecca)
@@ -781,69 +853,14 @@ stories:
       - "AR as-of reconciles to AX at three month-ends per entity"
     depends_on: [P3.S1, P3.S3]
     tasks:
-      - id: P3.S5.T1
-        type: Task
-        summary: "Open AR as of any date"
-        estimate_hours: 6
-        due_day: 15
-        priority: Highest
-        components: [Modeling]
-        labels: [ar, ax2012, point-in-time]
-        description: |
-          Reconstruct what was open on any date from `custtrans` and `custsettlement`. Invoice rows are updated when settled,
-          settlements can be reversed (and are then deleted), and payments can be partial or cover several invoices. Priya
-          Raman can explain the settlement mechanics.
-        acceptance_criteria:
-          - "Open amount per invoice as of any date"
-          - "Partial, multi-invoice and reversed settlements handled"
-          - "As-of balances reconcile to AX at three month-ends per entity"
-          - "Month-end snapshots stored for fast history"
-          - *git
-        depends_on: [P3.S1.T6]
-      - id: P3.S5.T2
-        type: Task
-        summary: "Aging buckets"
-        estimate_hours: 3
-        due_day: 16
-        priority: High
-        components: [Modeling]
-        labels: [ar, aging]
-        description: |
-          Age open items by days past due into the buckets Finance uses. Ask Alan Brooks for the buckets, and whether credit
-          notes and unapplied payments are aged or netted.
-        acceptance_criteria:
-          - "Buckets as specified by Alan"
-          - "Credit notes and unapplied cash treated per his rule"
-          - "Aging per entity, client and currency, in transaction currency and USD"
-          - *git
-        depends_on: [P3.S5.T1, P3.S3.T4]
-      - id: P3.S5.T3
-        type: Task
-        summary: "DSO the way the board sees it"
-        estimate_hours: 3
-        due_day: 16
-        priority: High
-        components: [Modeling, Documentation]
-        labels: [ar, kpi, stakeholder]
-        description: |
-          Rebecca's words: "DSO the way the board sees it." There's more than one way to compute DSO, and the methods tell
-          different stories for a client whose sales are changing. Find out exactly which method Rebecca means and why, and
-          how Alan computes it today. Implement it, and show the alternative side by side if they disagree.
-        acceptance_criteria:
-          - "DSO method documented in Rebecca's words, with a worked example"
-          - "Monthly DSO by entity and client"
-          - "Alternative method shown and clearly labelled if Rebecca and Alan differ"
-          - "Rebecca's sign-off recorded"
-          - *git
-        depends_on: [P3.S5.T1]
       - id: P3.S5.T4
         type: Task
         summary: "Ingest the budget workbook"
         estimate_hours: 5
-        due_day: 16
+        due_day: 15
         priority: High
         components: [Ingestion]
-        labels: [files, xlsx, budget]
+        labels: [files, xlsx, budget, level-3]
         description: |
           Finance's budget workbook arrives in `landing/files/`: wide format, merged header cells, formatting meant for
           people, and new versions after each reforecast. Turn it into something you can join to actuals without losing
@@ -855,6 +872,73 @@ stories:
           - "Layout changes fail loudly"
           - *git
         depends_on: [P1.S5.T1]
+      - id: P3.S5.T1
+        type: Task
+        summary: "Open AR as of any date"
+        estimate_hours: 6
+        due_day: 16
+        priority: Highest
+        components: [Modeling]
+        labels: [ar, ax2012, point-in-time, level-4]
+        description: |
+          **From Rebecca Lindqvist:**
+          > "I want to pick a date, any date, and see what was open that day. The board asks what receivables looked like at
+          > the end of last quarter, and 'what AX shows today' is not an answer."
+
+          AX keeps no history of this. Invoices are updated in place when they settle, a bounced payment's settlement is simply
+          deleted, and one payment can part-pay an invoice or cover several.
+
+          That leaves a question nobody has written down. When a settlement is reversed this month, what should last month-end
+          show: what looked true then, or what we know now? Rebecca wants a number she can stand behind, and Alan owns AR and
+          needs it to tie to AX. Settle it with Alan, and explain what you chose and what it costs.
+        acceptance_criteria:
+          - "Open amount per invoice as of any date"
+          - "Partial, multi-invoice and reversed settlements come out right, with a test for each"
+          - "As-of balances reconcile to the AX customer ledger at three month-ends per entity"
+          - "The rule for a reversal after the as-of date is documented and agreed with Alan"
+          - "Past month-ends answer fast enough for the P3-D2 as-of selector (under 3 seconds)"
+          - *git
+        depends_on: [P3.S1.T6]
+      - id: P3.S5.T2
+        type: Task
+        summary: "Aging buckets"
+        estimate_hours: 3
+        due_day: 16
+        priority: High
+        components: [Modeling]
+        labels: [ar, aging, level-2]
+        description: |
+          Age open items by days past due into the buckets Finance uses. Ask Alan Brooks for the buckets, and whether credit
+          notes and unapplied payments are aged or netted.
+
+          **Where to start:** Build on your open-AR model from P3.S5.T1; `custtrans.duedate` is the due date. Alan Brooks sets the buckets and says
+          how credit notes and unapplied payments are treated.
+        acceptance_criteria:
+          - "Buckets as specified by Alan"
+          - "Credit notes and unapplied cash treated per his rule"
+          - "Aging per entity, client and currency, in transaction currency and USD"
+          - "The aging total equals open AR for the same date and entity"
+          - *git
+        depends_on: [P3.S5.T1, P3.S3.T4]
+      - id: P3.S5.T3
+        type: Task
+        summary: "DSO the way the board sees it"
+        estimate_hours: 3
+        due_day: 17
+        priority: High
+        components: [Modeling, Documentation]
+        labels: [ar, kpi, stakeholder, level-3]
+        description: |
+          Rebecca's words: "DSO the way the board sees it." There's more than one way to compute DSO, and the methods tell
+          different stories for a client whose sales are changing. Find out exactly which method Rebecca means and why, and
+          how Alan computes it today. Implement it, and show the alternative side by side if they disagree.
+        acceptance_criteria:
+          - "DSO method documented in Rebecca's words, with a worked example"
+          - "Monthly DSO by entity and client"
+          - "Alternative method shown and clearly labelled if Rebecca and Alan differ"
+          - "Rebecca's sign-off recorded"
+          - *git
+        depends_on: [P3.S5.T1]
       - id: P3.S5.T5
         type: Task
         summary: "Warehouse P&L actual vs budget"
@@ -862,7 +946,7 @@ stories:
         due_day: 17
         priority: High
         components: [Modeling]
-        labels: [pnl, budget, gl]
+        labels: [pnl, budget, gl, level-3]
         description: |
           Build the monthly P&L by site from the AX general ledger (the site comes from the financial dimension) and compare
           it with the latest budget version. Alan Brooks decides which accounts roll into which P&L lines and how shared costs
@@ -882,7 +966,7 @@ stories:
         due_day: 17
         priority: High
         components: [Modeling]
-        labels: [bug, ar, ax2012]
+        labels: [bug, ar, ax2012, level-3]
         description: |
           **Reported by Alan Brooks:**
           > "us01 ties out to the penny. ca01 doesn't: the aging total is off from the AX customer balance at month-end, and
@@ -906,7 +990,7 @@ stories:
     sprint: 2
     due_day: 20
     components: [Dashboards]
-    labels: [dashboard, finance]
+    labels: [dashboard, finance, level-3]
     attachments: [wireframes/P3-D1.svg, wireframes/P3-D2.svg, wireframes/P3-D3.svg]
     description: |
       Three dashboards for Finance; specs are in the dashboard catalog and wireframes are attached.
@@ -940,19 +1024,26 @@ stories:
     tasks:
       - id: P3.S6.T1
         type: Task
-        summary: "Finance marts with frozen month-ends"
+        summary: "Serve finance numbers fast, with frozen month-ends"
         estimate_hours: 4
         due_day: 18
         priority: High
         components: [Modeling]
-        labels: [gold, performance, month-end]
+        labels: [gold, performance, month-end, level-4]
         description: |
-          Pre-aggregate assurance (monthly), AR (daily and month-end) and P&L (site × month) so every view is fast. Once Alan
-          closes a month, that month's numbers must not move.
+          **From Alan Brooks:**
+          > "Once I close a month, that month's numbers do not move. I don't want to explain to Rebecca why March changed in June."
+
+          Three dashboards have to answer in under 3 seconds a view on the free-tier warehouse, refreshed daily by 07:00 ET,
+          and closed months have to hold still. But things keep arriving after a close: credit notes, reversed settlements,
+          a re-issued budget, a fix to one of your own models. Speed, freshness and frozen history pull against each other.
+
+          Nobody has decided what exactly freezes, how Alan's close reaches the pipeline, or how a correction that belongs to
+          a closed month shows up instead. Propose it, and get Alan to accept it.
         acceptance_criteria:
-          - "Every visual in the three specs backed by a mart"
-          - "Each visual's query runs in under 3 seconds"
-          - "Closed months immutable after Alan's close date; mechanism documented"
+          - "Each visual in the three specs loads in under 3 seconds (measured)"
+          - "A closed month's numbers stay the same through a refresh, a new credit note and a model rebuild (tested)"
+          - "How a post-close correction appears is agreed with Alan and documented"
           - *git
         depends_on: [P3.S4.T6, P3.S5.T5]
       - id: P3.S6.T2
@@ -962,7 +1053,7 @@ stories:
         due_day: 18
         priority: Highest
         components: [Dashboards]
-        labels: [dashboard, brand]
+        labels: [dashboard, brand, level-3]
         description: |
           Build the dashboard to the P3-D1 spec and wireframe. Alan needs to go from "this client is under-billed" to the
           billing records and invoice lines that prove it in two clicks.
@@ -979,7 +1070,7 @@ stories:
         due_day: 19
         priority: High
         components: [Dashboards]
-        labels: [dashboard, brand]
+        labels: [dashboard, brand, level-3]
         description: |
           Build the dashboard to the P3-D2 spec. Rebecca's question: who owes us, how late are they, and who is getting worse?
         acceptance_criteria:
@@ -995,7 +1086,7 @@ stories:
         due_day: 19
         priority: High
         components: [Dashboards]
-        labels: [dashboard, brand]
+        labels: [dashboard, brand, level-3]
         description: |
           Build the dashboard to the P3-D3 spec. Rebecca wants the monthly pack in one place; Luis wants to see his sites
           without seeing anything else of Finance's.
@@ -1013,7 +1104,7 @@ stories:
         due_day: 20
         priority: Highest
         components: [Dashboards, Modeling]
-        labels: [bug, credit-notes]
+        labels: [bug, credit-notes, level-3]
         description: |
           **Reported by Alan Brooks:**
           > "Quick one before the readout. Invoiced revenue on Revenue Assurance is lower than AX for a couple of clients that
@@ -1033,7 +1124,7 @@ stories:
         due_day: 20
         priority: High
         components: [Dashboards, Security]
-        labels: [access, rls, performance]
+        labels: [access, rls, performance, level-3]
         description: |
           Implement the access rules in the specs and prove them with a Finance identity, an Operations identity and a GM
           identity. Measure load times.
@@ -1050,7 +1141,7 @@ stories:
         priority: Highest
         reporter: iris.novak
         components: [Dashboards, Data Quality]
-        labels: [uat, sign-off, reconciliation]
+        labels: [uat, sign-off, reconciliation, level-3]
         description: |
           Nothing goes to Rebecca and Alan until Iris Novak (Business Performance Manager) has signed it off. She ties
           your numbers back to the source systems herself, checks every KPI against your metric catalog and the
@@ -1076,7 +1167,7 @@ stories:
         due_day: 20
         priority: High
         components: [Documentation]
-        labels: [readout, release]
+        labels: [readout, release, level-3]
         description: |
           Five minutes, money first: how much leakage, how much overdue, which sites are off budget, and what you'd do next.
           Record it; it's your portfolio demo too. Then tag the release and close the epic.

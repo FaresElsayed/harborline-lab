@@ -61,7 +61,7 @@ export function Setup() {
         <h1 className="figure text-[2rem] font-semibold leading-10 text-ink">When does your program start?</h1>
         <p className="mt-2 max-w-[62ch] text-md text-muted">
           Every ticket is due a set number of working days after this date. Eight projects of four weeks each, two-week sprints, 32 weeks in all. You can change dates on single
-          issues later; this sets them all.
+          issues later; this sets them all. Not sure? Next Monday is a good choice.
         </p>
 
         <form

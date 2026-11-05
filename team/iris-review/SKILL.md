@@ -146,7 +146,8 @@ docker exec -i -e PGPASSWORD=<HL_REVIEWER_PASSWORD> harborline-postgres-1 \
 If a setting is missing from `.env`, use these defaults:
 - Postgres port `5432`;
 - app port `8080`;
-- your password `uat-review-2026`. If the container has another name, find it with `docker ps --filter name=postgres`. Your
+- your password has no default: setup makes one for each install, so read `HL_REVIEWER_PASSWORD` from `.env`, and stop and
+  say so if it is not there. If the container has another name, find it with `docker ps --filter name=postgres`. Your
 login is read-only and stops any statement after 5 minutes, so aggregate in SQL rather than pulling raw tables.
 
 **Salesforce (mock)**:

@@ -1,5 +1,14 @@
 # Project 1 - Data Platform Foundation (program weeks 1-4)
 # Requester: Sam Okafor (Director of IT)
+#
+# Difficulty ramp. Every Story, Task, Spike and Bug in p01..p08 carries exactly one label, level-1 to level-5:
+#   level-1  follow a clear instruction in one system; has a Where to start
+#   level-2  build something small to a clear spec; has a Where to start
+#   level-3  join systems and make a choice; the method is mostly yours
+#   level-4  design something with trade-offs and failure modes (CDC, idempotency, late data); no Where to start
+#   level-5  own an ambiguous business outcome end to end (security, stakeholders, readouts); no Where to start
+# Average level never falls from one project to the next, or from sprint 1 to sprint 2 inside a project. Project 1 has
+# no level-4 or level-5, Project 5 onward has no level-1. simulator/tests/test_tracker_catalog.py enforces all of it.
 project: 1
 epic:
   id: P1
@@ -19,11 +28,15 @@ epic:
     departments (Operations, Finance, Transportation) are queued behind it. This project is the foundation everything
     after it stands on, so Sam would rather it be boring and solid than clever.
 
+    **How this project runs:** the first sprint is small, concrete steps (a first connection, a first table, a first
+    number, a first pull request). The second sprint adds what keeps it running without you.
+
     **What this project delivers**
     - Your engineering setup and repository standards, so anyone who joins later works the same way.
     - A cloud data platform with separate dev and prod, secrets handled properly, and costs inside the free tier.
-    - The WMS landed every day with every insert, update and delete, plus history the WMS itself throws away.
-    - A bronze/silver layer with a data-quality framework that quarantines bad rows instead of hiding them.
+    - The WMS landed every day, starting with one table, and a first silver layer on top of it.
+    - Every insert, update and delete captured, plus history the WMS itself throws away.
+    - A data-quality framework that quarantines bad rows instead of hiding them.
     - Scheduled, retried, alerting pipelines, and CI on every pull request.
     - Dashboard **P1-D1 Data Platform Health**: can yesterday's data be trusted?
 
@@ -44,7 +57,7 @@ epic:
 stories:
   # ---------------------------------------------------------------- S1
   - id: P1.S1
-    summary: "Workstation, repository and engineering standards"
+    summary: "Workstation, first connection and first pull request"
     type: Story
     reporter: sam.okafor
     priority: Highest
@@ -52,25 +65,27 @@ stories:
     sprint: 1
     due_day: 3
     components: [CI/CD, Documentation]
-    labels: [setup, git, standards]
+    labels: [setup, git, standards, level-1]
     description: |
-      Before anyone writes a pipeline, Sam wants the boring parts right: a working machine, the simulator running, and a
-      repository that enforces how the team works.
+      Before anyone writes a pipeline, Sam wants the basics right: a working machine, a first query against the WMS, and
+      a repository that enforces how the team works.
 
       > "The last contractor's scripts lived on a laptop with passwords in them. When he left, so did the pipelines.
       > That doesn't happen again." (Sam)
 
-      The **Getting Started** handbook page has the install steps. This story is about the outcome, not the clicks.
+      The tickets here are small and in order. Do them one at a time, top to bottom.
 
       **Why now:** every later ticket assumes a branch per ticket, Conventional Commits with the ticket key, a PR with
       self-review and pre-commit secret scanning. Adding standards later costs ten times more.
 
       **Talk to:** Kevin O'Hara (machine, Docker, network) and Mei Tanaka (what counts as a secret and what must never be committed).
 
+      **Where to start:** The **Getting Started** handbook page has the install steps, then take P1.S1.T1.
+
       **Definition of Done**
       - All sub-tasks done; your repository is on GitHub with `main` protected
       - At least one PR merged through the full flow: branch `feat/DATA-<n>-…` → Conventional Commits with the key → PR template → self-review → merge
-      - ADR-0001 and CHANGELOG.md exist on `main`; the source inventory is linked from the README
+      - The ADR template and CHANGELOG.md exist on `main`; the source inventory is linked from the README
     acceptance_criteria:
       - "The simulator runs on your machine with a Medium or Large build finished; the Control Center is reachable at http://localhost:8080"
       - "You can query wms, ax2012 and iot as etl_reader and call the mock Salesforce and carrier APIs"
@@ -87,12 +102,14 @@ stories:
         due_day: 1
         priority: Highest
         components: [Platform]
-        labels: [setup]
+        labels: [setup, level-1]
         description: |
           Run the setup file (SETUP-WINDOWS.cmd or SETUP-MAC.command) until it finishes with ALL DONE. It installs what's
           missing and skips the rest. If it stops, paste its report to Kevin O'Hara, do what he says and run it again.
           Note anything that went wrong or took longer than expected; Sam wants that feedback so the next hire's setup
           is faster.
+
+          **Where to start:** Run the file from the folder you downloaded; Getting Started → *Run the setup file* says what each step does.
         acceptance_criteria:
           - "The setup file finishes with ALL DONE"
           - "Docker Desktop has at least the memory the handbook recommends"
@@ -101,28 +118,28 @@ stories:
         depends_on: []
       - id: P1.S1.T2
         type: Task
-        summary: "Build the dataset and connect to every source"
-        estimate_hours: 3
+        summary: "Build the dataset and run your first query"
+        estimate_hours: 2
         due_day: 1
         priority: Highest
         components: [Platform]
-        labels: [setup, wms, ax2012, salesforce, carrier-api]
+        labels: [setup, wms, level-1]
         description: |
           Start the simulator and run a Medium or Large build, if setup has not done it already (Medium is 2 years of history, Large 3; the Control Center shows an estimate).
-          Then prove you can reach each system the way a pipeline would:
-          - Postgres as `etl_reader`: databases `wms`, `ax2012` and `iot`
-          - the mock Salesforce REST API with the OAuth client credentials
-          - the carrier tracking API with its API key
-          - the `landing/` folder for EDI and business files
 
-          Connection details are on the Control Center's Links page. Don't build anything yet. Prove access and note what
-          you see, including what **Generate batch** and **Stream** do to the source data.
+          Then make your first connection: Postgres, database `wms`, as `etl_reader`, the same login your pipelines will use.
+          Run one query and look at the result. Don't build anything yet.
+
+          Finally, press **Generate batch** once in the Control Center and run the query again, so you see the source change
+          underneath you.
+
+          **Where to start:** Getting Started → *Try each source system* has the connection details and the query. Open it
+          from the `Harborline WMS` connection in DBeaver. Stuck? Kevin O'Hara.
         acceptance_criteria:
           - "Build completed; size, build time and row counts per system recorded"
-          - "DBeaver connected as etl_reader to all three databases"
-          - "An OAuth token obtained and one SOQL query answered by the mock Salesforce API"
-          - "One page of events returned by the carrier API"
-          - "You can explain the insert/update/delete counts the Control Center shows after a batch"
+          - "DBeaver connected as etl_reader to the wms database"
+          - "The first query in Getting Started returns one row per warehouse, with its time zone"
+          - "After one Generate batch you can say how many orders were added"
         depends_on: [P1.S1.T1]
       - id: P1.S1.T3
         type: Task
@@ -131,13 +148,15 @@ stories:
         due_day: 2
         priority: Highest
         components: [CI/CD]
-        labels: [git, setup]
+        labels: [git, setup, level-1]
         description: |
           The setup file created `harborline-analytics` on your machine and on your GitHub account, with a starter
           README. The layout from here is your call, but someone new should understand it from the README in five
           minutes. The simulator is not part of this repo.
 
           CI will run on Linux, so line endings matter: read the `.gitattributes` it started you with.
+
+          **Where to start:** `harborline-analytics` on your machine. Open its README first. Ask Nadia Petrov if you can't decide on a folder name.
         acceptance_criteria:
           - "Repository on your machine and on GitHub (nothing confidential in it)"
           - "README states purpose, layout, how to run, and links to this epic"
@@ -147,19 +166,22 @@ stories:
         depends_on: [P1.S1.T1]
       - id: P1.S1.T4
         type: Task
-        summary: "Protect main and add PR and issue templates"
+        summary: "Your first pull request: protect main and add templates"
         estimate_hours: 2
         due_day: 2
         priority: High
         components: [CI/CD]
-        labels: [git, standards]
+        labels: [git, standards, level-1]
         description: |
           Sam's rule: nothing reaches `main` without a pull request, and every PR tells a reviewer what changed, why, how
           it was tested and what could break. You're the only engineer building this, so the first reviewer is you tomorrow
           morning; Nadia Petrov will look when you ask. The self-review checklist is not optional.
 
           The setup file started this: a ruleset on `main`, a PR template and a bug template. Check them against the
-          criteria below and finish what's missing.
+          criteria below and finish what's missing. Keep the change small: the point is to learn the full flow.
+
+          **Where to start:** Getting Started → *Your own repository* has every command. The project brief's *Git and
+          engineering standards* says why.
         acceptance_criteria:
           - "Branch protection or a ruleset on main requires a PR, blocks force-pushes and deletion"
           - "PR template covers summary, ticket link, testing evidence, data impact, rollback and a self-review checklist"
@@ -174,13 +196,16 @@ stories:
         due_day: 2
         priority: Highest
         components: [CI/CD, Security]
-        labels: [git, security, lint]
+        labels: [git, security, lint, level-1]
         description: |
           The setup file installed pre-commit with gitleaks (secrets), ruff (Python lint and format) and sqlfluff (SQL
           lint). Prove it works. sqlfluff has a provisional dialect: revisit it after the platform decision (P1.S2.T1).
 
           Mei Tanaka's standard: a secret that reaches a remote is a security incident, even in a private repository.
           The same hooks will run in CI later (P1.S5), so nobody can skip them with `--no-verify`.
+
+          **Where to start:** Run `pre-commit run --all-files` in your repository, then try committing a scratch file with a made-up key in it.
+          Ask Mei Tanaka what she counts as a secret.
         acceptance_criteria:
           - "pre-commit config committed with gitleaks, ruff and sqlfluff; hook versions pinned"
           - "Hooks run on every commit on your machine"
@@ -195,50 +220,53 @@ stories:
         due_day: 3
         priority: Medium
         components: [CI/CD, Documentation]
-        labels: [git, release]
+        labels: [git, release, level-1]
         description: |
-          Every project in this program ends with a release tag. Decide how versions are bumped and how the CHANGELOG is
-          kept (by hand or generated from commits), and write it down. Commit messages carry the ticket key so anyone can
-          trace a change back to the request that caused it.
+          Every project in this program ends with a release tag. Write down how versions are bumped and how the CHANGELOG is
+          kept (by hand is fine). Commit messages carry the ticket key so anyone can trace a change back to the request that
+          caused it.
+
+          **Where to start:** Copy the rules from the project brief's *Commit messages* and *Releases, CHANGELOG and ADRs*
+          into your own words. Nadia Petrov will read it if you ask.
         acceptance_criteria:
           - "CONTRIBUTING (or a README section) defines commit types, scopes, the ticket-key rule and branch naming"
-          - "Commit messages are checked automatically (locally now, in CI from P1.S5)"
           - "CHANGELOG.md exists with an Unreleased section"
           - "Release policy written down: one tag per project, v0.1.0 at the end of this project"
           - *git
         depends_on: [P1.S1.T3]
       - id: P1.S1.T7
         type: Task
-        summary: "ADR practice and ADR-0001"
+        summary: "ADR template and index"
         estimate_hours: 2
         due_day: 3
         priority: Medium
         components: [Documentation]
-        labels: [adr, docs]
+        labels: [adr, docs, level-1]
         description: |
           > "Our last platform migration failed partly because nobody remembered why things were built the way they were." (Sam)
 
-          Set up a lightweight Architecture Decision Record practice. ADR-0001 records the decision to use ADRs. You'll
-          write several more in this project: platform, connectivity, infrastructure as code, ingestion strategy,
-          modeling tool and orchestration.
+          Set up a lightweight Architecture Decision Record practice: a template and an index. You don't need to decide
+          anything yet. ADR-0001 is your platform choice in the next story, and you'll write more in this project:
+          connectivity, infrastructure as code, ingestion strategy, modeling tool and orchestration.
+
+          **Where to start:** The project brief's *Releases, CHANGELOG and ADRs* lists what an ADR contains and where it lives.
         acceptance_criteria:
           - "ADR template (context, decision, alternatives, consequences, status) in docs/adr"
-          - "ADR-0001 merged with status Accepted"
           - "ADR index linked from the README; status values defined (Proposed, Accepted, Superseded)"
           - &docs "Committed via PR (docs/DATA-<n>-… branch, Conventional Commit with the key) and linked from this ticket"
         depends_on: [P1.S1.T3]
       - id: P1.S1.T8
         type: Task
-        summary: "Source-system discovery and inventory"
+        summary: "Source-system inventory"
         estimate_hours: 5
         due_day: 3
         priority: Highest
         components: [Ingestion, Documentation]
-        labels: [discovery, wms, ax2012, salesforce, iot, edi, files, stakeholder]
+        labels: [discovery, wms, ax2012, salesforce, iot, edi, files, stakeholder, level-2]
         description: |
-          Before you design ingestion, know what you're ingesting. Profile every source and write an inventory a new
-          engineer could use: what each system is, who owns it, how to connect, the tables or objects that matter,
-          approximate volumes, keys, which columns tell you a row changed, how deletes happen, time-zone and unit
+          Before you design ingestion, know what you're ingesting. Connect once to each remaining source and write an
+          inventory a new engineer could use: what each system is, who owns it, how to connect, the tables or objects that
+          matter, approximate volumes, keys, which columns tell you a row changed, how deletes happen, time-zone and unit
           conventions, and what you still don't know.
 
           The owners know things the schema won't tell you. Ask them:
@@ -247,7 +275,11 @@ stories:
           - **Dana Whitfield**: Salesforce
           - **Tomás Ortega**: EDI and the carrier tracking feed
           - **Grace Liu**: sensors (IoT)
+
+          **Where to start:** Getting Started → *Try each source system* gets you connected; the Source systems handbook page
+          has the behaviour reference and the data dictionary. Fill in the table from there, then ask about the gaps.
         acceptance_criteria:
+          - "Connected once to each: ax2012 and iot as etl_reader, an OAuth token and one SOQL query on Salesforce, one page of carrier events, the landing folder"
           - "Inventory covers WMS, AX 2012, IoT, Salesforce, carrier API, EDI and the landing files"
           - "Every WMS table listed with row count, primary key, change-tracking column (or none) and delete behaviour"
           - "Cross-system keys identified (client, tracking number, client PO, worker) with known quality concerns"
@@ -265,12 +297,12 @@ stories:
     sprint: 1
     due_day: 6
     components: [Platform, Security]
-    labels: [cloud, environments, security, finops, iac]
+    labels: [cloud, environments, security, finops, level-2]
     description: |
       Harborline needs a home for its data. Sam has no budget for a paid platform this year, so start from a free tier:
       **Databricks Free Edition** or a **Snowflake trial**. The trial ends after 30 days, so plan for day 31. Pick one,
-      justify it, and set it up the way you'd run it in production: separate dev and prod, no shared passwords, and
-      nothing that only works because you clicked it once in a UI.
+      justify it, and set it up with separate dev and prod and no shared passwords. Keep a list of what you create; it
+      goes into code in P1.S5.
 
       **Constraints**
       - Free-tier limits are real. Databricks Free Edition is serverless-only, with one small SQL warehouse, a cap on
@@ -283,9 +315,10 @@ stories:
 
       **Why now:** every later story deploys into this.
 
+      **Where to start:** Getting Started → *Your cloud platform*, then P1.S2.T1.
+
       **Definition of Done**
-      - All sub-tasks done; ADRs for platform, connectivity and infrastructure as code accepted and merged
-      - dev and prod are reproducible from the repository; dev has been torn down and recreated from code once
+      - All sub-tasks done; ADRs for platform and connectivity accepted and merged
       - gitleaks is clean on the full git history
       - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, checks green)
     acceptance_criteria:
@@ -293,7 +326,6 @@ stories:
       - "Separate dev and prod environments with documented naming conventions and access"
       - "Secrets live in a secret store or untracked local config, never in the repository"
       - "Cost guardrails configured and documented, including what happens when a free-tier quota is hit"
-      - "Environment objects are created from code in the repository, not by hand"
       - "The path from on-prem sources to the cloud is documented and respects the no-inbound-ports rule"
     depends_on: [P1.S1]
     tasks:
@@ -304,15 +336,17 @@ stories:
         due_day: 4
         priority: Highest
         components: [Platform, Documentation]
-        labels: [spike, adr, cloud]
+        labels: [spike, adr, cloud, level-2]
         description: |
           Time-box: 4 hours. Compare the options for Harborline's whole roadmap, not just this month. Later projects need
           API ingestion, near-real-time CDC (Project 6, five-minute freshness), row-level security and PII masking
           (Project 8) and dashboards. Include what breaks when the trial or quota runs out, and how you'd move off the platform.
 
           Sam doesn't care which one you pick. He cares that you can defend it.
+
+          **Where to start:** Answer the questions in Getting Started → *Decide, with reasons*, one row per option. That table is most of the ADR.
         acceptance_criteria:
-          - "ADR (platform choice) with options, criteria, decision and consequences"
+          - "ADR-0001 (platform choice) with options, criteria, decision and consequences"
           - "Free-tier limits that affect the design listed, with links to the official documentation"
           - "Decision names the dashboard tool you'll use (platform-native, Power BI Desktop or Streamlit) and why"
           - "Time spent logged; no more than the time-box"
@@ -325,16 +359,21 @@ stories:
         due_day: 4
         priority: Highest
         components: [Platform]
-        labels: [cloud, environments]
+        labels: [cloud, environments, level-2]
         description: |
           Create the account or workspace and the structures for two environments. You must be able to break dev with
           no risk to prod, and prod should change only through a merged PR (fully enforced once CD exists in P1.S5).
           Anyone reading an object name should know its environment and its layer (bronze, silver or gold).
+
+          Creating these by hand is fine for now, as long as you write down what you made. They go into code in P1.S5.T8.
+
+          **Where to start:** The project brief's *Environments and infrastructure*, then your platform's own quick-start.
         acceptance_criteria:
           - "dev and prod separated (catalogs, databases or schemas; your design, documented)"
           - "Naming conventions for environments, layers, objects and service identities written down"
           - "A non-personal identity (service principal or service user) runs pipelines, separate from your login"
           - "Your personal login cannot write to prod outside the deployment path, or the free-tier gap is documented"
+          - "A list of every object you created by hand is committed"
           - *git
         depends_on: [P1.S2.T1]
       - id: P1.S2.T3
@@ -344,16 +383,19 @@ stories:
         due_day: 5
         priority: Highest
         components: [Security, Platform]
-        labels: [security, secrets]
+        labels: [security, secrets, level-2]
         description: |
-          Pipelines need the Postgres `etl_reader` password, the Salesforce client secret, the carrier API key and, later,
-          an EIA API key. Decide where secrets live on your machine and on the platform, how code reads them, and how
+          Pipelines need the Postgres `etl_reader` password, the Salesforce client secret, the carrier API key and, if you take
+          Project 4's stretch comparison, an EIA API key. Decide where secrets live on your machine and on the platform, how code reads them, and how
           you'd rotate one. Check Mei Tanaka's expectations first. She is strict and she will ask.
+
+          **Where to start:** Start with one secret, the `etl_reader` password: put it in `.env` (already ignored) and read it from code. The
+          project brief's *Secrets and personal data* has the rules; your platform's docs have its secret store.
         acceptance_criteria:
           - "No secret in code, notebooks, config or git history (gitleaks run on the full history)"
           - "Local secrets kept in an untracked file or the OS credential store, documented in the README"
           - "Platform-side secrets kept in the platform's secret mechanism"
-          - "Rotation drill done for one secret you control and written up in the runbook"
+          - "Rotation drill done for one secret you control and written up in docs/runbook.md (start the file now; P1.S5.T7 finishes it)"
           - *git
         depends_on: [P1.S2.T2]
       - id: P1.S2.T4
@@ -363,7 +405,7 @@ stories:
         due_day: 5
         priority: Highest
         components: [Platform, Security, Documentation]
-        labels: [adr, connectivity, security]
+        labels: [adr, connectivity, security, level-3]
         description: |
           The sources sit on-prem: Postgres in Docker, a folder of landing files and two APIs. Kevin O'Hara's rule is no
           inbound ports from the internet, so the cloud platform can't connect to Postgres directly. Decide how data
@@ -384,45 +426,27 @@ stories:
         due_day: 6
         priority: High
         components: [Platform]
-        labels: [finops, cloud]
+        labels: [finops, cloud, level-2]
         description: |
           > "Keep it cheap, and never surprise me." (Sam)
 
           Find out what costs money or consumes quota on your platform. Put guardrails in place: auto-stop or suspend,
           small compute sizes, quotas or resource monitors, and budget alerts where the platform allows them. Document
           what happens when a limit is hit, including how long you're blocked. These numbers feed the cost panel on P1-D1.
+
+          **Where to start:** Your platform's docs page on auto-stop or auto-suspend, then its page on quotas or resource monitors. The free-tier
+          limits you listed in P1.S2.T1 are the checklist.
         acceptance_criteria:
           - "Every compute resource auto-stops or suspends within minutes of going idle"
           - "A budget or quota alert, resource monitor or documented free-tier equivalent exists"
-          - "Free-tier quotas and what happens when each is exceeded documented in the runbook"
+          - "Free-tier quotas and what happens when each is exceeded documented in docs/runbook.md"
           - "Baseline usage for one day of development recorded"
-          - *git
-        depends_on: [P1.S2.T2]
-      - id: P1.S2.T6
-        type: Task
-        summary: "Infrastructure as code for the platform"
-        estimate_hours: 5
-        due_day: 6
-        priority: High
-        components: [Platform, CI/CD]
-        labels: [iac, adr]
-        description: |
-          dev and prod must be reproducible from the repository. Pick an infrastructure-as-code approach that fits your
-          platform and the free tier, and record why in an ADR. Options include Terraform providers, Databricks Asset
-          Bundles and SQL migration tools, or something else you can justify. Recreate dev from scratch once to prove it.
-
-          If you're on the Snowflake trial, this is what makes day 31 a non-event.
-        acceptance_criteria:
-          - "ADR (infrastructure as code) accepted"
-          - "Schemas or catalogs, compute, service identity and grants defined in code"
-          - "dev torn down and recreated from code with no manual steps; time recorded"
-          - "You can tell how you'd notice someone changing prod by hand (drift check documented)"
           - *git
         depends_on: [P1.S2.T2]
 
   # ---------------------------------------------------------------- S3
   - id: P1.S3
-    summary: "WMS batch ingestion with incremental loads and hard-delete handling"
+    summary: "First WMS tables: a landed table, a first number, then every table and a first silver layer"
     type: Story
     reporter: sam.okafor
     priority: Highest
@@ -430,110 +454,307 @@ stories:
     sprint: 1
     due_day: 10
     components: [Ingestion]
-    labels: [wms, incremental, deletes, backfill]
+    labels: [wms, incremental, backfill, silver, time-zones, units, level-2]
     description: |
-      The WMS is the heart of the business and the hardest source Harborline has. It's a legacy on-prem system: Marcus
-      Bell can't change its schema, and IT won't add triggers to it. Land it in the platform every day with **every
-      change**, meaning inserts, updates and deletes, and keep the history the WMS itself throws away.
+      Time to put real data in the platform, one small step at a time. Land the smallest WMS table, then see a number you
+      can check against the source. Then widen: every WMS table, a daily incremental load and a first silver layer, so
+      no department has to touch raw bronze data.
 
-      **What makes it hard** (from the source inventory and Marcus)
-      - Timestamps are local warehouse time with no time zone, and `mod_ts` is set by the application, not the database.
-      - `order_line` has no audit timestamp at all.
-      - Rows are physically deleted: inventory at zero quantity, cancelled order lines, abandoned draft orders, voided
-        labels (`shipment_carton`), `billing_record` corrections before invoicing, ASNs cancelled before arrival, SKUs
-        created in error.
-      - A nightly housekeeping job deletes `task` rows older than 180 days. Ops will want labor history older than that.
-      - The vendor ships releases that can add columns (see `sys_release`).
-      - Volume on Large: ~2.5 M orders, ~7 M lines and ~20 M `inventory_txn` rows over 3 years (Medium is about 40% of that over 2 years), plus continuous change when the
-        simulator is streaming.
+      Marcus Bell can't change the WMS schema, and IT won't add triggers to it. The WMS has harder habits too: `order_line`
+      has no audit timestamp, rows are physically deleted and a nightly job purges old tasks. Those wait for P1.S4. Note
+      them, but don't solve them here.
 
       **Constraints**
-      - Read-only access as `etl_reader`. Logical replication is enabled on the server, but streaming CDC is planned
-        for Project 6. For now Sam wants reliable batch loads. If your design uses replication features anyway, justify it.
+      - Read-only access as `etl_reader`. For now Sam wants reliable batch loads; streaming CDC is planned for Project 6.
       - The WMS is a production system in the daytime, so keep the extract load modest.
-      - A missed day (laptop off, network down) must recover without manual fixes.
+      - Volume on Large: ~2.5 M orders, ~7 M lines and ~20 M `inventory_txn` rows over 3 years (Medium is about 40% of that over 2 years).
+
+      **Where to start:** P1.S3.T1, one table, and the connectivity ADR you just wrote.
 
       **Definition of Done**
-      - All sub-tasks done; the ingestion-strategy ADR is accepted
-      - All 28 WMS tables land in bronze with load metadata; the 3-year backfill is complete
-      - Inserts, updates and deletes from a simulator batch are reflected after the next load, proven by a reconciliation
+      - All sub-tasks done; the ingestion-strategy and modeling-tool ADRs are accepted
+      - All 28 WMS tables land in bronze with load metadata; the full backfill is complete
+      - Silver models for the WMS have tests
       - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, checks green)
     acceptance_criteria:
+      - "A first table and a first number in the platform, checked against the source"
       - "Every WMS table lands in bronze with batch id, extract window and source row counts"
       - "Each table has a documented load strategy (full, incremental, append-only or snapshot comparison) and the reason"
-      - "Updates are captured for tables with and without audit timestamps, including order_line quantity changes"
-      - "Hard deletes are detected for every table that deletes, with the time the deletion was detected"
-      - "Task history older than 180 days survives the purge, and purges are distinguishable from cancellations"
-      - "A missed day catches up on the next run; re-running a load creates no duplicates"
-      - "New columns from a WMS release don't break the load and are reported"
+      - "Tables with mod_ts load incrementally; re-running a load creates no duplicates"
       - "Full backfill completed within free-tier limits, with its duration documented"
+      - "Layer conventions (bronze, silver, gold) documented: what each guarantees and who may read it"
+      - "Silver WMS models are typed, one current row per business key, with UTC and local timestamps and canonical units"
     depends_on: [P1.S2]
     tasks:
       - id: P1.S3.T1
         type: Task
-        summary: "Ingestion strategy per WMS table (ADR)"
-        estimate_hours: 4
-        due_day: 7
+        summary: "Land your first table: wms.warehouse"
+        estimate_hours: 3
+        due_day: 6
         priority: Highest
-        components: [Ingestion, Documentation]
-        labels: [wms, adr]
+        components: [Ingestion]
+        labels: [wms, first-load, level-1]
         description: |
-          For each WMS table, decide how you'll detect new, changed and deleted rows, how often, and at what extract cost.
-          Use what you learned in discovery. Ask Marcus Bell anything you're unsure of: whether `mod_ts` is always set on
-          update, when housekeeping runs, which tables are append-only.
+          Copy one table from the WMS to your dev environment, by the route your connectivity ADR describes. `warehouse` is
+          the right first table: one row per site, no consumer data, nothing to get wrong. Copy the whole table, every time.
+          Don't build a framework yet. A short script is fine.
+
+          **Where to start:** Run `SELECT * FROM wms.warehouse` in DBeaver and note the row count. Write the script that lands
+          those rows in dev bronze, reading the password from where you put it in P1.S2.T3. Stuck? Nadia Petrov.
         acceptance_criteria:
-          - "Per-table matrix: grain, primary key, change signal, delete behaviour, strategy, frequency, expected daily volume"
-          - "ADR (ingestion strategy) accepted, including why not streaming CDC yet"
-          - "Edge cases listed: local-time watermarks across DST, late-committing transactions, warehouses in different time zones"
-          - *docs
-        depends_on: [P1.S1.T8, P1.S2.T4]
+          - "wms.warehouse is in dev bronze with every source column and a load timestamp"
+          - "Row count in the platform equals the row count in the WMS"
+          - "Running the script twice leaves the same rows, not double"
+          - *git
+        depends_on: [P1.S2.T2, P1.S2.T3]
       - id: P1.S3.T2
         type: Task
-        summary: "Config-driven extract to the landing zone"
+        summary: "Your first number: orders per site"
+        estimate_hours: 3
+        due_day: 7
+        priority: Highest
+        components: [Ingestion, Dashboards]
+        labels: [wms, first-number, level-1]
+        description: |
+          Sam's first question of any platform is whether its numbers are right. Land `order_header` in dev bronze, leaving out
+          every `ship_to_*` column, and join it to the `warehouse` table you landed. Show one number per site, orders received
+          in the last 30 days, in the dashboard tool you named in ADR-0001 (a saved query with a simple chart counts). Then
+          check it against the source.
+
+          **Where to start:** The first query in Getting Started → *Try each source system* is nearly this one. Run it in
+          DBeaver with a date filter, stop the stream so the source holds still, and keep that result to compare against.
+        acceptance_criteria:
+          - "Orders received per site, last 30 days, shown in your dashboard tool"
+          - "Every site's number equals the same query run against the WMS"
+          - "No ship_to column in the platform; a screenshot with both results is in the PR"
+          - *git
+        depends_on: [P1.S3.T1]
+      - id: P1.S3.T3
+        type: Task
+        summary: "Add tables by configuration: a config-driven extract"
         estimate_hours: 6
         due_day: 7
         priority: Highest
         components: [Ingestion]
-        labels: [wms, framework]
+        labels: [wms, framework, level-2]
         description: |
-          Build the extract that moves WMS data to the platform the way your connectivity ADR describes. Adding a table
-          should be configuration, not code. Every batch must be traceable: which run produced it, when, how many rows the
-          source had and how many arrived.
+          Your first script copied one table. Turn it into something that copies any table, so adding a table is a line of
+          configuration, not code. Every batch must be traceable: which run produced it, when, how many rows the source had
+          and how many arrived. Full copies are fine for now.
+
+          **Where to start:** A YAML file in the repository with one entry per table (name, schema, load mode) and your P1.S3.T1
+          script reading it. Get `warehouse` and `owner` working before adding more.
         acceptance_criteria:
-          - "Tables and their strategies driven by configuration in the repository"
+          - "Tables and their load mode driven by configuration in the repository"
           - "Each batch carries run id, extract window and row counts and lands in bronze unchanged (append-only)"
           - "Source and landed row counts reconciled per table per run; a mismatch fails the run"
           - "Extract time for one day of full volume documented"
           - "Credentials read from the secret mechanism set up in P1.S2.T3"
           - *git
-        depends_on: [P1.S3.T1, P1.S2.T3]
-      - id: P1.S3.T3
+        depends_on: [P1.S3.T1, P1.S2.T4]
+      - id: P1.S3.T4
+        type: Task
+        summary: "Backfill the full WMS history"
+        estimate_hours: 3
+        due_day: 8
+        priority: High
+        components: [Ingestion, Platform]
+        labels: [wms, backfill, finops, level-2]
+        description: |
+          Run the initial full load of the full dataset into prod, and a smaller slice into dev. Watch the free-tier
+          limits: a careless backfill can burn a day's quota or a big share of the trial credits. Record how long it took
+          and what it consumed. Sam will ask.
+
+          **Where to start:** List your tables by size first (your inventory has the counts) and load small to large, so a mistake is cheap. Note
+          your quota before and after.
+        acceptance_criteria:
+          - "Full backfill in prod; source and landed counts reconciled for every table"
+          - "Duration, data volume and compute or credits used recorded in the runbook"
+          - "dev holds a documented subset that is enough for development and CI"
+          - "A failed backfill restarts from where it stopped"
+          - *git
+        depends_on: [P1.S3.T3]
+      - id: P1.S3.T5
+        type: Task
+        summary: "Ingestion strategy per WMS table (ADR)"
+        estimate_hours: 4
+        due_day: 8
+        priority: Highest
+        components: [Ingestion, Documentation]
+        labels: [wms, adr, level-3]
+        description: |
+          You've now seen every WMS table in your own platform. For each one, decide how you'll detect new, changed and deleted
+          rows, how often, and at what extract cost. The next tickets and P1.S4 implement this. Use what you learned in
+          discovery. Ask Marcus Bell anything you're unsure of: whether `mod_ts` is always set on update, when housekeeping
+          runs, which tables are append-only.
+        acceptance_criteria:
+          - "Per-table matrix: grain, primary key, change signal, delete behaviour, strategy, frequency, expected daily volume"
+          - "ADR (ingestion strategy) accepted, including why not streaming CDC yet"
+          - "Edge cases listed: local-time watermarks across DST, late-committing transactions, warehouses in different time zones"
+          - *docs
+        depends_on: [P1.S1.T8, P1.S2.T4, P1.S3.T4]
+      - id: P1.S3.T6
         type: Task
         summary: "Incremental loads for tables with audit timestamps"
         estimate_hours: 5
-        due_day: 8
+        due_day: 9
         priority: Highest
         components: [Ingestion]
-        labels: [wms, incremental]
+        labels: [wms, incremental, level-2]
         description: |
           Most WMS tables carry `mod_ts`, which is local warehouse time and set by the application. Load only what changed
-          since the last successful run, without missing late-committed rows and without re-reading the world every time.
-          Watermarks must survive restarts and failed runs.
+          since the last successful run, without re-reading the world every time. Watermarks must survive restarts and failed
+          runs.
+
+          **Where to start:** One table, `owner`. Keep the highest `mod_ts` you loaded, per table, and next time read a little
+          before it (an overlap window) so late-committing rows aren't missed, then drop what you've already seen.
         acceptance_criteria:
           - "Watermark state persisted per table and advanced only after a successful load"
           - "No missed updates when a simulator batch and an extract overlap in time (tested)"
-          - "Behaviour across a DST change documented and tested"
-          - "Re-running the same window is idempotent"
+          - "Behaviour across a DST change documented"
+          - "Re-running the same window creates no duplicates"
+          - "A column added by a WMS release (see sys_release) doesn't break the load and is reported"
           - *git
-        depends_on: [P1.S3.T2]
-      - id: P1.S3.T4
+        depends_on: [P1.S3.T3, P1.S3.T5]
+      - id: P1.S3.T7
+        type: Task
+        summary: "Daily snapshots of AX customers and Salesforce accounts for the client crosswalk"
+        estimate_hours: 3
+        due_day: 9
+        priority: Medium
+        components: [Ingestion]
+        labels: [ax2012, salesforce, crosswalk, level-2]
+        description: |
+          Every later project joins clients across three systems: WMS `owner.owner_code`, AX `custtable.accountnum` (the
+          name lives in `dirpartytable`) and the Salesforce `Account` (`WMS_Owner_Code__c`, `ERP_Account_Number__c`).
+          The full AX and Salesforce pipelines come in Project 3. For now, land a small daily snapshot of just these
+          customer and account records so the platform can check the crosswalk (P1.S4.T6).
+
+          Dana Whitfield can tell you about Salesforce API limits; Priya Raman about AX customers in the three legal entities.
+
+          **Where to start:** Getting Started → *Try each source system* has both the AX customer query and the Salesforce token and SOQL call.
+          Point them at bronze, once a day, as a new dated snapshot each time.
+        acceptance_criteria:
+          - "Daily full snapshot of AX customers (all three legal entities, with party names) and Salesforce Accounts in bronze"
+          - "Salesforce access uses OAuth client credentials and follows pagination to the end"
+          - "Snapshot history kept so day-to-day changes can be compared"
+          - *git
+        depends_on: [P1.S3.T3]
+      - id: P1.S3.T8
+        type: Task
+        summary: "Layer conventions and modeling tool (ADR)"
+        estimate_hours: 3
+        due_day: 9
+        priority: Highest
+        components: [Modeling, Documentation]
+        labels: [adr, conventions, level-2]
+        description: |
+          Choose the modeling tool (dbt Core, platform-native SQL or pipelines, or something else) and decide how bronze,
+          silver and gold are laid out, named and tested. Remember the free-tier limits, and that every later project
+          inherits this choice.
+
+          **Where to start:** If you have no reason to choose otherwise, dbt Core is a safe default. Read the project brief's *Environments and
+          infrastructure*, then write the ADR. Nadia Petrov reviews it.
+        acceptance_criteria:
+          - "ADR (modeling tool and layers) accepted"
+          - "Naming, materialization and testing conventions documented"
+          - "Repository structure matches the ADR"
+          - *docs
+        depends_on: [P1.S2.T1]
+      - id: P1.S3.T9
+        type: Task
+        summary: "First silver models for the WMS"
+        estimate_hours: 7
+        due_day: 10
+        priority: Highest
+        components: [Modeling]
+        labels: [wms, silver, time-zones, level-3]
+        description: |
+          Build silver for every WMS table Ops and Finance will use: one current row per business key, types enforced. All WMS
+          times are local to the row's warehouse (`warehouse.time_zone`), and downstream needs both UTC and local. Child tables
+          with no warehouse column still need a time zone.
+
+          Deleted rows come in P1.S4, so leave room for a deleted flag and a detected-at time.
+        acceptance_criteria:
+          - "Silver models for all WMS tables, with primary-key uniqueness and not-null tests"
+          - "Every timestamp available in UTC and local time, correct across DST transitions (tested on a fall-back night)"
+          - "Incremental where it pays off; full rebuild time documented"
+          - *git
+        depends_on: [P1.S3.T8, P1.S3.T4]
+      - id: P1.S3.T10
+        type: Task
+        summary: "Normalize units of measure"
+        estimate_hours: 3
+        due_day: 10
+        priority: High
+        components: [Modeling, Data Quality]
+        labels: [wms, units, level-2]
+        description: |
+          US sites record weights and dimensions in LB and IN; TOR1 and MTY1 use KG and CM. The unit is stored per row
+          (`weight_uom`, `dim_uom`), and some rows are wrong. Finance and Transportation will add weights across sites,
+          so silver must offer canonical units without losing the original values.
+
+          **Where to start:** `wms.material`, and a `GROUP BY` of its units per site, to see what's there.
+        acceptance_criteria:
+          - "Canonical weight and dimension columns sit alongside the source values and units"
+          - "Rows whose unit is implausible for their site or magnitude are flagged, ready to become a rule in P1.S4.T5"
+          - "Canonical unit choice documented"
+          - *git
+        depends_on: [P1.S3.T9]
+
+  # ---------------------------------------------------------------- S4
+  - id: P1.S4
+    summary: "Every change captured, and data quality you can see"
+    type: Story
+    reporter: sam.okafor
+    priority: Highest
+    story_points: 13
+    sprint: 2
+    due_day: 14
+    components: [Modeling, Data Quality]
+    labels: [wms, incremental, deletes, retention, dq, quarantine, level-3]
+    description: |
+      The first sprint landed what the WMS shows today. Now capture what it hides.
+
+      **What makes the WMS hard** (from your inventory and Marcus Bell)
+      - `order_line` has no audit timestamp at all.
+      - Rows are physically deleted: inventory at zero quantity, cancelled order lines, abandoned draft orders, voided
+        labels (`shipment_carton`), `billing_record` corrections before invoicing, ASNs cancelled before arrival, SKUs
+        created in error.
+      - A nightly housekeeping job deletes `task` rows older than 180 days. Ops will want labor history older than that.
+
+      Just as important: when data is wrong, Sam wants to **see** it, not have it silently dropped or silently passed
+      through. The simulator injects realistic defects (orphans, duplicates, negative quantities, sentinel dates, unit
+      mix-ups, whitespace in keys, mojibake and more) at about 1 in 10,000 records per category by default. Your
+      framework should catch them, quarantine what's unusable and record every result.
+
+      **Why now:** Project 2 (Operations) builds on silver in two weeks.
+
+      **Definition of Done**
+      - All sub-tasks done
+      - Inserts, updates and deletes from a simulator batch are reflected after the next load, proven by a reconciliation
+      - The DQ results table is populated on every run
+      - DQ precision and recall measured once against the simulator's answer key, recorded in the PR
+      - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, checks green)
+    acceptance_criteria:
+      - "Updates are captured for order_line, including quantity changes"
+      - "Hard deletes are detected for every table that deletes, with the time the deletion was detected"
+      - "Task history older than 180 days survives the purge, and purges are distinguishable from cancellations"
+      - "DQ rules declared as configuration with severity; every run records rule, table, rows checked, rows failed and sample keys"
+      - "Rows failing error-level rules are quarantined with a reason and excluded from silver; warnings pass with a flag"
+      - "Quarantined rows can be re-processed after a fix without a full reload"
+      - "Cross-system client key match rate measured daily"
+      - "DQ precision and recall measured against the simulator answer key"
+    depends_on: [P1.S3]
+    tasks:
+      - id: P1.S4.T1
         type: Task
         summary: "Capture changes to order_line, which has no audit timestamp"
         estimate_hours: 5
-        due_day: 8
+        due_day: 11
         priority: Highest
         components: [Ingestion]
-        labels: [wms, incremental, deletes]
+        labels: [wms, incremental, deletes, level-3]
         description: |
           `order_line` has no `mod_ts`, yet its allocated, picked and shipped quantities and its status change all day,
           and cancelled lines are deleted. Ops' fill rate and Finance's billing both depend on it being right.
@@ -546,188 +767,41 @@ stories:
           - "Run time and data volume per load documented for your build size"
           - "Approach and trade-offs recorded in the ingestion ADR"
           - *git
-        depends_on: [P1.S3.T2]
-      - id: P1.S3.T5
+        depends_on: [P1.S3.T3, P1.S3.T5]
+      - id: P1.S4.T2
         type: Task
-        summary: "Detect hard deletes across the WMS"
-        estimate_hours: 5
-        due_day: 9
+        summary: "Detect hard deletes, and keep task history beyond the 180-day purge"
+        estimate_hours: 6
+        due_day: 12
         priority: Highest
         components: [Ingestion]
-        labels: [wms, deletes]
+        labels: [wms, deletes, retention, level-3]
         description: |
           Several WMS tables delete rows physically: `inventory` (zero quantity), `order_header` (abandoned draft orders),
           `order_line` (cancelled), `shipment_carton` (voided labels), `billing_record` (pre-invoice corrections),
-          `asn_header` and `asn_line` (cancelled before arrival), `material` (SKUs created in error) and `task` (purge; see
-          the next ticket). The list may not be complete; Marcus Bell would know. Downstream needs to know a row is gone,
-          and when you noticed.
+          `asn_header` and `asn_line` (cancelled before arrival), `material` (SKUs created in error) and `task` (purge). The
+          list may not be complete; Marcus Bell would know. Downstream needs to know a row is gone, and when you noticed.
+
+          `task` needs extra care. The WMS deletes rows older than 180 days every night, and Luis Moreno's team will want labor
+          productivity history in Project 2. Keep tasks after the WMS forgets them, and never mistake a purge for a
+          cancellation. Ask Marcus when the purge runs and exactly what it removes.
         acceptance_criteria:
-          - "Every deleting table has delete detection; deleted rows are flagged, not removed, with a detected-at time"
+          - "Every deleting table has delete detection; deleted rows are flagged in bronze and silver, not removed, with a detected-at time"
           - "Delete counts per table per run are recorded (they appear on P1-D1)"
           - "Detected deletes reconcile with the simulator's delete counts per table after a batch"
           - "Rows missing because of a partial or failed extract can never be recorded as deletes"
-          - *git
-        depends_on: [P1.S3.T2]
-      - id: P1.S3.T6
-        type: Task
-        summary: "Keep task history beyond the 180-day purge"
-        estimate_hours: 3
-        due_day: 9
-        priority: High
-        components: [Ingestion]
-        labels: [wms, retention, deletes]
-        description: |
-          The WMS deletes `task` rows older than 180 days every night. Luis Moreno's team will want labor productivity
-          history in Project 2. Make sure the platform keeps tasks after the WMS forgets them, and that a purge is never
-          mistaken for a cancellation. Ask Marcus Bell when the purge runs and exactly what it removes.
-        acceptance_criteria:
-          - "Purged tasks remain in your history with their final state"
-          - "Purge deletions are classified separately from operational deletes"
+          - "Purged tasks remain in your history with their final state, classified separately from operational deletes"
           - "Documented how much task history existed at your first load, and what is lost for good"
           - *git
-        depends_on: [P1.S3.T5]
-      - id: P1.S3.T7
-        type: Task
-        summary: "Backfill the full WMS history"
-        estimate_hours: 4
-        due_day: 10
-        priority: High
-        components: [Ingestion, Platform]
-        labels: [wms, backfill, finops]
-        description: |
-          Run the initial full load of the full dataset into prod, and a smaller slice into dev. Watch the free-tier
-          limits: a careless backfill can burn a day's quota or a big share of the trial credits. Record how long it took
-          and what it consumed. Sam will ask.
-        acceptance_criteria:
-          - "Full backfill in prod; source and landed counts reconciled for every table"
-          - "Duration, data volume and compute or credits used recorded in the runbook"
-          - "dev holds a documented subset that is enough for development and CI"
-          - "A failed backfill restarts from where it stopped"
-          - *git
-        depends_on: [P1.S3.T3, P1.S3.T4, P1.S3.T5]
-      - id: P1.S3.T8
-        type: Task
-        summary: "Daily snapshots of AX customers and Salesforce accounts for the client crosswalk"
-        estimate_hours: 3
-        due_day: 10
-        priority: Medium
-        components: [Ingestion]
-        labels: [ax2012, salesforce, crosswalk]
-        description: |
-          Every later project joins clients across three systems: WMS `owner.owner_code`, AX `custtable.accountnum` (the
-          name lives in `dirpartytable`) and the Salesforce `Account` (`WMS_Owner_Code__c`, `ERP_Account_Number__c`).
-          The full AX and Salesforce pipelines come in Project 3. For now, land a small daily snapshot of just these
-          customer and account records so the platform can check the crosswalk (P1.S4.T7).
-
-          Dana Whitfield can tell you about Salesforce API limits; Priya Raman about AX customers in the three legal entities.
-        acceptance_criteria:
-          - "Daily full snapshot of AX customers (all three legal entities, with party names) and Salesforce Accounts in bronze"
-          - "Salesforce access uses OAuth client credentials and follows pagination to the end"
-          - "Snapshot history kept so day-to-day changes can be compared"
-          - *git
-        depends_on: [P1.S3.T2]
-
-  # ---------------------------------------------------------------- S4
-  - id: P1.S4
-    summary: "Bronze/silver framework and data-quality framework"
-    type: Story
-    reporter: sam.okafor
-    priority: Highest
-    story_points: 13
-    sprint: 2
-    due_day: 14
-    components: [Modeling, Data Quality]
-    labels: [silver, dq, quarantine, time-zones, units]
-    description: |
-      No department touches raw bronze data. Silver is where data becomes trustworthy: typed, deduplicated, one current
-      row per business key, history where it's needed, times in UTC (and local where Ops needs them), and units you can
-      add up.
-
-      Just as important: when data is wrong, Sam wants to **see** it, not have it silently dropped or silently passed
-      through. The simulator injects realistic defects (orphans, duplicates, negative quantities, sentinel dates, unit
-      mix-ups, whitespace in keys, mojibake and more) at about 1 in 10,000 records per category by default. Your
-      framework should catch them, quarantine what's unusable and record every result.
-
-      **Why now:** Project 2 (Operations) builds on silver in two weeks.
-
-      **Definition of Done**
-      - All sub-tasks done; the modeling-tool ADR is accepted
-      - Silver models for the WMS have tests; the DQ results table is populated on every run
-      - DQ precision and recall measured once against the simulator's answer key, recorded in the PR
-      - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, checks green)
-    acceptance_criteria:
-      - "Layer conventions (bronze, silver, gold) documented: what each guarantees and who may read it"
-      - "Silver WMS models are typed, deduplicated, current-state with deleted flags, UTC and local timestamps, canonical units"
-      - "DQ rules declared as configuration with severity; every run records rule, table, rows checked, rows failed and sample keys"
-      - "Rows failing error-level rules are quarantined with a reason and excluded from silver; warnings pass with a flag"
-      - "Quarantined rows can be re-processed after a fix without a full reload"
-      - "Cross-system client key match rate measured daily"
-      - "DQ precision and recall measured against the simulator answer key"
-    depends_on: [P1.S3]
-    tasks:
-      - id: P1.S4.T1
-        type: Task
-        summary: "Layer conventions and modeling tool (ADR)"
-        estimate_hours: 3
-        due_day: 11
-        priority: Highest
-        components: [Modeling, Documentation]
-        labels: [adr, conventions]
-        description: |
-          Choose the modeling tool (dbt Core, platform-native SQL or pipelines, or something else) and decide how bronze,
-          silver and gold are laid out, named and tested. Remember the free-tier limits, and that every later project
-          inherits this choice.
-        acceptance_criteria:
-          - "ADR (modeling tool and layers) accepted"
-          - "Naming, materialization and testing conventions documented"
-          - "Repository structure matches the ADR"
-          - *docs
-        depends_on: [P1.S2.T1]
-      - id: P1.S4.T2
-        type: Task
-        summary: "Silver models for the WMS"
-        estimate_hours: 7
-        due_day: 12
-        priority: Highest
-        components: [Modeling]
-        labels: [wms, silver, time-zones]
-        description: |
-          Build silver for every WMS table Ops and Finance will use: one current row per business key, deleted rows
-          flagged, types enforced. All WMS times are local to the row's warehouse (`warehouse.time_zone`), and downstream
-          needs both UTC and local. Child tables with no warehouse column still need a time zone.
-        acceptance_criteria:
-          - "Silver models for all WMS tables, with primary-key uniqueness and not-null tests"
-          - "Every timestamp available in UTC and local time, correct across DST transitions (tested on a fall-back night)"
-          - "Deleted rows flagged with their detected-at time, not dropped"
-          - "Incremental where it pays off; full rebuild time documented"
-          - *git
-        depends_on: [P1.S4.T1, P1.S3.T7]
+        depends_on: [P1.S3.T3, P1.S3.T5]
       - id: P1.S4.T3
-        type: Task
-        summary: "Normalize units of measure"
-        estimate_hours: 3
-        due_day: 12
-        priority: High
-        components: [Modeling, Data Quality]
-        labels: [wms, units]
-        description: |
-          US sites record weights and dimensions in LB and IN; TOR1 and MTY1 use KG and CM. The unit is stored per row
-          (`weight_uom`, `dim_uom`), and some rows are wrong. Finance and Transportation will add weights across sites,
-          so silver must offer canonical units without losing the original values.
-        acceptance_criteria:
-          - "Canonical weight and dimension columns sit alongside the source values and units"
-          - "A DQ rule flags rows whose unit is implausible for their site or magnitude"
-          - "Canonical unit choice documented"
-          - *git
-        depends_on: [P1.S4.T2]
-      - id: P1.S4.T4
         type: Task
         summary: "Data-quality framework and results table"
         estimate_hours: 6
-        due_day: 13
+        due_day: 12
         priority: Highest
         components: [Data Quality]
-        labels: [dq, framework]
+        labels: [dq, framework, level-3]
         description: |
           Build or adopt a DQ framework where rules are declared, not hand-coded per table, and every evaluation is
           recorded. Sam wants to answer "what failed last night, how badly, and since when?" from one table.
@@ -739,15 +813,15 @@ stories:
           - "Error-level failures can block promotion to silver; warn-level failures cannot"
           - "Result history kept so trends can be charted on P1-D1"
           - *git
-        depends_on: [P1.S4.T1]
-      - id: P1.S4.T5
+        depends_on: [P1.S3.T8]
+      - id: P1.S4.T4
         type: Task
         summary: "Quarantine and re-processing"
         estimate_hours: 4
         due_day: 13
         priority: High
         components: [Data Quality]
-        labels: [dq, quarantine]
+        labels: [dq, quarantine, level-3]
         description: |
           Rows that fail error-level rules must not reach silver, and must not disappear either. They go somewhere visible
           with a reason, someone fixes the cause (or the rule), and the rows flow on without reloading everything.
@@ -757,36 +831,39 @@ stories:
           - "Re-processing after a rule change or source fix documented and tested"
           - "Quarantine volume per table available for P1-D1"
           - *git
-        depends_on: [P1.S4.T4]
-      - id: P1.S4.T6
+        depends_on: [P1.S4.T3]
+      - id: P1.S4.T5
         type: Task
         summary: "Data-quality rules for the WMS"
         estimate_hours: 4
-        due_day: 14
+        due_day: 13
         priority: High
         components: [Data Quality]
-        labels: [dq, wms]
+        labels: [dq, wms, level-2]
         description: |
           Write the rules that matter for WMS data. The simulator's defect categories (Control Center → DQ) are a starting
           list, but think like Ops and Finance: what would make a number on a dashboard wrong? Check with Marcus Bell which
           defects are plausible in the real WMS and who should own each rule.
+
+          **Where to start:** Control Center → DQ lists the defect categories. Write one rule per bullet in the criteria below, then check with
+          Marcus Bell which defects are plausible in the real WMS.
         acceptance_criteria:
           - "Rules cover orphan references, duplicate business keys, missing required values, negative quantities, shipped more than ordered, sentinel and future dates, key whitespace and case, header vs line totals, and unit plausibility"
           - "Each rule has a severity and an owner"
           - "Rules run on every load and write to the results table"
           - *git
-        depends_on: [P1.S4.T4, P1.S4.T2]
-      - id: P1.S4.T7
+        depends_on: [P1.S4.T3, P1.S3.T9]
+      - id: P1.S4.T6
         type: Task
         summary: "Cross-system client key check"
         estimate_hours: 3
         due_day: 14
         priority: High
         components: [Data Quality]
-        labels: [dq, crosswalk, ax2012, salesforce, wms]
+        labels: [dq, crosswalk, ax2012, salesforce, wms, level-3]
         description: |
           Finance, Sales and Ops each keep their own client list. Before Finance starts relying on the joins in Project 3,
-          Sam wants to know how trustworthy they are. Using the snapshots from P1.S3.T8, measure how well WMS owners, AX
+          Sam wants to know how trustworthy they are. Using the snapshots from P1.S3.T7, measure how well WMS owners, AX
           customers and Salesforce accounts line up.
 
           Dana Whitfield owns Salesforce data entry; Priya Raman owns AX customer setup; Marcus Bell owns the WMS owner table.
@@ -796,25 +873,27 @@ stories:
           - "Findings shared with the owners; who you told and what they said recorded"
           - "Check runs daily and feeds P1-D1"
           - *git
-        depends_on: [P1.S3.T8, P1.S4.T4]
-      - id: P1.S4.T8
+        depends_on: [P1.S3.T7, P1.S4.T3]
+      - id: P1.S4.T7
         type: Task
         summary: "Measure DQ precision and recall against the answer key"
         estimate_hours: 2
         due_day: 14
         priority: Medium
         components: [Data Quality]
-        labels: [dq, answer-key]
+        labels: [dq, answer-key, level-2]
         description: |
           The simulator logs every defect it injects. Once your rules are in place (not before; it's an honor system), run
           the scoring script described on the answer-key handbook page and see what you caught, what you missed and what
           you flagged wrongly. This is how you calibrate rules instead of guessing.
+
+          **Where to start:** The answer-key handbook page has the scoring command. Score, read the misses, change one rule, score again.
         acceptance_criteria:
           - "Precision and recall per defect category recorded in the PR description"
           - "At least one rule improved because of a miss or a false positive"
           - "Categories you deliberately don't catch yet listed with the reason"
           - *git
-        depends_on: [P1.S4.T6]
+        depends_on: [P1.S4.T5]
 
   # ---------------------------------------------------------------- S5
   - id: P1.S5
@@ -824,14 +903,14 @@ stories:
     priority: High
     story_points: 8
     sprint: 2
-    due_day: 17
+    due_day: 18
     components: [Orchestration, CI/CD]
-    labels: [orchestration, ci, cd, alerting, reliability]
+    labels: [orchestration, ci, cd, alerting, reliability, iac, level-3]
     description: |
       > "Right now the pipeline runs when you run it. I need it to run when nobody's watching, recover by itself when
       > something blips, and tell IT when it can't." (Sam)
 
-      Sam also needs every change checked before it reaches prod.
+      Sam also needs every change checked before it reaches prod, and everything you created by hand back in code.
 
       **Requirements from IT**
       - A scheduled daily run end to end (extract → bronze → silver → DQ), plus an on-demand run.
@@ -844,17 +923,19 @@ stories:
       Part of the pipeline runs on-prem and part in the cloud, and orchestration has to cover both.
 
       **Definition of Done**
-      - All sub-tasks done; the orchestration ADR is accepted
+      - All sub-tasks done; the orchestration and infrastructure-as-code ADRs are accepted
       - Five consecutive scheduled runs succeeded with no manual steps (run history linked)
+      - dev and prod are reproducible from the repository; dev has been torn down and recreated from code once
       - The runbook covers rerun, backfill, catch-up and alert response
       - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
     acceptance_criteria:
       - "Daily schedule and on-demand trigger for the end-to-end pipeline, with task dependencies"
-      - "Transient failures retried with backoff; every step idempotent"
+      - "Transient failures retried with backoff; re-running a step creates no duplicates"
       - "Missed runs caught up automatically, in order"
       - "Alerts on failure, freshness breach and error-level DQ failures reach the channel agreed with Kevin O'Hara"
       - "CI runs on every PR (lint, unit tests, model build and tests against dev) and is required by branch protection"
       - "A merge to main deploys to prod without manual steps; deployments are versioned"
+      - "Environment objects are created from code in the repository, not by hand"
       - "Runbook in the repository"
     depends_on: [P1.S4]
     tasks:
@@ -865,7 +946,7 @@ stories:
         due_day: 15
         priority: Highest
         components: [Orchestration]
-        labels: [orchestration, adr]
+        labels: [orchestration, adr, level-3]
         description: |
           Choose where orchestration lives (on-prem, cloud or split) given your connectivity ADR and the free-tier limits,
           record the choice in an ADR, and wire the full flow with dependencies. Run history must be queryable; P1-D1
@@ -876,18 +957,19 @@ stories:
           - "Dependencies enforced: silver doesn't run on a failed extract"
           - "Run and step history (start, end, status, rows, retries) persisted to a table"
           - *git
-        depends_on: [P1.S4.T2, P1.S4.T4]
+        depends_on: [P1.S3.T9, P1.S4.T3]
       - id: P1.S5.T2
         type: Task
-        summary: "Retries, idempotency and catch-up"
+        summary: "Retries and catch-up"
         estimate_hours: 3
         due_day: 15
         priority: High
         components: [Orchestration]
-        labels: [reliability, orchestration]
+        labels: [reliability, orchestration, level-3]
         description: |
-          Make failures boring. Transient errors retry with backoff; permanent ones fail fast. Re-running any step for any
-          window gives the same result. If the machine was off for two days, the next run processes both days, in order.
+          Make failures boring. Transient errors retry with backoff; permanent ones fail fast. If the machine was off for two
+          days, the next run processes both days, in order. Re-running a step for a window must give the same result; the
+          simplest way is for each step to replace its window rather than add to it. Project 6 comes back to this properly.
         acceptance_criteria:
           - "Retry policy per step type documented"
           - "Killing a run midway and re-running it produces no duplicates or gaps (tested)"
@@ -901,10 +983,13 @@ stories:
         due_day: 16
         priority: High
         components: [Orchestration]
-        labels: [alerting, observability]
+        labels: [alerting, observability, level-2]
         description: |
           Kevin O'Hara is on call for infrastructure. Ask him how IT wants to be alerted, and how it doesn't: nobody wants
           forty e-mails for one root cause. Every alert must be actionable.
+
+          **Where to start:** Ask Kevin O'Hara which channel he wants. Then make one pipeline step fail on purpose and get that one alert through
+          before adding the others.
         acceptance_criteria:
           - "Alerts fire on pipeline failure, freshness-SLA breach and error-level DQ failures"
           - "Each alert names the run, step, table, error and the runbook section to follow"
@@ -919,17 +1004,20 @@ stories:
         due_day: 16
         priority: Highest
         components: [CI/CD]
-        labels: [ci, git]
+        labels: [ci, git, level-2]
         description: |
           Every PR is checked automatically before it can merge: the same lint as pre-commit, unit tests, and a build and
           test of changed models against dev with a small dataset. CI runs often, so keep CI minutes and platform compute small.
+
+          **Where to start:** The project brief's *CI on every pull request* is the spec. Start with one GitHub Actions job that runs your
+          pre-commit hooks, get it green, then add tests and the model build.
         acceptance_criteria:
           - "CI runs on every PR (GitHub Actions or equivalent)"
           - "Lint (ruff, sqlfluff, gitleaks, commit messages), unit tests and model build and tests must pass before merge"
           - "CI status check required by branch protection on main"
           - "Typical CI duration and platform compute per run documented"
           - *git
-        depends_on: [P1.S1.T5, P1.S4.T1]
+        depends_on: [P1.S1.T5, P1.S3.T8]
       - id: P1.S5.T5
         type: Task
         summary: "Continuous deployment to prod"
@@ -937,10 +1025,13 @@ stories:
         due_day: 17
         priority: High
         components: [CI/CD]
-        labels: [cd, release]
+        labels: [cd, release, level-2]
         description: |
           Prod changes only through a merge to `main`. Deploy automatically (or with one documented approval step), make
           the deployed version visible, and know how to roll back.
+
+          **Where to start:** Add a second GitHub Actions workflow that runs on a push to `main`, using a prod-scoped secret. Deploy one model
+          first. The project brief's *Environments and infrastructure* has the rule it enforces.
         acceptance_criteria:
           - "A merge to main deploys to prod with no manual steps, or one documented approval"
           - "The deployed version is visible in prod (for example a version table or tag)"
@@ -955,7 +1046,7 @@ stories:
         due_day: 17
         priority: Highest
         components: [Orchestration, Ingestion]
-        labels: [incident, idempotency]
+        labels: [incident, idempotency, level-3]
         description: |
           **Reported by Kevin O'Hara (IT Infrastructure), Monday 07:40:**
           > "The data box was powered off from Friday night to Monday for the building power work. When it came back the
@@ -975,19 +1066,44 @@ stories:
         type: Task
         summary: "Write the runbook"
         estimate_hours: 2
-        due_day: 17
+        due_day: 18
         priority: Medium
         components: [Documentation, Orchestration]
-        labels: [runbook, docs]
+        labels: [runbook, docs, level-2]
         description: |
           Write the runbook IT would use at 3 a.m. without you: how to check health, rerun a step, backfill a window,
           rotate a secret, respond to each alert, and what normal looks like.
+
+          **Where to start:** Copy your alert list in as headings, one section per alert. Then do each procedure once as you write it. Kevin O'Hara
+          is the reader; ask him what he'd want at 3 a.m.
         acceptance_criteria:
           - "Runbook has a section per alert type"
           - "Rerun, backfill, catch-up and secret-rotation procedures each tested once"
           - "Linked from the README and from alert messages"
           - *docs
         depends_on: [P1.S5.T3, P1.S5.T5]
+      - id: P1.S5.T8
+        type: Task
+        summary: "Infrastructure as code for the platform"
+        estimate_hours: 4
+        due_day: 18
+        priority: High
+        components: [Platform, CI/CD]
+        labels: [iac, adr, level-3]
+        description: |
+          dev and prod must be reproducible from the repository. You kept a list in P1.S2.T2 of what you made by hand; put it in
+          code. Pick an infrastructure-as-code approach that fits your platform and the free tier, and record why in an ADR.
+          Options include Terraform providers, Databricks Asset Bundles and SQL migration tools, or something else you can
+          justify. Recreate dev from scratch once to prove it.
+
+          If you're on the Snowflake trial, this is what makes day 31 a non-event.
+        acceptance_criteria:
+          - "ADR (infrastructure as code) accepted"
+          - "Schemas or catalogs, compute, service identity and grants defined in code"
+          - "dev torn down and recreated from code with no manual steps; time recorded"
+          - "You can tell how you'd notice someone changing prod by hand (drift check documented)"
+          - *git
+        depends_on: [P1.S2.T2, P1.S5.T5]
 
   # ---------------------------------------------------------------- S6
   - id: P1.S6
@@ -999,7 +1115,7 @@ stories:
     sprint: 2
     due_day: 20
     components: [Dashboards]
-    labels: [dashboard, observability, finops]
+    labels: [dashboard, observability, finops, level-3]
     attachments: [wireframes/P1-D1.svg]
     description: |
       > "Every morning I want to open one page and know whether yesterday's data can be trusted, before Luis or Rebecca
@@ -1046,10 +1162,13 @@ stories:
         due_day: 18
         priority: High
         components: [Modeling]
-        labels: [observability, gold]
+        labels: [observability, gold, level-2]
         description: |
           Turn the run history from P1.S5 into something a dashboard can read: runs, steps, durations, rows in and out,
           retries and failures, by environment.
+
+          **Where to start:** The run and step history table from P1.S5.T1. Write one query that shows last night's run, then shape the gold tables
+          around what P1-D1 needs from it.
         acceptance_criteria:
           - "Gold tables for runs and steps with status, timings, rows and retry counts"
           - "Duration trend per step available (p50 and p95)"
@@ -1063,7 +1182,7 @@ stories:
         due_day: 18
         priority: High
         components: [Modeling]
-        labels: [observability, freshness]
+        labels: [observability, freshness, level-3]
         description: |
           For each source table: how old is the newest data, how does today's volume compare with a normal day like it,
           and how many inserts, updates and deletes did you capture? Normal has to account for weekly seasonality (Sundays
@@ -1081,11 +1200,14 @@ stories:
         due_day: 19
         priority: Medium
         components: [Modeling, Platform]
-        labels: [finops]
+        labels: [finops, level-2]
         description: |
           Sam wants to see spend, or free-quota consumption, next to the work that caused it. Use what your platform
           exposes (system or usage tables, account usage, query history). If the free tier hides billing data, choose a
           defensible proxy and label it clearly on the dashboard.
+
+          **Where to start:** Your platform's system or usage tables (`system.billing` on Databricks, `ACCOUNT_USAGE` on Snowflake, where your tier
+          exposes them), and the baseline day you recorded in P1.S2.T5.
         acceptance_criteria:
           - "Daily usage by environment, and by pipeline step where attributable"
           - "Month-to-date usage vs budget or quota, with a projection"
@@ -1094,38 +1216,25 @@ stories:
         depends_on: [P1.S2.T5, P1.S5.T1]
       - id: P1.S6.T4
         type: Task
-        summary: "Build P1-D1 Data Platform Health"
+        summary: "Build P1-D1 Data Platform Health and lock down access"
         estimate_hours: 6
         due_day: 19
         priority: High
         components: [Dashboards]
-        labels: [dashboard, brand]
+        labels: [dashboard, brand, access, performance, level-3]
         description: |
           Build the dashboard to the P1-D1 spec and wireframe, using the Harborline brand kit. Picture Sam reading it in
-          30 seconds at 7 a.m.: the top row alone should tell him whether anything is wrong.
+          30 seconds at 7 a.m.: the top row alone should tell him whether anything is wrong. Then restrict it to IT and prove
+          the performance target holds.
         acceptance_criteria:
           - "Every KPI and visual in the P1-D1 spec present"
           - "Brand kit applied: logo lockup, IT accent, background template, palette, number formats"
           - "Footer shows data freshness and dashboard version"
-          - "Every view under 3 seconds (measured)"
-          - *git
-        depends_on: [P1.S6.T1, P1.S6.T2, P1.S6.T3, P1.S4.T7]
-      - id: P1.S6.T5
-        type: Task
-        summary: "Lock down access and verify performance"
-        estimate_hours: 1
-        due_day: 20
-        priority: High
-        components: [Dashboards, Security]
-        labels: [access, performance]
-        description: |
-          Restrict the dashboard to IT and prove the performance target holds.
-        acceptance_criteria:
+          - "Every view under 3 seconds; cold and warm load times recorded per view"
           - "Access restricted per the spec and tested with a non-IT identity, or the free-tier limitation documented"
-          - "Cold and warm load times recorded per view"
           - *git
-        depends_on: [P1.S6.T4]
-      - id: P1.S6.T6
+        depends_on: [P1.S6.T1, P1.S6.T2, P1.S6.T3, P1.S4.T6]
+      - id: P1.S6.T5
         type: Task
         summary: "UAT sign-off from Iris Novak for P1-D1"
         estimate_hours: 4
@@ -1133,7 +1242,7 @@ stories:
         priority: Highest
         reporter: iris.novak
         components: [Dashboards, Data Quality]
-        labels: [uat, sign-off, reconciliation]
+        labels: [uat, sign-off, reconciliation, level-2]
         description: |
           Nothing goes to Sam Okafor until Iris Novak (Business Performance Manager) has signed it off. She ties
           your numbers back to the source systems herself, checks every KPI against your metric catalog and the
@@ -1147,26 +1256,32 @@ stories:
 
           First time only: save Iris's prompt from the team page (Dashboard sign-off) and download one source extract,
           so the steps are familiar before the deadline.
+
+          **Where to start:** The team page's *Dashboard sign-off* section has every step, in order. If you haven't met Iris Novak yet, do that first
+          (Getting Started → *Your AI chat team*).
         acceptance_criteria:
           - "A submission for each dashboard: every page as PNG, CSV exports of the headline visuals and the end tables behind them, data-as-of and sim clock, a copy of the metric catalog, bridge.csv and the matching source extract"
           - "Iris's review report committed under uat/ for every round"
           - "No open Blocker or Major findings; agreed Minors ticketed"
           - "Verdict Signed off (or Signed off with conditions) for P1-D1"
-        depends_on: [P1.S6.T5]
-      - id: P1.S6.T7
+        depends_on: [P1.S6.T4]
+      - id: P1.S6.T6
         type: Task
         summary: "Readout to Sam and release v0.1.0"
         estimate_hours: 2
         due_day: 20
         priority: High
         components: [Documentation]
-        labels: [readout, release]
+        labels: [readout, release, level-2]
         description: |
           Walk Sam through P1-D1 in five minutes: what's healthy, what isn't, and one thing you'd fix next. Record it; it's
           your portfolio demo too. Then tag the release and close the epic.
+
+          **Where to start:** Write three lines first: what's healthy, what isn't, what you'd fix next. Then open P1-D1 and talk Sam through it.
+          The project brief's *Releases, CHANGELOG and ADRs* has the tag commands.
         acceptance_criteria:
           - "Readout delivered and recording (or script plus screenshots) linked here"
           - "Sam's questions and feedback captured as new tickets"
           - "v0.1.0 tagged on main; CHANGELOG lists every ticket key in the release"
           - "Retro notes (keep / change / try) committed"
-        depends_on: [P1.S6.T6]
+        depends_on: [P1.S6.T5]

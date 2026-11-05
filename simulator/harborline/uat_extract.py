@@ -122,7 +122,7 @@ class Project:
     dashboards: tuple[tuple[str, str], ...]
     files: tuple[Src, ...]
     keys: tuple[Key, ...] = ()
-    business_files: tuple[str, ...] = ()  # budget | rate_cards | warehouse_master
+    business_files: tuple[str, ...] = ()  # budget | rate_cards | diesel_reference | warehouse_master
     edi_940: bool = False
     platform: bool = False
     periods: str = "two"  # two | latest | iot | none (see default_periods)
@@ -437,14 +437,8 @@ P4 = Project(
             f"({sub('wms.shipment', 'shipment_id', P4_SHIPMENTS)}) UNION SELECT unnest(%(bill_trk)s::text[])",
         ),
     ),
-    business_files=("rate_cards",),
+    business_files=("rate_cards", "diesel_reference"),
     not_in_extract=(
-        Gap(
-            "P4-D1",
-            "Fuel surcharge variance (expected %)",
-            "Needs the weekly EIA diesel price, which is public reference "
-            "data. The carriers' fuel tables are in the rate card workbooks; the applied % is on the bill lines.",
-        ),
         Gap(
             "P4-D1",
             "Disputable now",
@@ -1646,14 +1640,19 @@ class Extractor:
             member = f"files/{p.name}"
             with p.open("rb") as fh, zf.open(member, "w", force_zip64=True) as dest:
                 shutil.copyfileobj(fh, dest, 1 << 20)
+            rows, cols = None, []
+            if p.suffix == ".csv":
+                with p.open(newline="", encoding="utf-8") as fh:
+                    table = list(csv.reader(fh))
+                rows, cols = len(table) - 1, table[0]
             self.add(
                 member,
                 "files",
                 BUSINESS_LABEL[kind],
                 why,
                 None,
-                None,
-                [],
+                rows,
+                cols,
                 [],
                 zf,
                 source=f"landing/files/{p.relative_to(base).as_posix()}",
@@ -1785,6 +1784,7 @@ def parse_940(data: bytes) -> list[dict[str, Any]]:
 BUSINESS_LABEL = {
     "budget": "budget workbook",
     "rate_cards": "carrier rate card workbook",
+    "diesel_reference": "weekly diesel reference file",
     "warehouse_master": "warehouse master workbook",
 }
 _RATE = re.compile(r"^([A-Z0-9]+)_rates_(\d{8})\.xlsx$")
@@ -1849,9 +1849,15 @@ def _warehouse_masters(base: Path, scope: Scope) -> list[tuple[Path, str]]:
     return out
 
 
+def _diesel_reference(base: Path, scope: Scope) -> list[tuple[Path, str]]:
+    path = base / "reference" / "diesel_weekly.csv"
+    return [(path, "the weekly price the rate cards' fuel tables read, whole series")] if path.exists() else []
+
+
 BUSINESS_FILES: dict[str, Callable[[Path, Scope], list[tuple[Path, str]]]] = {
     "budget": _budgets,
     "rate_cards": _rate_cards,
+    "diesel_reference": _diesel_reference,
     "warehouse_master": _warehouse_masters,
 }
 

@@ -663,15 +663,15 @@ export async function runScenario(id: string, params: Record<string, unknown>): 
 }
 
 export const connections = (): Connections => ({
-  postgres: { host: 'localhost', port: 5432, user: 'etl_reader', password: 'etl-reader-2026', databases: ['wms', 'ax2012', 'iot'] },
+  postgres: { host: 'localhost', port: 5432, user: 'etl_reader', password: 'created-by-setup', databases: ['wms', 'ax2012', 'iot'] },
   salesforce: {
     instance_url: 'http://localhost:8080/sfdc',
     token_url: 'http://localhost:8080/sfdc/services/oauth2/token',
-    client_id: '3MVG9harborline.etl.client',
-    client_secret: 'hl-sf-secret-7c41',
+    client_id: 'created-by-setup',
+    client_secret: 'created-by-setup',
     api_version: 'v67.0',
   },
-  carrier: { base_url: 'http://localhost:8080/carrier/v1', api_key: 'hl-carrier-live-5e2a9d' },
+  carrier: { base_url: 'http://localhost:8080/carrier/v1', api_key: 'created-by-setup' },
   landing_path_host_hint: 'C:\\dev\\harborline-lab\\landing',
 });
 

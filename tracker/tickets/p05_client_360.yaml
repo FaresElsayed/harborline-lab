@@ -43,632 +43,6 @@ epic:
   dashboards: [P5-D1, P5-D2]
 
 stories:
-  # ---------------------------------------------------------------- S1
-  - id: P5.S1
-    summary: "Salesforce at scale: full history, hard deletes, merges and schema drift"
-    type: Story
-    reporter: hannah.price
-    priority: High
-    story_points: 8
-    sprint: 1
-    due_day: 5
-    components: [Ingestion]
-    labels: [salesforce, bulk-api, incremental, data-contract]
-    description: |
-      In Billing Assurance you pulled the few Salesforce objects Finance needed. Client 360 needs everything:
-      Accounts, Contacts, Opportunities and their history, line items, products and price books, Contracts, Cases and Tasks.
-      All of it must be complete and current, and still correct after deletes and merges.
-
-      > "When Dana merges two duplicate accounts, my pipeline report shows the deal twice for a week. And Cases older than
-      > a couple of months seem to vanish from every extract I've ever been sent." (Hannah)
-
-      **What good looks like**
-      - Every object in scope is available in bronze and silver with full history (2 years on Medium, 3 on Large) and refreshed at least daily.
-      - A record that is deleted or merged in Salesforce stops counting downstream. Children of a merged record follow the surviving parent.
-      - A new custom field doesn't break anything and appears without a code change. Someone is told, so they can decide whether to model it.
-      - The pipeline stays inside the data team's API budget (5,000 calls/day), including on the day you re-sync everything.
-
-      **Facts and constraints**
-      - Query results come in pages of 2,000. Bulk API 2.0 query jobs return CSV pages with a locator.
-      - `/updated` covers the last 30 days and `/deleted` the last 15 days (the recycle bin). If the pipeline is down for longer
-        than that, it must recover without silent gaps.
-      - The org returns 18-character ids. Other systems and free text often hold the 15-character form.
-
-      **Talk to:** Dana Whitfield (Salesforce admin) about objects, merges, field changes and the API budget.
-
-      **Definition of Done**
-      - All sub-tasks done; acceptance criteria demonstrated on your full dataset with the simulator streaming
-      - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
-      - Data dictionary and data contract updated; CHANGELOG entry under *Unreleased*
-    acceptance_criteria:
-      - "All in-scope objects land in bronze and silver with full history and reconcile daily to Salesforce counts"
-      - "Hard deletes and merges are reflected downstream within one daily cycle"
-      - "A new custom field (schema_drift_release scenario) lands without code changes and raises an alert"
-      - "Measured API usage stays under 5,000 calls/day, including a full re-sync"
-      - "Recovery path for an outage longer than 15 days documented and tested"
-    depends_on: [P3.S2, P1.S5]
-    tasks:
-      - id: P5.S1.T1
-        type: Spike
-        summary: "Size the org: objects, row counts, change rates and API cost"
-        estimate_hours: 3
-        due_day: 1
-        priority: High
-        components: [Ingestion]
-        labels: [salesforce, spike]
-        description: |
-          Before you choose how to pull each object, measure it. For every object in scope, count the rows (deleted rows included)
-          and estimate the daily change volume. Then work out how many API calls a full load and a normal daily incremental
-          would cost with each approach the API offers.
-        acceptance_criteria:
-          - "Table per object: row count, deleted count, daily changes, chosen load method, estimated calls per run"
-          - "Total fits inside 5,000 calls/day with headroom for one full re-sync"
-          - &docs "Note committed via PR (docs/DATA-<n>-… branch, Conventional Commit with the key) and linked from this ticket"
-        depends_on: []
-      - id: P5.S1.T2
-        type: Task
-        summary: "Agree a Salesforce data contract with Dana"
-        estimate_hours: 2
-        due_day: 2
-        priority: Medium
-        components: [Ingestion]
-        labels: [salesforce, data-contract]
-        description: |
-          Dana changes the org and your pipeline depends on it. Agree in writing which objects and fields you rely on, which
-          fields are free text and which are validated, and how she'll warn you before field changes or merge clean-ups.
-          Also agree who fixes a wrong crosswalk field on an Account, and the API budget.
-        acceptance_criteria:
-          - "Contract lists objects, critical fields, owner, change-notice process and API budget"
-          - "Dana's answers (from your conversation with her) quoted in the PR description"
-          - *docs
-        depends_on: [P5.S1.T1]
-      - id: P5.S1.T3
-        type: Task
-        summary: "Backfill full history with Bulk API 2.0"
-        estimate_hours: 7
-        due_day: 3
-        priority: High
-        components: [Ingestion]
-        labels: [salesforce, bulk-api, backfill]
-        description: |
-          Load the full history of the high-volume objects through Bulk API 2.0 query jobs. Include deleted and merged records
-          where the API allows it. The backfill must be restartable: if it fails halfway, it resumes from where it stopped
-          without starting over or loading anything twice.
-        acceptance_criteria:
-          - "Bronze row counts per object match SELECT COUNT() at the backfill cut-off (deleted rows included where queried)"
-          - "A job killed mid-way resumes without duplicates (demonstrated and logged)"
-          - "API calls used by the backfill recorded against the budget"
-          - &git "Merged via PR from a feat/DATA-<n>-… branch; Conventional Commits carry the key; PR self-review done; CI green"
-        depends_on: [P5.S1.T1]
-      - id: P5.S1.T4
-        type: Task
-        summary: "Daily incremental sync including hard deletes"
-        estimate_hours: 6
-        due_day: 4
-        priority: High
-        components: [Ingestion]
-        labels: [salesforce, incremental, deletes]
-        description: |
-          After the backfill, keep every object current from the change feeds Salesforce offers, including records deleted
-          since the last run. Store the high-water marks the API returns rather than relying on your own clock. Decide what
-          happens when the pipeline has been down longer than the deleted window, and document it.
-        acceptance_criteria:
-          - "Inserts, updates and deletes made by a simulator batch appear downstream after the next run"
-          - "Watermarks come from the API response and persist between runs"
-          - "An outage longer than 15 days triggers a documented full reconciliation; deletes are never silently missed"
-          - "Daily incremental API cost measured and within budget"
-          - *git
-        depends_on: [P5.S1.T3]
-      - id: P5.S1.T5
-        type: Task
-        summary: "Handle Account and Contact merges (MasterRecordId)"
-        estimate_hours: 4
-        due_day: 4
-        priority: High
-        components: [Ingestion, Modeling]
-        labels: [salesforce, merges]
-        description: |
-          When Dana merges duplicates, the losing record is deleted and points to the survivor. Its Contacts, Opportunities
-          and Cases move to the survivor. Downstream must count the survivor once. Keep a merge history so that old ids
-          (in Cases, in the crosswalk, in other systems) still resolve.
-        acceptance_criteria:
-          - "Merge map maintained (loser → survivor, merge date), including chains A→B→C"
-          - "Run the sf_account_merge scenario: no downstream metric double-counts the merged account"
-          - "Any historical id resolves to its current survivor"
-          - *git
-        depends_on: [P5.S1.T4]
-      - id: P5.S1.T6
-        type: Task
-        summary: "Detect and absorb schema drift from describe"
-        estimate_hours: 4
-        due_day: 5
-        priority: Medium
-        components: [Ingestion]
-        labels: [salesforce, schema-drift]
-        description: |
-          Dana adds custom fields without telling anyone, and the simulator's schema-drift release does the same. Detect new,
-          removed and retyped fields on every run. New fields land in bronze automatically and nothing downstream breaks,
-          but someone is told.
-        acceptance_criteria:
-          - "Each run compares describe output with the last known schema and records the differences"
-          - "schema_drift_release scenario: pipeline stays green, the new field lands in bronze, an alert is raised"
-          - "Removed or retyped fields fail loudly and in a controlled way (never silent nulls)"
-          - *git
-        depends_on: [P5.S1.T4]
-      - id: P5.S1.T7
-        type: Task
-        summary: "Reconcile Salesforce bronze to source every day"
-        estimate_hours: 4
-        due_day: 5
-        priority: Medium
-        components: [Data Quality]
-        labels: [salesforce, reconciliation]
-        description: |
-          Prove completeness every day. Compare counts per object with Salesforce, confirm deleted ids were applied, and
-          check that ids are well formed. You need to match 15-character ids from other systems to 18-character ones.
-        acceptance_criteria:
-          - "Daily reconciliation per object (source, platform, difference) with a tolerance agreed with Hannah"
-          - "15-character ids convert to 18-character ids correctly (tested against known pairs from the API)"
-          - "A failing check marks downstream models stale and shows on the Data Platform Health dashboard"
-          - *git
-        depends_on: [P5.S1.T4]
-
-  # ---------------------------------------------------------------- S2
-  - id: P5.S2
-    summary: "Client master and crosswalk: one id per client across WMS, AX and Salesforce"
-    type: Story
-    reporter: omar.haddad
-    priority: High
-    story_points: 8
-    sprint: 1
-    due_day: 9
-    components: [Modeling, Data Quality]
-    labels: [mdm, crosswalk, scd2]
-    description: |
-      > "Every report I get starts with someone fixing the client list by hand. I want that to happen once, properly." (Omar)
-
-      Client identity is keyed by hand in three places:
-      - the WMS owner code (`owner.owner_code`, with `owner.erp_account_nbr` typed in by onboarding)
-      - the AX customer account (`custtable.accountnum`, with one row per legal entity, so a client served from the US and Canada has two)
-      - two custom fields on the Salesforce Account
-
-      Some of these are blank and some are typed wrong. The health score, the client portal (Project 8) and the executive
-      scorecard all depend on getting this right.
-
-      **What good looks like**
-      - One client key per real client, mapped to every WMS owner, every AX customer row and every Salesforce Account (merged ones included).
-      - Matches you're not sure about go to a steward list with an owner instead of being guessed.
-      - Written survivorship rules: which system wins for name, status, vertical, billing currency, account owner and billing address.
-      - Full history (SCD2), so that "active clients at the end of March" and "who owned this account last year" have answers.
-      - Prospects (Salesforce only) and former customers are in the master but clearly flagged.
-
-      **Talk to:** Omar and Hannah (what a client is, and what "active" means), Dana Whitfield (Account fields),
-      Priya Raman (`custtable`, date-effective addresses), Marcus Bell (owner status lifecycle in the WMS).
-
-      **Definition of Done**
-      - All sub-tasks done; crosswalk coverage and steward list reviewed with Omar
-      - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
-      - Data dictionary entries and model owner documented; CHANGELOG entry
-    acceptance_criteria:
-      - "Every WMS owner and AX customer row maps to exactly one client key"
-      - "≥ 98% of active clients matched automatically across all three systems; the rest are on the steward list with an owner"
-      - "Survivorship rules documented, agreed and implemented"
-      - "Client dimension keeps full history with no gaps or overlaps, and point-in-time questions are answerable"
-    depends_on: [P5.S1, P3.S1, P1.S3, P2.S1]
-    tasks:
-      - id: P5.S2.T1
-        type: Spike
-        summary: "Workshop: what counts as a client, and as an active one?"
-        estimate_hours: 3
-        due_day: 6
-        priority: High
-        components: [Modeling]
-        labels: [needs-clarification, definitions]
-        description: |
-          Omar and Hannah use the word "client" differently, and "active" has at least three meanings: contract active,
-          owner ACTIVE in the WMS, and shipped recently. Run a short session with both of them. Bring real examples: a client
-          with two AX entities, a prospect, a client that left, and a client that is onboarding. Write down the decisions.
-        acceptance_criteria:
-          - "Decision record: client grain, parent/child handling, prospects, former customers, and each definition of 'active' with its owner"
-          - "Anything they couldn't agree on is escalated to Daniel Reyes with your recommendation"
-          - "Definitions added to the metric catalog from Warehouse Performance"
-          - *docs
-        depends_on: []
-      - id: P5.S2.T2
-        type: Task
-        summary: "Build the cross-system client match"
-        estimate_hours: 7
-        due_day: 7
-        priority: High
-        components: [Modeling, Data Quality]
-        labels: [crosswalk]
-        description: |
-          Match WMS owners, AX customers (all legal entities) and Salesforce Accounts. People typed these keys, so expect
-          blanks, case and whitespace differences, and characters that look alike. Names differ in punctuation and legal
-          suffixes. Every match records the rule that produced it and a confidence level.
-        acceptance_criteria:
-          - "Every WMS owner and every AX customer row appears in the crosswalk exactly once"
-          - "≥ 98% of active clients matched automatically; the remainder go to the steward list"
-          - "No many-to-many match exists without a steward decision"
-          - "Match rules unit-tested with the nastiest real cases you found"
-          - *git
-        depends_on: [P5.S2.T1]
-      - id: P5.S2.T3
-        type: Task
-        summary: "Account team and ownership history (AE and CSM per client)"
-        estimate_hours: 3
-        due_day: 8
-        priority: Medium
-        components: [Modeling]
-        labels: [salesforce, ownership]
-        description: |
-          The pipeline and health views are sliced by Account Executive and Client Success Manager. The Account owner in
-          Salesforce is the AE, and account owners change over time. CSM assignment is not a Salesforce field today. Agree
-          with Omar on a client → CSM seed mapping kept in the repo until Dana adds a field.
-        acceptance_criteria:
-          - "Each client has a current AE and CSM with effective dates"
-          - "Owner changes over time are captured from Salesforce"
-          - "Inactive users are handled: no client is left without an owner in any book"
-          - *git
-        depends_on: [P5.S2.T2]
-      - id: P5.S2.T4
-        type: Task
-        summary: "Steward list and version-controlled overrides"
-        estimate_hours: 4
-        due_day: 8
-        priority: Medium
-        components: [Data Quality]
-        labels: [crosswalk, stewardship]
-        description: |
-          Unmatched and low-confidence rows need a human. Produce a steward list the source owners can act on: what's wrong,
-          which system to fix, and a suggested value. Keep a reviewed override file for decisions that can't be fixed at source.
-        acceptance_criteria:
-          - "Steward list grouped by owner (Dana / Priya / Marcus) with suggested fixes"
-          - "Overrides live in the repo, change only by PR, and are applied before survivorship"
-          - "When a value is fixed at source, the build reports that its override is now redundant"
-          - *git
-        depends_on: [P5.S2.T2]
-      - id: P5.S2.T5
-        type: Task
-        summary: "Survivorship rules per attribute"
-        estimate_hours: 3
-        due_day: 8
-        priority: Medium
-        components: [Modeling]
-        labels: [needs-clarification, survivorship]
-        description: |
-          When the systems disagree on name, vertical, billing currency, status, billing address or account owner, which one
-          wins? Propose a rule for each attribute, review the rules with Omar, Hannah and Priya, then implement them.
-        acceptance_criteria:
-          - "Rules table per attribute, with rationale and the person who agreed it"
-          - "Golden record populated for every client"
-          - "Conflict counts per attribute reported, so source owners can see where their systems disagree"
-          - *git
-        depends_on: [P5.S2.T2]
-      - id: P5.S2.T6
-        type: Task
-        summary: "Client dimension with history (SCD2)"
-        estimate_hours: 6
-        due_day: 9
-        priority: High
-        components: [Modeling]
-        labels: [scd2]
-        description: |
-          Build the conformed client dimension with full history of the attributes that change: status, tier, AE, CSM,
-          credit limit, payment terms, blocked flag and billing address. AX addresses are already date-effective. Late
-          corrections must not create overlapping or gapped history.
-        acceptance_criteria:
-          - "Exactly one current row per client; no overlaps or gaps in validity ranges (tested)"
-          - "Point-in-time query answers: active clients and their owners at any month-end in the history"
-          - "Re-running the build creates no spurious versions"
-          - *git
-        depends_on: [P5.S2.T3, P5.S2.T4, P5.S2.T5]
-      - id: P5.S2.T7
-        type: Task
-        summary: "Tests and documentation for the client master"
-        estimate_hours: 2
-        due_day: 9
-        priority: Medium
-        components: [Data Quality]
-        labels: [testing, documentation]
-        description: |
-          The client master is about to become a dependency for the portal, the scorecard and the health score. Lock it
-          down with tests and document it so the next person can trust it.
-        acceptance_criteria:
-          - "Tests: key uniqueness, referential integrity from every fact, coverage of all active WMS owners"
-          - "Data dictionary entries for the crosswalk and the dimension, with owner and refresh SLA"
-          - *git
-        depends_on: [P5.S2.T6]
-
-  # ---------------------------------------------------------------- S3
-  - id: P5.S3
-    summary: "Link Salesforce Cases to the orders and shipments they're about"
-    type: Story
-    reporter: omar.haddad
-    priority: High
-    story_points: 5
-    sprint: 2
-    due_day: 13
-    components: [Modeling]
-    labels: [salesforce, cases, text-matching]
-    description: |
-      > "My CSMs write the order number in the subject, the description, the custom field, or nowhere at all. I can't tell
-      > which warehouse or carrier causes most of our cases." (Omar)
-
-      Cases have an optional WMS order number field and a tracking number field. Most of the evidence, though, is free
-      text in Subject and Description: WMS order numbers, client PO numbers, and carrier tracking numbers in many formats.
-      A case can mention several of them, sometimes with typos. Shipments get a new tracking number when a label is
-      reprinted. Cases can also be created before the order exists in the WMS, for example when a client calls about an
-      order they just sent.
-
-      **What good looks like**
-      - A case → order / shipment bridge with link type and confidence. Precision ≥ 95% and recall ≥ 85%, measured on a labelled sample.
-      - Case rates by warehouse, carrier, client and reason that Omar trusts.
-      - Unlinked cases are explainable. Billing questions, for example, often have no order.
-
-      **Talk to:** Omar (what counts as a correct link; Reason vs Root Cause), Dana Whitfield (how the custom fields are
-      meant to be filled), Beth Kowalczyk (carrier tracking formats) if you need her.
-
-      **Definition of Done**
-      - All sub-tasks done; quality measured on the labelled sample and accepted by Omar
-      - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
-      - Matching rules and taxonomy documented; CHANGELOG entry
-    acceptance_criteria:
-      - "Bridge table links cases to orders and shipments with link type, confidence and evidence"
-      - "Precision ≥ 95% and recall ≥ 85% on a labelled sample of ≥ 200 cases, enforced in CI"
-      - "Case facts carry client, warehouse and carrier keys where linked"
-      - "Links update when the order or a reprinted label arrives after the case"
-    depends_on: [P5.S1, P2.S2, P4.S1]
-    tasks:
-      - id: P5.S3.T1
-        type: Spike
-        summary: "Profile case text and identifier formats"
-        estimate_hours: 3
-        due_day: 11
-        priority: High
-        components: [Modeling]
-        labels: [cases, spike]
-        description: |
-          Profile Subject, Description and the custom fields across the full history of Cases. Find how often each identifier type
-          appears, which formats show up, and which noise looks like an identifier (phone numbers, invoice numbers,
-          dates).
-        acceptance_criteria:
-          - "Frequencies by identifier type and case origin"
-          - "Identifier format catalog (WMS order, client PO, each carrier's tracking format) with real examples"
-          - *docs
-        depends_on: []
-      - id: P5.S3.T2
-        type: Task
-        summary: "Agree the case taxonomy with Omar"
-        estimate_hours: 2
-        due_day: 11
-        priority: Medium
-        components: [Modeling]
-        labels: [cases, needs-clarification, definitions]
-        description: |
-          Cases carry a Reason picklist and a Root Cause picklist, and CSMs fill them inconsistently. Agree with Omar which
-          one drives reporting, how "Unknown" is treated, and how spam, duplicate and merged cases are excluded.
-        acceptance_criteria:
-          - "Decision recorded in the metric catalog"
-          - "Mapping table version-controlled"
-          - *git
-        depends_on: []
-      - id: P5.S3.T3
-        type: Task
-        summary: "Extract identifiers and match them to orders and shipments"
-        estimate_hours: 7
-        due_day: 12
-        priority: High
-        components: [Modeling]
-        labels: [cases, text-matching]
-        description: |
-          Extract candidate identifiers from case fields and text and resolve them to WMS orders, shipments (including
-          tracking numbers replaced by a label reprint) and carrier tracking. Handle multiple candidates, typos, and
-          identifiers that belong to a different client's order.
-        acceptance_criteria:
-          - "Bridge rows carry link type (field / subject / description), confidence and the matched evidence"
-          - "Identifiers matching another client's order are flagged, never linked"
-          - "Re-running produces identical links"
-          - *git
-        depends_on: [P5.S3.T1]
-      - id: P5.S3.T4
-        type: Task
-        summary: "Labelled sample and quality gate"
-        estimate_hours: 3
-        due_day: 13
-        priority: High
-        components: [Data Quality]
-        labels: [cases, testing]
-        description: |
-          Hand-label a random sample of at least 200 cases, stratified by origin, and measure the linker's precision and
-          recall. Keep the sample in the repo as a regression test.
-        acceptance_criteria:
-          - "Precision ≥ 95% and recall ≥ 85% on the sample, or a documented gap that Omar accepts"
-          - "Sample stored as a test fixture; CI fails if quality drops below the gate"
-          - *git
-        depends_on: [P5.S3.T3]
-      - id: P5.S3.T5
-        type: Task
-        summary: "Case facts and link-quality monitoring"
-        estimate_hours: 3
-        due_day: 13
-        priority: Medium
-        components: [Modeling]
-        labels: [cases]
-        description: |
-          Publish case facts joined to the client master and the bridge: open and close times, escalations, credits and
-          link status. Monitor the link rate by origin and by client, so you notice when CSM behaviour changes.
-        acceptance_criteria:
-          - "Case fact with client key, order and shipment keys where linked, and durations in hours"
-          - "Daily link rate by origin and client"
-          - "Spam, duplicate and merged cases excluded per the taxonomy decision"
-          - *git
-        depends_on: [P5.S3.T3, P5.S3.T2]
-      - id: P5.S3.T6
-        type: Task
-        summary: "Late links: cases created before the order or label exists"
-        estimate_hours: 2
-        due_day: 13
-        priority: Medium
-        components: [Modeling]
-        labels: [cases, incremental]
-        description: |
-          A client often opens a case before the WMS has the order, or before a reprinted label exists. Make sure links
-          are re-evaluated when new orders and shipments arrive and when a case is edited, without rebuilding everything.
-        acceptance_criteria:
-          - "A case whose order arrives a day later gets linked on the next run (tested)"
-          - "Editing a case's text updates its links"
-          - *git
-        depends_on: [P5.S3.T3]
-
-  # ---------------------------------------------------------------- S4
-  - id: P5.S4
-    summary: "Client health score, written back to Salesforce every night"
-    type: Story
-    reporter: omar.haddad
-    priority: High
-    story_points: 8
-    sprint: 2
-    due_day: 16
-    components: [Modeling, Reverse ETL]
-    labels: [health-score, reverse-etl, salesforce]
-    description: |
-      > "I want a number from 0 to 100 on every account in Salesforce that tells my CSMs who to call this week, and a
-      > reason they can say out loud." (Omar)
-      >
-      > "If it's on the account page, it had better not contradict what my AEs tell the client about their growth." (Hannah)
-
-      The Salesforce Account has two fields reserved for this: `Health_Score__c` (0–100) and `Churn_Risk__c`
-      (Low / Medium / High). They are the only fields the integration user may update. They're written through the REST
-      API one record per call, inside Dana's API budget.
-
-      What goes into the score is for you and Omar to decide. It must be explainable, built from data you already have
-      (orders, cases, service levels, payments, contract dates and so on), and backtested against clients who actually left.
-
-      **What good looks like**
-      - Weekly score history per client, with the top drivers stored next to the score.
-      - A backtest showing what the score said about former customers 3 and 6 months before they left.
-      - A nightly write-back that sends only changed values, retries safely and audits every write.
-      - Dana and Omar sign off a dry run before the first live write.
-
-      **Talk to:** Omar and Hannah (definition, risk bands), Alan Brooks (payment behaviour inputs), Dana Whitfield (write-back rules, API budget).
-
-      **Definition of Done**
-      - All sub-tasks done; dry run approved and first live write completed
-      - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
-      - Score definition in the metric catalog; write-back runbook in the repo; CHANGELOG entry
-    acceptance_criteria:
-      - "Score definition and risk bands signed off by Omar and Hannah and recorded in the metric catalog"
-      - "Backtest on former customers documented, including the lead time the score would have given"
-      - "Every active client's surviving Account carries the current score and risk band by 06:30 ET"
-      - "Write-back is idempotent, audited, within the API budget and never targets merged or deleted accounts"
-    depends_on: [P5.S2, P5.S3, P2.S5, P3.S5]
-    tasks:
-      - id: P5.S4.T1
-        type: Task
-        summary: "Health score definition workshop with Omar and Hannah"
-        estimate_hours: 3
-        due_day: 11
-        priority: High
-        components: [Modeling]
-        labels: [health-score, needs-clarification, definitions]
-        description: |
-          Omar wants a retention signal. Hannah wants it to reflect growth as well. Bring a short list of candidate inputs
-          and say which data each one needs. Agree the components and weights (or a ranking approach), the bands for
-          Churn Risk, and what happens to new clients with little history.
-        acceptance_criteria:
-          - "Signed-off definition in the metric catalog, with Omar as owner"
-          - "Risk bands and the minimum-history rule written down"
-          - "Open disagreements documented with a decision owner"
-          - *docs
-        depends_on: []
-      - id: P5.S4.T2
-        type: Task
-        summary: "Client features mart (point-in-time correct)"
-        estimate_hours: 7
-        due_day: 14
-        priority: High
-        components: [Modeling]
-        labels: [health-score, features]
-        description: |
-          Build weekly per-client features for the agreed inputs on top of the client master and your existing marts
-          (orders, OTIF, cases, AR/DSO, contracts). Each feature must be computable as of any past week, with no data from
-          after that week leaking in, so the backtest is honest.
-        acceptance_criteria:
-          - "Feature table per client-week covering the full history"
-          - "Point-in-time correctness tested: no feature uses data after its week end"
-          - "Each feature documented with its source and owner"
-          - *git
-        depends_on: [P5.S4.T1]
-      - id: P5.S4.T3
-        type: Task
-        summary: "Score, risk band and backtest"
-        estimate_hours: 5
-        due_day: 15
-        priority: High
-        components: [Modeling]
-        labels: [health-score]
-        description: |
-          Compute the score and risk band per client-week and backtest them against former customers. Show Omar how much
-          warning his team would have had.
-        acceptance_criteria:
-          - "Score history table for all clients"
-          - "Backtest: score and band for every former customer 3 and 6 months before they left"
-          - "Share of active clients in High risk falls within a range Omar agrees is plausible"
-          - *git
-        depends_on: [P5.S4.T2]
-      - id: P5.S4.T4
-        type: Task
-        summary: "Explain the score: top drivers per client"
-        estimate_hours: 2
-        due_day: 15
-        priority: Medium
-        components: [Modeling]
-        labels: [health-score, explainability]
-        description: |
-          For each client-week, store the two or three drivers that moved the score most, in plain words a CSM can say on a call.
-        acceptance_criteria:
-          - "Drivers stored next to each score"
-          - "Wording reviewed by Omar"
-          - *git
-        depends_on: [P5.S4.T3]
-      - id: P5.S4.T5
-        type: Task
-        summary: "Write Health_Score__c and Churn_Risk__c back to Salesforce"
-        estimate_hours: 7
-        due_day: 16
-        priority: Highest
-        components: [Reverse ETL]
-        labels: [reverse-etl, salesforce, api-limits]
-        description: |
-          Run a nightly reverse ETL to surviving Salesforce Accounts that sends only values changed since the last
-          successful write. It must handle 4xx and 5xx responses and the daily limit correctly, never write to merged or
-          deleted accounts, and be safe to re-run. Start with a dry run for Dana and Omar to review.
-        acceptance_criteria:
-          - "Dry-run report approved by Dana and Omar before the first live write"
-          - "Only changed values are sent; calls per night recorded and within budget"
-          - "Every write audited: account, old value, new value, run id, HTTP status"
-          - "Re-running the same night sends nothing; 403 and 5xx responses leave no partial state"
-          - *git
-        depends_on: [P5.S4.T3, P5.S1.T5]
-      - id: P5.S4.T6
-        type: Task
-        summary: "Schedule, alert and document the write-back"
-        estimate_hours: 2
-        due_day: 16
-        priority: Medium
-        components: [Orchestration]
-        labels: [reverse-etl, runbook]
-        description: |
-          Put the score build and write-back on the nightly schedule after their inputs, and alert on failure. Write the
-          runbook: how to pause the write-back, how to re-send one account, and how to roll back a bad night.
-        acceptance_criteria:
-          - "Runs only when upstream models are fresh; otherwise it skips and alerts"
-          - "Failure alert reaches you"
-          - "Runbook in the repo"
-          - *git
-        depends_on: [P5.S4.T5]
-
   # ---------------------------------------------------------------- S5
   - id: P5.S5
     summary: "EDI order reconciliation and client item-master onboarding checks"
@@ -677,9 +51,9 @@ stories:
     priority: High
     story_points: 5
     sprint: 1
-    due_day: 10
+    due_day: 3
     components: [Data Quality, Ingestion]
-    labels: [edi, files, onboarding]
+    labels: [edi, files, onboarding, level-3]
     description: |
       Client Success has two headaches that are really data problems.
 
@@ -711,27 +85,31 @@ stories:
         type: Spike
         summary: "Walk the 940 lifecycle with Tomás and Marcus"
         estimate_hours: 2
-        due_day: 6
+        due_day: 1
         priority: Medium
         components: [Data Quality]
-        labels: [edi, needs-clarification, spike]
+        labels: [edi, needs-clarification, spike, level-2]
         description: |
           Find out how an inbound 940 becomes a WMS order: purpose codes (original, change, cancel), how resends happen,
           which identifiers carry across (depositor order number, PO), and what a 997 does and doesn't prove. Capture it as
           a sequence diagram.
+
+          **Where to start:** Open the EDI section of Source systems, then one 940 and its 997 under `landing/edi/` for any client.
+          `order_header.client_order_ref` in the WMS is where the client's PO lands. Ask Tomás Ortega about the translator
+          and resends, and Marcus Bell about the order once it is in the WMS.
         acceptance_criteria:
           - "Lifecycle note with identifiers and known failure modes at each step"
           - "Open questions answered by Tomás and Marcus and recorded"
-          - *docs
+          - &docs "Note committed via PR (docs/DATA-<n>-… branch, Conventional Commit with the key) and linked from this ticket"
         depends_on: []
       - id: P5.S5.T2
         type: Task
         summary: "Reconcile EDI 940s to WMS orders"
         estimate_hours: 6
-        due_day: 8
+        due_day: 2
         priority: High
         components: [Data Quality]
-        labels: [edi, reconciliation]
+        labels: [edi, reconciliation, level-3]
         description: |
           Match every inbound 940 transaction to the WMS order it created. Honor changes and cancellations and ignore true
           resends. Each unmatched transaction gets a reason and an age. Build on the EDI parsing from Freight Audit; don't
@@ -740,21 +118,27 @@ stories:
           - "Every 940 classified: matched, cancelled, duplicate resend or unmatched"
           - "Match rate per client per day"
           - "Unmatched list with age and evidence (interchange control number, file name, PO)"
-          - *git
+          - &git "Merged via PR from a feat/DATA-<n>-… branch; Conventional Commits carry the key; PR self-review done; CI green"
         depends_on: [P5.S5.T1]
       - id: P5.S5.T3
         type: Task
         summary: "Unmatched-order exception report for Client Success"
         estimate_hours: 3
-        due_day: 9
+        due_day: 2
         priority: Medium
         components: [Data Quality]
-        labels: [edi, reporting]
+        labels: [edi, reporting, level-2]
         description: |
-          Turn the unmatched list into something Omar's team can act on each morning: grouped by client and age bucket, and
-          showing the acknowledgement status that went back to the client.
+          Turn the unmatched list into something Omar's team can act on each morning: one report, grouped by client and by
+          age bucket (0-1, 2-3, 4-7 and 8+ days unless Omar asks for others), showing the acknowledgement status that went
+          back to the client.
+
+          **Where to start:** Start from the unmatched list you built in the ticket before this one. The 997s are under
+          `landing/edi/outbound/997/` and, for older traffic, `landing/edi/archive/`. Until the client master exists later
+          this sprint, use `owner.owner_code` as the client. Omar Haddad decides who receives the report.
         acceptance_criteria:
           - "Refreshed daily before 08:00 ET"
+          - "Grouped by client and age bucket"
           - "Shows the 997 status for every unmatched 940"
           - "Omar confirms it answers 'did we get it?' at a glance"
           - *git
@@ -763,10 +147,10 @@ stories:
         type: Task
         summary: "Ingest client item-master CSVs robustly"
         estimate_hours: 6
-        due_day: 10
+        due_day: 3
         priority: High
         components: [Ingestion]
-        labels: [files, encoding, schema-drift]
+        labels: [files, encoding, schema-drift, level-3]
         description: |
           Load every item-master file version in `landing/files/`, whatever its delimiter, encoding, header names and date
           format. Keep every version, because new versions are how clients tell us about changes. Quarantine bad rows with
@@ -782,16 +166,21 @@ stories:
         type: Task
         summary: "Item master vs WMS material diff"
         estimate_hours: 3
-        due_day: 10
+        due_day: 3
         priority: Medium
         components: [Data Quality]
-        labels: [files, onboarding]
+        labels: [files, onboarding, level-2]
         description: |
-          Compare each client's latest item master with WMS material. Look for SKUs missing on either side, UPC conflicts,
-          and weights or dimensions that differ beyond tolerance, including unit mix-ups between lb and kg.
+          Compare each client's latest item master with WMS material and list every difference of these kinds: SKUs missing
+          on either side, UPC conflicts, and weights or dimensions that differ beyond tolerance, including unit mix-ups
+          between lb and kg.
+
+          **Where to start:** Open `material` in the WMS, joined to `owner` on `owner_id`, and match it to your loaded rows on `sku`.
+          `unit_weight` carries `weight_uom`, and `unit_length`, `unit_width` and `unit_height` carry `dim_uom`, so convert
+          before comparing. Ask Shanice Carter for the tolerances.
         acceptance_criteria:
-          - "Diff per client with counts and examples"
-          - "Tolerances agreed with Marcus Bell"
+          - "Diff per client with a count and examples for each kind of difference"
+          - "Tolerances agreed with Shanice Carter and written next to the check"
           - "Output feeds the onboarding report"
           - *git
         depends_on: [P5.S5.T4]
@@ -799,18 +188,695 @@ stories:
         type: Task
         summary: "Item-master file contract and per-file report for clients"
         estimate_hours: 2
-        due_day: 10
+        due_day: 3
         priority: Medium
         components: [Documentation]
-        labels: [files, onboarding, data-contract]
+        labels: [files, onboarding, data-contract, level-2]
         description: |
           Write the file contract CS can send to new clients: required columns, accepted formats and encodings, and
           versioning. Generate a per-file quality report from your checks that CS can forward to the client.
+
+          **Where to start:** Open `file_spec.txt` in two or three folders under `landing/files/clients/` to see what clients agreed at
+          onboarding, then reuse the checks from the two tickets before this one. Omar Haddad reviews the contract.
         acceptance_criteria:
           - "One-page contract reviewed by Omar"
           - "Report generated automatically for every new file"
           - *docs
         depends_on: [P5.S5.T5]
+
+  # ---------------------------------------------------------------- S1
+  - id: P5.S1
+    summary: "Salesforce at scale: full history, hard deletes, merges and schema drift"
+    type: Story
+    reporter: hannah.price
+    priority: High
+    story_points: 8
+    sprint: 1
+    due_day: 7
+    components: [Ingestion]
+    labels: [salesforce, bulk-api, incremental, data-contract, level-4]
+    description: |
+      In Billing Assurance you pulled the few Salesforce objects Finance needed. Client 360 needs everything: Accounts,
+      Contacts, Opportunities and their history, line items, products and price books, Contracts, Cases and Tasks.
+
+      > "When Dana merges two duplicate accounts, my pipeline report shows the deal twice for a week. And Cases older than
+      > a couple of months seem to vanish from every extract I've ever been sent." (Hannah)
+
+      **What good looks like**
+      - Every object in scope is available in bronze and silver with full history (2 years on Medium, 3 on Large) and refreshed at least daily.
+      - A record that is deleted or merged in Salesforce stops counting downstream. Children of a merged record follow the surviving parent.
+      - A new custom field doesn't break anything and appears without a code change. Someone is told, so they can decide whether to model it.
+      - The pipeline stays inside the data team's API budget (5,000 calls/day), including on the day you re-sync everything.
+
+      **Constraints you can't change**
+      - Salesforce reports updated records for the last 30 days and deleted records for the last 15 (the recycle bin).
+        If the pipeline is down for longer than that, it must recover without silent gaps.
+      - The org returns 18-character ids. Other systems and free text often hold the 15-character form.
+      - Other integrations share the org's daily allowance, so a mistake here stops more than your own jobs.
+
+      How you trade freshness and completeness against call cost is yours to decide and defend. Dana Whitfield owns the
+      org, including merges, field changes and the API budget.
+
+      **Definition of Done**
+      - All sub-tasks done; acceptance criteria demonstrated on your full dataset with the simulator streaming
+      - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
+      - Data dictionary and data contract updated; CHANGELOG entry under *Unreleased*
+    acceptance_criteria:
+      - "All in-scope objects land in bronze and silver with full history and reconcile daily to Salesforce counts"
+      - "Hard deletes and merges are reflected downstream within one daily cycle"
+      - "A new custom field (schema_drift_release scenario) lands without code changes and raises an alert"
+      - "Measured API usage stays under 5,000 calls/day, including a full re-sync"
+      - "Recovery path for an outage longer than 15 days documented and tested"
+    depends_on: [P3.S2, P1.S5]
+    tasks:
+      - id: P5.S1.T1
+        type: Spike
+        summary: "Size the org: objects, row counts, change rates and API cost"
+        estimate_hours: 3
+        due_day: 4
+        priority: High
+        components: [Ingestion]
+        labels: [salesforce, spike, level-3]
+        description: |
+          Before you choose how to pull each object, measure it. For every object in scope, count the rows (deleted rows included)
+          and estimate the daily change volume. Then work out how many API calls a full load and a normal daily incremental
+          would cost with each approach the API offers.
+        acceptance_criteria:
+          - "Table per object: row count, deleted count, daily changes, chosen load method, estimated calls per run"
+          - "Total fits inside 5,000 calls/day with headroom for one full re-sync"
+          - *docs
+        depends_on: []
+      - id: P5.S1.T2
+        type: Task
+        summary: "Agree a Salesforce data contract with Dana"
+        estimate_hours: 2
+        due_day: 4
+        priority: Medium
+        components: [Ingestion]
+        labels: [salesforce, data-contract, level-2]
+        description: |
+          Dana changes the org and your pipeline depends on it. Agree in writing which objects and fields you rely on, which
+          fields are free text and which are validated, and how she'll warn you before field changes or merge clean-ups.
+          Also agree who fixes a wrong crosswalk field on an Account, and the API budget.
+
+          **Where to start:** Open the Salesforce section of Source systems and your sizing note from the ticket before this one, and list what
+          your pipeline reads. Then take the list and the questions above to Dana Whitfield, who owns the org.
+        acceptance_criteria:
+          - "Contract lists objects, critical fields, owner, change-notice process and API budget"
+          - "Dana's answers (from your conversation with her) quoted in the PR description"
+          - *docs
+        depends_on: [P5.S1.T1]
+      - id: P5.S1.T3
+        type: Task
+        summary: "Backfill the full Salesforce history, restartably"
+        estimate_hours: 7
+        due_day: 5
+        priority: High
+        components: [Ingestion]
+        labels: [salesforce, bulk-api, backfill, level-3]
+        description: |
+          Load the full history of the high-volume objects, using the method your sizing note chose. Include deleted and
+          merged records where the API allows it. The backfill must be restartable: if it fails halfway, it resumes from where
+          it stopped without starting over or loading anything twice.
+        acceptance_criteria:
+          - "Bronze row counts per object match SELECT COUNT() at the backfill cut-off (deleted rows included where queried)"
+          - "A job killed mid-way resumes without duplicates (demonstrated and logged)"
+          - "API calls used by the backfill recorded against the budget"
+          - *git
+        depends_on: [P5.S1.T1]
+      - id: P5.S1.T4
+        type: Task
+        summary: "Daily incremental sync including hard deletes"
+        estimate_hours: 6
+        due_day: 6
+        priority: High
+        components: [Ingestion]
+        labels: [salesforce, incremental, deletes, level-4]
+        description: |
+          > "I need to believe that what's in the platform this morning is what's in Salesforce this morning: new records,
+          > changed records, and the ones that are gone." (Hannah)
+
+          After the backfill, every object stays current, and that includes records deleted since the last run. Runs will be
+          late, retried and occasionally missed for a long time, and the source and your platform won't always agree on what
+          time it is. Decide what happens when the pipeline has been down longer than Salesforce remembers its deletes, write
+          that decision down, and be ready to defend what it costs.
+        acceptance_criteria:
+          - "Inserts, updates and deletes made by a simulator batch appear downstream after the next run"
+          - "A late, retried or overlapping run misses no change and loads none twice (demonstrated)"
+          - "After an outage longer than 15 days the pipeline recovers by a documented path, and no delete is silently missed"
+          - "Daily incremental API cost measured and within budget"
+          - *git
+        depends_on: [P5.S1.T3]
+      - id: P5.S1.T5
+        type: Task
+        summary: "Handle Account and Contact merges"
+        estimate_hours: 4
+        due_day: 6
+        priority: High
+        components: [Ingestion, Modeling]
+        labels: [salesforce, merges, level-4]
+        description: |
+          > "When Dana merges two duplicate accounts, my pipeline report shows the deal twice for a week." (Hannah)
+
+          Dana merges duplicates when she finds them, and the same record can be merged more than once over the years. Their
+          Contacts, Opportunities and Cases move with them. Downstream has to count the survivor once, today and in history,
+          and an old id still sitting in a Case, the crosswalk or another system has to keep meaning something.
+        acceptance_criteria:
+          - "Run the sf_account_merge scenario: no downstream metric double-counts the merged account"
+          - "Any historical id resolves to its current survivor, including one merged more than once"
+          - "The history of merges (which record, into which, and when) can be reported"
+          - *git
+        depends_on: [P5.S1.T4]
+      - id: P5.S1.T6
+        type: Task
+        summary: "Detect and absorb Salesforce schema drift"
+        estimate_hours: 4
+        due_day: 7
+        priority: Medium
+        components: [Ingestion]
+        labels: [salesforce, schema-drift, level-3]
+        description: |
+          Dana adds custom fields without telling anyone, and the simulator's schema-drift release does the same. Detect new,
+          removed and retyped fields on every run. New fields land in bronze automatically and nothing downstream breaks,
+          but someone is told.
+        acceptance_criteria:
+          - "Each run records new, removed and retyped fields against the last known schema"
+          - "schema_drift_release scenario: pipeline stays green, the new field lands in bronze, an alert is raised"
+          - "Removed or retyped fields fail loudly and in a controlled way (never silent nulls)"
+          - *git
+        depends_on: [P5.S1.T4]
+      - id: P5.S1.T7
+        type: Task
+        summary: "Reconcile Salesforce bronze to source every day"
+        estimate_hours: 4
+        due_day: 7
+        priority: Medium
+        components: [Data Quality]
+        labels: [salesforce, reconciliation, level-3]
+        description: |
+          Prove completeness every day. Compare counts per object with Salesforce, confirm deleted ids were applied, and
+          check that ids are well formed. You need to match 15-character ids from other systems to 18-character ones.
+        acceptance_criteria:
+          - "Daily reconciliation per object (source, platform, difference) with a tolerance agreed with Hannah"
+          - "15-character ids convert to 18-character ids correctly (tested against known pairs from the API)"
+          - "A failing check marks downstream models stale and shows on the Data Platform Health dashboard"
+          - *git
+        depends_on: [P5.S1.T4]
+
+  # ---------------------------------------------------------------- S2
+  - id: P5.S2
+    summary: "Client master and crosswalk: one id per client across WMS, AX and Salesforce"
+    type: Story
+    reporter: omar.haddad
+    priority: High
+    story_points: 8
+    sprint: 1
+    due_day: 10
+    components: [Modeling, Data Quality]
+    labels: [mdm, crosswalk, scd2, level-4]
+    description: |
+      > "Every report I get starts with someone fixing the client list by hand. I want that to happen once, properly." (Omar)
+
+      Client identity is keyed by hand in three places: the WMS, AX (one customer row per legal entity, so a client served
+      from the US and Canada has two) and Salesforce. Some of these are blank and some are typed wrong. The health score,
+      the client portal (Project 8) and the executive scorecard all depend on getting this right, and all of them will
+      inherit whatever you get wrong.
+
+      **What good looks like**
+      - One client key per real client, mapped to every WMS owner, every AX customer row and every Salesforce Account (merged ones included).
+      - Matches you're not sure about go to a steward list with an owner instead of being guessed.
+      - Written survivorship rules: which system wins for name, status, vertical, billing currency, account owner and billing address.
+      - Full history, so that "active clients at the end of March" and "who owned this account last year" have answers.
+      - Prospects (Salesforce only) and former customers are in the master but clearly flagged.
+
+      Omar and Hannah decide what a client is and what "active" means, and they don't agree yet. Dana Whitfield owns the
+      Account fields, Priya Raman owns AX customers and addresses, and Marcus Bell owns the owner lifecycle in the WMS.
+
+      **Definition of Done**
+      - All sub-tasks done; crosswalk coverage and steward list reviewed with Omar
+      - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
+      - Data dictionary entries and model owner documented; CHANGELOG entry
+    acceptance_criteria:
+      - "Every WMS owner and AX customer row maps to exactly one client key"
+      - "≥ 98% of active clients matched automatically across all three systems; the rest are on the steward list with an owner"
+      - "Survivorship rules documented, agreed and implemented"
+      - "Client dimension keeps full history with no gaps or overlaps, and point-in-time questions are answerable"
+    depends_on: [P5.S1, P3.S1, P1.S3, P2.S1]
+    tasks:
+      - id: P5.S2.T1
+        type: Spike
+        summary: "Workshop: what counts as a client, and as an active one?"
+        estimate_hours: 3
+        due_day: 8
+        priority: High
+        components: [Modeling]
+        labels: [needs-clarification, definitions, level-3]
+        description: |
+          Omar and Hannah use the word "client" differently, and "active" has at least three meanings: contract active,
+          owner ACTIVE in the WMS, and shipped recently. Run a short session with both of them. Bring real examples: a client
+          with two AX entities, a prospect, a client that left, and a client that is onboarding. Write down the decisions.
+        acceptance_criteria:
+          - "Decision record: client grain, parent/child handling, prospects, former customers, and each definition of 'active' with its owner"
+          - "Anything they couldn't agree on is escalated to Daniel Reyes with your recommendation"
+          - "Definitions added to the metric catalog from Warehouse Performance"
+          - *docs
+        depends_on: []
+      - id: P5.S2.T2
+        type: Task
+        summary: "Build the cross-system client match"
+        estimate_hours: 7
+        due_day: 8
+        priority: High
+        components: [Modeling, Data Quality]
+        labels: [crosswalk, level-4]
+        description: |
+          > "I asked three people how many active clients we have and got three different numbers." (Omar)
+
+          WMS owners, AX customers (all legal entities) and Salesforce Accounts all describe the same clients, and people
+          typed the keys that connect them. Omar wants at least 98% of active clients matched without a human, and he also
+          wants no client's numbers landing on another client. Those two wishes pull against each other. Decide where the
+          line sits, and be able to show why any given match was made.
+        acceptance_criteria:
+          - "Every WMS owner and every AX customer row appears in the crosswalk exactly once"
+          - "≥ 98% of active clients matched automatically; the remainder go to the steward list"
+          - "No many-to-many match exists without a steward decision"
+          - "Every match records how it was made and how sure it is"
+          - "Match rules unit-tested with the nastiest real cases you found"
+          - *git
+        depends_on: [P5.S2.T1]
+      - id: P5.S2.T3
+        type: Task
+        summary: "Account team and ownership history (AE and CSM per client)"
+        estimate_hours: 3
+        due_day: 9
+        priority: Medium
+        components: [Modeling]
+        labels: [salesforce, ownership, level-3]
+        description: |
+          The pipeline and health views are sliced by Account Executive and Client Success Manager. The Account owner in
+          Salesforce is the AE, and account owners change over time. CSM assignment is not a Salesforce field today. Agree
+          with Omar on a client → CSM seed mapping kept in the repo until Dana adds a field.
+        acceptance_criteria:
+          - "Each client has a current AE and CSM with effective dates"
+          - "Owner changes over time are captured from Salesforce"
+          - "Inactive users are handled: no client is left without an owner in any book"
+          - *git
+        depends_on: [P5.S2.T2]
+      - id: P5.S2.T4
+        type: Task
+        summary: "Steward list and version-controlled overrides"
+        estimate_hours: 4
+        due_day: 9
+        priority: Medium
+        components: [Data Quality]
+        labels: [crosswalk, stewardship, level-3]
+        description: |
+          Unmatched and low-confidence rows need a human. Produce a steward list the source owners can act on: what's wrong,
+          which system to fix, and a suggested value. Keep a reviewed override file for decisions that can't be fixed at source.
+        acceptance_criteria:
+          - "Steward list grouped by owner (Dana / Priya / Marcus) with suggested fixes"
+          - "Overrides live in the repo, change only by PR, and are applied before survivorship"
+          - "When a value is fixed at source, the build reports that its override is now redundant"
+          - *git
+        depends_on: [P5.S2.T2]
+      - id: P5.S2.T5
+        type: Task
+        summary: "Survivorship rules per attribute"
+        estimate_hours: 3
+        due_day: 9
+        priority: Medium
+        components: [Modeling]
+        labels: [needs-clarification, survivorship, level-3]
+        description: |
+          When the systems disagree on name, vertical, billing currency, status, billing address or account owner, which one
+          wins? Propose a rule for each attribute, review the rules with Omar, Hannah and Priya, then implement them.
+        acceptance_criteria:
+          - "Rules table per attribute, with rationale and the person who agreed it"
+          - "Golden record populated for every client"
+          - "Conflict counts per attribute reported, so source owners can see where their systems disagree"
+          - *git
+        depends_on: [P5.S2.T2]
+      - id: P5.S2.T6
+        type: Task
+        summary: "Client dimension with full history"
+        estimate_hours: 6
+        due_day: 10
+        priority: High
+        components: [Modeling]
+        labels: [scd2, level-4]
+        description: |
+          > "Who was active at the end of March, and who owned them then? I should be able to ask that about any month." (Omar)
+
+          Build the conformed client dimension. Status, tier, AE, CSM, credit limit, payment terms, blocked flag and billing
+          address all change over time and all need their history kept. Sources correct themselves late, and sometimes
+          backdate the correction. The answer to a past month-end must stay trustworthy when that happens, and rebuilding must
+          not invent changes that never occurred.
+        acceptance_criteria:
+          - "Exactly one current row per client; no overlaps or gaps in validity ranges (tested)"
+          - "Point-in-time query answers: active clients and their owners at any month-end in the history"
+          - "A late or backdated source correction leaves the history consistent (tested)"
+          - "Re-running the build creates no spurious versions"
+          - *git
+        depends_on: [P5.S2.T3, P5.S2.T4, P5.S2.T5]
+      - id: P5.S2.T7
+        type: Task
+        summary: "Tests and documentation for the client master"
+        estimate_hours: 2
+        due_day: 10
+        priority: Medium
+        components: [Data Quality]
+        labels: [testing, documentation, level-2]
+        description: |
+          The client master is about to become a dependency for the portal, the scorecard and the health score. Lock it
+          down with tests and document it so the next person can trust it.
+
+          **Where to start:** Start from the crosswalk and client dimension you just built. For coverage, compare with `owner` rows where
+          `owner_status` is ACTIVE. Use the same data dictionary format as your earlier projects, and ask Omar Haddad who the
+          named owner should be.
+        acceptance_criteria:
+          - "Tests: key uniqueness, referential integrity from every fact, coverage of all active WMS owners"
+          - "Data dictionary entries for the crosswalk and the dimension, with owner and refresh SLA"
+          - *git
+        depends_on: [P5.S2.T6]
+
+  # ---------------------------------------------------------------- S3
+  - id: P5.S3
+    summary: "Link Salesforce Cases to the orders and shipments they're about"
+    type: Story
+    reporter: omar.haddad
+    priority: High
+    story_points: 5
+    sprint: 2
+    due_day: 13
+    components: [Modeling]
+    labels: [salesforce, cases, text-matching, level-4]
+    description: |
+      > "My CSMs write the order number in the subject, the description, the custom field, or nowhere at all. I can't tell
+      > which warehouse or carrier causes most of our cases." (Omar)
+
+      The evidence for what a case is about is scattered and typed by people. A case can mention several orders, sometimes
+      with typos. A shipment gets a new tracking number when its label is reprinted. And a client may call about an order
+      before it exists in the WMS, so a case can be older than the thing it's about.
+
+      **What good looks like**
+      - Every case that is about an order or shipment is linked to it, with the type and confidence of the link. Precision ≥ 95% and recall ≥ 85%, measured on a labelled sample.
+      - Case rates by warehouse, carrier, client and reason that Omar trusts.
+      - Unlinked cases are explainable. Billing questions, for example, often have no order.
+
+      Omar decides what counts as a correct link and how Reason and Root Cause are used. Dana Whitfield owns how the case
+      fields are meant to be filled.
+
+      **Definition of Done**
+      - All sub-tasks done; quality measured on the labelled sample and accepted by Omar
+      - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
+      - Matching rules and taxonomy documented; CHANGELOG entry
+    acceptance_criteria:
+      - "Bridge table links cases to orders and shipments with link type, confidence and evidence"
+      - "Precision ≥ 95% and recall ≥ 85% on a labelled sample of ≥ 200 cases, enforced in CI"
+      - "Case facts carry client, warehouse and carrier keys where linked"
+      - "Links update when the order or a reprinted label arrives after the case"
+    depends_on: [P5.S1, P2.S2, P4.S1]
+    tasks:
+      - id: P5.S3.T1
+        type: Spike
+        summary: "Profile case text and identifier formats"
+        estimate_hours: 3
+        due_day: 11
+        priority: High
+        components: [Modeling]
+        labels: [cases, spike, level-3]
+        description: |
+          Profile Subject, Description and the custom fields across the full history of Cases. Find how often each identifier type
+          appears, which formats show up, and which noise looks like an identifier (phone numbers, invoice numbers,
+          dates).
+        acceptance_criteria:
+          - "Frequencies by identifier type and case origin"
+          - "Identifier format catalog (WMS order, client PO, each carrier's tracking format) with real examples"
+          - *docs
+        depends_on: []
+      - id: P5.S3.T2
+        type: Task
+        summary: "Agree the case taxonomy with Omar"
+        estimate_hours: 2
+        due_day: 11
+        priority: Medium
+        components: [Modeling]
+        labels: [cases, needs-clarification, definitions, level-3]
+        description: |
+          Cases carry a Reason picklist and a Root Cause picklist, and CSMs fill them inconsistently. Agree with Omar which
+          one drives reporting, how "Unknown" is treated, and how spam, duplicate and merged cases are excluded.
+        acceptance_criteria:
+          - "Decision recorded in the metric catalog"
+          - "Mapping table version-controlled"
+          - *git
+        depends_on: []
+      - id: P5.S3.T3
+        type: Task
+        summary: "Link cases to the orders and shipments they mention"
+        estimate_hours: 7
+        due_day: 12
+        priority: High
+        components: [Modeling]
+        labels: [cases, text-matching, level-4]
+        description: |
+          > "If a CSM opens a case and it points at the wrong order, she stops trusting all of them. If it points at another
+          > client's order, I have a much bigger problem." (Omar)
+
+          Resolve what each case is about to WMS orders and shipments, including shipments whose tracking number was replaced
+          by a reprint. Evidence will be ambiguous, misspelled, or contradictory, and some of what looks like an identifier
+          isn't one. Decide how you weigh that evidence, and be ready to show Omar why any link exists.
+        acceptance_criteria:
+          - "Each link records where its evidence came from, its confidence and the evidence itself"
+          - "Identifiers matching another client's order are flagged, never linked"
+          - "Re-running produces identical links"
+          - *git
+        depends_on: [P5.S3.T1]
+      - id: P5.S3.T4
+        type: Task
+        summary: "Labelled sample and quality gate"
+        estimate_hours: 3
+        due_day: 13
+        priority: High
+        components: [Data Quality]
+        labels: [cases, testing, level-3]
+        description: |
+          Hand-label a random sample of at least 200 cases, stratified by origin, and measure the linker's precision and
+          recall. Keep the sample in the repo as a regression test.
+        acceptance_criteria:
+          - "Precision ≥ 95% and recall ≥ 85% on the sample, or a documented gap that Omar accepts"
+          - "Sample stored as a test fixture; CI fails if quality drops below the gate"
+          - *git
+        depends_on: [P5.S3.T3]
+      - id: P5.S3.T5
+        type: Task
+        summary: "Case facts and link-quality monitoring"
+        estimate_hours: 3
+        due_day: 13
+        priority: Medium
+        components: [Modeling]
+        labels: [cases, level-3]
+        description: |
+          Publish case facts joined to the client master and the bridge: open and close times, escalations, credits and
+          link status. Monitor the link rate by origin and by client, so you notice when CSM behaviour changes.
+        acceptance_criteria:
+          - "Case fact with client key, order and shipment keys where linked, and durations in hours"
+          - "Daily link rate by origin and client"
+          - "Spam, duplicate and merged cases excluded per the taxonomy decision"
+          - *git
+        depends_on: [P5.S3.T3, P5.S3.T2]
+      - id: P5.S3.T6
+        type: Task
+        summary: "Late links: cases created before the order or label exists"
+        estimate_hours: 2
+        due_day: 13
+        priority: Medium
+        components: [Modeling]
+        labels: [cases, incremental, level-4]
+        description: |
+          > "A client calls about an order they just sent. Tomorrow that order is in the WMS, and the case should know." (Omar)
+
+          Cases, orders, labels and case text all change on their own schedules, and any of them can arrive after the others.
+          Links have to catch up on their own, without rebuilding everything each night. Decide what a change should trigger,
+          and how far back you are willing to look.
+        acceptance_criteria:
+          - "A case whose order arrives a day later gets linked on the next run (tested)"
+          - "A reprinted label arriving after the case keeps the case linked to its shipment (tested)"
+          - "Editing a case's text updates its links"
+          - "A normal run does not rebuild the whole bridge (shown from the run's row counts)"
+          - *git
+        depends_on: [P5.S3.T3]
+
+  # ---------------------------------------------------------------- S4
+  - id: P5.S4
+    summary: "Client health score, written back to Salesforce every night"
+    type: Story
+    reporter: omar.haddad
+    priority: High
+    story_points: 8
+    sprint: 2
+    due_day: 16
+    components: [Modeling, Reverse ETL]
+    labels: [health-score, reverse-etl, salesforce, level-5]
+    description: |
+      > "I want a number from 0 to 100 on every account in Salesforce that tells my CSMs who to call this week, and a
+      > reason they can say out loud." (Omar)
+      >
+      > "If it's on the account page, it had better not contradict what my AEs tell the client about their growth." (Hannah)
+
+      We lost three clients in the last year, and each time Client Success heard about it from the termination notice.
+      Daniel wants to know before they tell us. What goes into the score is for you and Omar to decide. It must be
+      explainable, built from data you already have, and backtested against clients who actually left.
+
+      The Salesforce Account has two fields reserved for this: `Health_Score__c` (0–100) and `Churn_Risk__c`
+      (Low / Medium / High). They are the only fields the integration user may update. They're written through the REST
+      API one record per call, inside Dana's API budget.
+
+      **What good looks like**
+      - Weekly score history per client, with the top drivers stored next to the score.
+      - A backtest showing what the score said about former customers 3 and 6 months before they left.
+      - A nightly write-back that sends only changed values, retries safely and audits every write.
+      - Dana and Omar sign off a dry run before the first live write.
+
+      You own this outcome, from the definition to the first night it runs live. Omar owns the definition, Hannah has a
+      say in it, Alan Brooks owns what payment behaviour means, Dana Whitfield owns the write-back rules and the API
+      budget, and Mei Tanaka reviews the security of anything that writes back.
+
+      **Definition of Done**
+      - All sub-tasks done; dry run approved and first live write completed
+      - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
+      - Score definition in the metric catalog; write-back runbook in the repo; CHANGELOG entry
+    acceptance_criteria:
+      - "Score definition and risk bands signed off by Omar and Hannah and recorded in the metric catalog"
+      - "Backtest on former customers documented, including the lead time the score would have given"
+      - "Every active client's surviving Account carries the current score and risk band by 06:30 ET"
+      - "Write-back is idempotent, audited, within the API budget and never targets merged or deleted accounts"
+    depends_on: [P5.S2, P5.S3, P2.S5, P3.S5]
+    tasks:
+      - id: P5.S4.T1
+        type: Task
+        summary: "Health score definition workshop with Omar and Hannah"
+        estimate_hours: 3
+        due_day: 13
+        priority: High
+        components: [Modeling]
+        labels: [health-score, needs-clarification, definitions, level-5]
+        description: |
+          > "I can tell you what worries me about a client. I can't tell you how to weight it." (Omar)
+          >
+          > "If the account page says at risk while my AE is closing an expansion with that client, someone is calling me." (Hannah)
+
+          Omar wants a retention signal. Hannah wants it to reflect growth as well. Neither has a formula, and both will have
+          to live with the result on every account page. Get them to one definition they will both defend, including how the
+          score turns into Churn Risk bands and what a new client with little history gets. Where they can't agree, say who
+          decides and what you recommend.
+        acceptance_criteria:
+          - "Signed-off definition in the metric catalog, with Omar as owner"
+          - "Risk bands and the minimum-history rule written down"
+          - "Open disagreements documented with a decision owner"
+          - *docs
+        depends_on: []
+      - id: P5.S4.T2
+        type: Task
+        summary: "Client features mart (point-in-time correct)"
+        estimate_hours: 7
+        due_day: 14
+        priority: High
+        components: [Modeling]
+        labels: [health-score, features, level-4]
+        description: |
+          > "Don't show me a backtest that only works because it already knows who left." (Omar)
+
+          Omar and Hannah's definition needs weekly per-client inputs across the full history, built on the client master and
+          your existing marts. Each input has to be what we could have known that week. Source data gets corrected later, and
+          some of it arrives late, so decide what "as of that week" means for each input, and say what that costs you in
+          accuracy or freshness.
+        acceptance_criteria:
+          - "Feature table per client-week covering the full history"
+          - "Point-in-time correctness tested: no feature uses data after its week end"
+          - "Each feature documented with its source and owner"
+          - *git
+        depends_on: [P5.S4.T1]
+      - id: P5.S4.T3
+        type: Task
+        summary: "Score, risk band and backtest"
+        estimate_hours: 5
+        due_day: 15
+        priority: High
+        components: [Modeling]
+        labels: [health-score, level-4]
+        description: |
+          > "Show me how much warning my team would have had. And if the score cries wolf on half my book, nobody will open
+          > it twice." (Omar)
+
+          Compute the score and risk band per client-week and test them against what actually happened to former customers.
+          Weigh early warning against false alarms, and be honest with Omar about what the score would have missed.
+        acceptance_criteria:
+          - "Score history table for all clients"
+          - "Backtest: score and band for every former customer 3 and 6 months before they left"
+          - "Share of active clients in High risk falls within a range Omar agrees is plausible"
+          - *git
+        depends_on: [P5.S4.T2]
+      - id: P5.S4.T4
+        type: Task
+        summary: "Explain the score: top drivers per client"
+        estimate_hours: 2
+        due_day: 15
+        priority: Medium
+        components: [Modeling]
+        labels: [health-score, explainability, level-3]
+        description: |
+          For each client-week, store the two or three drivers that moved the score most, in plain words a CSM can say on a call.
+        acceptance_criteria:
+          - "Drivers stored next to each score"
+          - "Wording reviewed by Omar"
+          - *git
+        depends_on: [P5.S4.T3]
+      - id: P5.S4.T5
+        type: Task
+        summary: "Write Health_Score__c and Churn_Risk__c back to Salesforce"
+        estimate_hours: 7
+        due_day: 16
+        priority: Highest
+        components: [Reverse ETL]
+        labels: [reverse-etl, salesforce, api-limits, level-5]
+        description: |
+          > "This is the first thing of yours that writes into my org. I'll want to know how many calls it makes, and what it
+          > does on a bad night." (Dana)
+
+          Every morning by 06:30 ET, the current score and band have to be on every active client's surviving Account, inside
+          the API budget. Only values that changed since the last successful write should go out. Nights will go badly:
+          failed calls, an exhausted limit, a job re-run by hand, an account merged since yesterday. None of those may leave
+          a CSM looking at a wrong number, or an account Salesforce no longer has being written to.
+
+          You own getting this live. That includes the dry run Dana and Omar review before anything is written, and Mei
+          Tanaka's security review: integrations here are expected to read, and this one writes. Bring her what it can touch
+          and why that's acceptable.
+        acceptance_criteria:
+          - "Dry-run report approved by Dana and Omar before the first live write"
+          - "Mei Tanaka's security review recorded before the first live write"
+          - "Only changed values are sent; calls per night recorded and within budget"
+          - "Every write audited: account, old value, new value, run id, HTTP status"
+          - "Re-running the same night sends nothing; 403 and 5xx responses leave no partial state"
+          - "Merged and deleted accounts are never written to"
+          - *git
+        depends_on: [P5.S4.T3, P5.S1.T5]
+      - id: P5.S4.T6
+        type: Task
+        summary: "Schedule, alert and document the write-back"
+        estimate_hours: 2
+        due_day: 16
+        priority: Medium
+        components: [Orchestration]
+        labels: [reverse-etl, runbook, level-3]
+        description: |
+          Put the score build and write-back on the nightly schedule after their inputs, and alert on failure. Write the
+          runbook: how to pause the write-back, how to re-send one account, and how to roll back a bad night.
+        acceptance_criteria:
+          - "Runs only when upstream models are fresh; otherwise it skips and alerts"
+          - "Failure alert reaches you"
+          - "Runbook in the repo"
+          - *git
+        depends_on: [P5.S4.T5]
 
   # ---------------------------------------------------------------- S6
   - id: P5.S6
@@ -822,7 +888,7 @@ stories:
     sprint: 2
     due_day: 20
     components: [Dashboards]
-    labels: [dashboards, brand-kit, readout]
+    labels: [dashboards, brand-kit, readout, level-4]
     attachments: [wireframes/P5-D1.svg, wireframes/P5-D2.svg]
     description: |
       There are two dashboards, specified in **P5-D1 Sales Pipeline** (owner Hannah) and **P5-D2 Client Health 360**
@@ -833,10 +899,11 @@ stories:
       > "A CSM should open one page before a client call and know everything: orders, cases, service, money, risk." (Omar)
 
       Several definitions will conflict: "pipeline" (all open deals or forecast categories only), "win rate" (by count
-      or by amount), "active client" and "case rate". Each KPI on these pages needs one agreed definition with a named
-      owner in the metric catalog.
+      or by amount), "active client" and "case rate". The people who disagree are senior, and each KPI on these pages still
+      needs one agreed definition with a named owner in the metric catalog. A slow page and a page that shows someone the
+      wrong rows are both failures, and the warehouse you have is small. Deciding what to give up is your call.
 
-      **Requirements (both dashboards)**
+      **What Hannah and Omar will hold you to**
       - KPIs, filters and visuals as specified; conflicts resolved and recorded
       - Refresh SLA met, with data freshness shown on the page
       - Access per spec: leadership sees everything, CSMs see their book, AEs see their accounts, and consumer PII never appears
@@ -864,10 +931,10 @@ stories:
         type: Task
         summary: "Finalize P5-D1 / P5-D2 specs and KPI definitions"
         estimate_hours: 2
-        due_day: 14
+        due_day: 16
         priority: High
         components: [Dashboards]
-        labels: [needs-clarification, definitions]
+        labels: [needs-clarification, definitions, level-3]
         description: |
           Walk Hannah through P5-D1 and Omar through P5-D2. Settle each KPI conflict noted in the specs and record the decisions.
         acceptance_criteria:
@@ -878,16 +945,20 @@ stories:
         depends_on: []
       - id: P5.S6.T2
         type: Task
-        summary: "Pipeline marts: snapshots, conversion and slippage"
+        summary: "Pipeline marts: history, conversion and slippage"
         estimate_hours: 5
         due_day: 17
         priority: High
         components: [Modeling]
-        labels: [salesforce, pipeline]
+        labels: [salesforce, pipeline, level-4]
         description: |
-          Build opportunity snapshot history from Opportunity history (stage, amount, probability and close date over time),
-          plus stage conversion and slip facts. Show amounts in USD and in the native currency using your FX model from
-          Billing Assurance.
+          > "Where are deals stalling, and which ones keep slipping? And when Rebecca asks what the pipeline looked like at
+          > the end of last quarter, I want the number we'd have given her then." (Hannah)
+
+          Stage, amount, probability and close date all move over a deal's life, and deals get merged away, deleted, reopened
+          and pushed out. Hannah needs the pipeline as it stood on any past date, plus stage conversion and slippage. Amounts
+          show in USD and in the native currency, and Finance's FX rules apply. Decide what counts as a slip when a close date
+          moves back and then forward, and record it with Hannah.
         acceptance_criteria:
           - "Pipeline as of any past date is reproducible"
           - "Slip count per opportunity (close date pushed out) correct on test cases"
@@ -901,9 +972,10 @@ stories:
         due_day: 18
         priority: High
         components: [Dashboards]
-        labels: [dashboards, brand-kit]
+        labels: [dashboards, brand-kit, level-3]
         description: |
-          Build the dashboard from the spec and wireframe with the brand kit, and commit its definition to the repo.
+          Build the dashboard from the spec and wireframe with the brand kit, and commit its definition to the repo. Where the
+          spec and the 3-second limit pull against each other, make the call and say why in the PR.
         acceptance_criteria:
           - "All spec visuals and filters present"
           - "Freshness shown; P95 < 3 s measured"
@@ -917,7 +989,7 @@ stories:
         due_day: 19
         priority: High
         components: [Dashboards]
-        labels: [dashboards, brand-kit, health-score]
+        labels: [dashboards, brand-kit, health-score, level-3]
         description: |
           Build a portfolio page and a client drill page. The drill page shows score trend and drivers, orders, linked
           cases, service level, AR, EDI exceptions and the renewal date.
@@ -935,7 +1007,7 @@ stories:
         due_day: 19
         priority: High
         components: [Dashboards, Security]
-        labels: [access, performance]
+        labels: [access, performance, level-3]
         description: |
           Enforce the access rules in the specs and prove they work. Measure interaction times on both dashboards.
         acceptance_criteria:
@@ -951,7 +1023,7 @@ stories:
         due_day: 17
         priority: Highest
         components: [Reverse ETL, Ingestion]
-        labels: [incident, salesforce, api-limits]
+        labels: [incident, salesforce, api-limits, level-4]
         description: |
           **Reported by Dana Whitfield (Salesforce admin):**
           > "At 02:40 the integration user started getting 403 REQUEST_LIMIT_EXCEEDED, and my contract sync failed until
@@ -960,8 +1032,11 @@ stories:
           **Expected:** the data team's jobs stay inside their 5,000-call budget even when something fails, retries or re-syncs.
 
           **Impact:** other Salesforce integrations were blocked for hours.
+
+          When the budget runs short, something of yours has to give way: a re-sync, the ingestion, or the nightly write-back
+          that CSMs read at 06:30 ET. Decide which, and tell Dana and Omar what they'd see on that morning.
         acceptance_criteria:
-          - "Root cause identified from API usage per job, or proof with numbers that your jobs stayed in budget"
+          - "Root cause identified with numbers per job, or proof with numbers that your jobs stayed in budget"
           - "Guardrail: jobs stop or degrade before exceeding the budget, and they alert"
           - "Drill or regression test demonstrates the guardrail"
           - "Short blameless postmortem in docs/postmortems/"
@@ -975,7 +1050,7 @@ stories:
         due_day: 18
         priority: High
         components: [Reverse ETL]
-        labels: [bug, reverse-etl, merges]
+        labels: [bug, reverse-etl, merges, level-3]
         description: |
           **Reported by Omar Haddad:**
           > "Tara opened two of her accounts in Salesforce this morning and Health Score is empty, but Client Health 360
@@ -995,7 +1070,7 @@ stories:
         priority: Highest
         reporter: iris.novak
         components: [Dashboards, Data Quality]
-        labels: [uat, sign-off, reconciliation]
+        labels: [uat, sign-off, reconciliation, level-3]
         description: |
           Nothing goes to Hannah and Omar until Iris Novak (Business Performance Manager) has signed it off. She ties
           your numbers back to the source systems herself, checks every KPI against your metric catalog and the
@@ -1019,10 +1094,16 @@ stories:
         due_day: 20
         priority: High
         components: [Documentation]
-        labels: [readout, release]
+        labels: [readout, release, level-5]
         description: |
-          Present both dashboards to Hannah and Omar in 5 minutes: what they can answer now, how fresh the data is, and the
-          known limits. Record a 3-minute demo for your portfolio, tag the release, and hold a short project retro.
+          > "Tell me what I can do on Monday that I couldn't do last Monday." (Hannah)
+          >
+          > "And tell me where I shouldn't trust it yet, before a client finds out for me." (Omar)
+
+          You have 5 minutes with Hannah and Omar, and they don't want the same thing from you. Choose what to show, what to
+          leave out and how to say the known limits out loud, including how fresh the data is and what the score can't see.
+          You own what happens to their feedback afterwards. Then record a 3-minute demo for your portfolio, tag the release,
+          and hold a short project retro.
         acceptance_criteria:
           - "Readout delivered; feedback captured as new tickets"
           - "Demo video linked from the README"

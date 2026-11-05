@@ -30,6 +30,18 @@ on('GET', /^\/api\/sim\/connections$/, () => sim.connections());
 // saved chats on the Team page
 on('GET', /^\/api\/handbook\/team-links$/, () => ({ links: {}, site: null }));
 
+// handbook progress (the app's Start here keeps its ticks in the `start` page)
+const progress = new Map<string, { state: unknown; updated_at: string }>();
+on('GET', /^\/api\/handbook\/progress\/([\w.-]+)$/, (m) => ({ page: m[1], state: {}, updated_at: null, ...progress.get(m[1]) }));
+on('PUT', /^\/api\/handbook\/progress\/([\w.-]+)$/, (m, _u, body) => {
+  const row = { state: b(body).state, updated_at: new Date().toISOString() };
+  progress.set(m[1], row);
+  return { page: m[1], ...row };
+});
+
+// the app's version and where newer ones are published
+on('GET', /^\/api\/version$/, () => ({ version: '2026.11.9', update_repo: 'harborline-lab/harborline-lab' }));
+
 // UAT source extract
 on('GET', /^\/api\/uat\/extract\/options$/, () => uat.options());
 on('POST', /^\/api\/uat\/extract$/, (_m, _u, body) => uat.build(String(b(body).project ?? ''), b(body).periods as string[] | undefined));

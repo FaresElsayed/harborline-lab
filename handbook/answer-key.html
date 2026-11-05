@@ -19,6 +19,7 @@
 <article class="hb-content">
 
 <h1>Answer key</h1>
+<p class="hb-noprint" style="margin:-8px 0 16px;font-size:.875rem"><a href="http://localhost:8080/start" data-hb-app="/start">&larr; Back to Start here in the app</a></p>
 <p class="hb-lead">Every project has something real to find in the data: a business story the simulator planted on
 purpose. This page explains each one, behind a spoiler gate. Open a project only after you have shipped its
 dashboards; finding the story yourself is the exercise.</p>
@@ -177,7 +178,7 @@ are absent for PUREFRM in months where it was due.</p>
 <p>Alan keys the month-end EUR/USD and GBP/USD rates by hand on the first business day. They differ from the ECB
 reference rate by 0.5 to 2.5%.</p>
 <p><strong>Where it shows:</strong> <code>dbo.exchangerate</code> (stored ×100) against Frankfurter’s ECB series for the
-same dates. The effect is on the EUR and GBP clients’ USD revenue and on realised FX gains and losses.</p>
+same dates, inside the range <code>reference/signal_sources.csv</code> gives for the build. The effect is on the EUR and GBP clients’ USD revenue and on realised FX gains and losses.</p>
 <h3>How clients pay</h3>
 <div class="hb-table-wrap"><table class="hb-table hb-table--dense">
 <thead><tr><th>Behaviour</th><th>Clients</th><th>Signature</th></tr></thead>
@@ -206,7 +207,7 @@ amount Beth can claim.</p>
 <h3>Marlowe applies fuel surcharges one week late</h3>
 <p>When the weekly diesel price moves, Marlowe (<code>MRLF</code>) applies the new surcharge percentage a week late.</p>
 <p><strong>Where it shows:</strong> the surcharge percentage implied by each Marlowe bill against the rate card’s fuel
-table applied to the EIA weekly diesel price. The billed percentage matches the previous week’s price, consistently.
+table applied to the weekly price in <code>reference/diesel_weekly.csv</code>. The billed percentage matches the previous week’s price, consistently.
 In a falling market that overcharges; in a rising one it undercharges.</p>
 </div>
 </details>
@@ -298,6 +299,12 @@ need them, and access is audited.</li>
 </div>
 </details>
 </section>
+
+<nav class="callout hb-noprint" aria-label="What to do next" style="margin-top:40px">
+<p class="callout-title">What next?</p>
+<p>Scored your findings or read a story? Back to the next project.</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"><a class="hb-btn hb-btn--primary" href="http://localhost:8080/tracker/board" data-hb-app="/tracker/board">Open the board</a> <a class="hb-btn" href="http://localhost:8080/start" data-hb-app="/start">Start here</a></div>
+</nav>
 
 </article>
 <aside class="hb-toc" data-hb-toc></aside>

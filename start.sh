@@ -12,10 +12,69 @@ if ! docker info >/dev/null 2>&1; then
   exit 1
 fi
 
+# Passwords and keys are made here, once, the same way setup does it. What is already in .env always wins: Postgres keeps
+# its first password in the Docker volume, so a new one would lock you out of your own data.
+key_names="POSTGRES_PASSWORD HL_APP_PASSWORD HL_ETL_PASSWORD HL_REVIEWER_PASSWORD SF_CLIENT_ID SF_CLIENT_SECRET CARRIER_API_KEY"
+case "$(uname -s)" in
+  Darwin) state_dir="${HL_STATE_DIR:-$HOME/Library/Logs/HarborlineLab}" ;;
+  *) state_dir="${HL_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/HarborlineLab}" ;;
+esac
+env_backup="$state_dir/env.backup"
+mkdir -p "$state_dir"
+key_in() { { grep -E "^[[:space:]]*$1[[:space:]]*=" "$2" || true; } 2>/dev/null | tail -n 1 | cut -d= -f2- | tr -d '[:space:]'; }
+new_key() {
+  local k
+  k="$(openssl rand -hex 24 2>/dev/null || true)"
+  if [ "${#k}" -lt 32 ]; then k="$(od -An -tx1 -N24 /dev/urandom | tr -d ' \n')"; fi
+  if [ "${#k}" -lt 32 ]; then echo "[FAIL] Could not make a random key on this computer." >&2; exit 1; fi
+  printf '%s' "$k"
+}
+set_key() {
+  local tmp
+  tmp="$(mktemp)"
+  if grep -qE "^[[:space:]]*$1[[:space:]]*=" .env; then
+    sed -E "s|^[[:space:]]*$1[[:space:]]*=.*|$1=$2|" .env >"$tmp"
+  else
+    cat .env >"$tmp"
+    printf '%s=%s\n' "$1" "$2" >>"$tmp"
+  fi
+  mv "$tmp" .env
+}
+stop_if_data_would_lock_out() {
+  docker volume ls -q --filter "name=harborline-lab_pgdata" | grep -qxF "harborline-lab_pgdata" || return 0
+  cat >&2 <<STOP
+Your settings file (.env) and its backup are both gone, but your simulator data is still here in Docker.
+The data is locked with the password that was in that file. A new password would not open it, so this stopped here.
+Nothing has been changed or deleted. You have two choices:
+  1  Keep your data: put your old .env back in this folder, from a backup or another copy, then run this again.
+  2  Start fresh: this deletes all your simulator data and tracker progress. Run these, then run this again:
+       docker rm -f harborline-lab-app-1 harborline-lab-postgres-1
+       docker volume rm harborline-lab_pgdata
+STOP
+  exit 1
+}
 if [ ! -f .env ]; then
-  cp .env.example .env
-  echo "Created .env from .env.example (edit it to change ports or passwords)."
+  if [ -f "$env_backup" ]; then
+    cp "$env_backup" .env
+    echo "Your .env was missing, so it was restored from its backup. Your passwords still match your data."
+  else
+    stop_if_data_would_lock_out
+    cp .env.example .env
+    echo "Created .env with passwords and keys made just for this computer."
+  fi
 fi
+chmod 600 .env
+for key in $key_names; do
+  [ -z "$(key_in "$key" .env)" ] || continue
+  value="$(key_in "$key" "$env_backup")"
+  if [ -z "$value" ]; then
+    if [ "$key" = "POSTGRES_PASSWORD" ]; then stop_if_data_would_lock_out; fi
+    value="$(new_key)"
+  fi
+  set_key "$key" "$value"
+done
+cp .env "$env_backup"
+chmod 600 "$env_backup"
 mkdir -p landing
 
 # Run the app container as you, so files it writes to ./landing and ./answer_key stay yours.

@@ -2,6 +2,7 @@
 
 Every path defaults to the package layout (``R/config``, ``R/landing`` ...) so the simulator also runs
 from a source checkout. Inside the container the compose file points them at the ``/data`` mounts.
+No password or key has a default: setup generates them into .env, different on every install.
 """
 
 from __future__ import annotations
@@ -91,13 +92,13 @@ def load_settings() -> Settings:
         pg_host=_env("HL_PG_HOST", "localhost"),
         pg_port=_env_int("HL_PG_PORT", 5432),
         pg_superuser=_env("POSTGRES_USER", "postgres"),
-        pg_superpassword=_env("POSTGRES_PASSWORD", "harborline-admin"),
+        pg_superpassword=_env("POSTGRES_PASSWORD", ""),
         app_user=_env("HL_APP_USER", "harborline_app"),
-        app_password=_env("HL_APP_PASSWORD", "harborline-app"),
+        app_password=_env("HL_APP_PASSWORD", ""),
         etl_user=_env("HL_ETL_USER", "etl_reader"),
-        etl_password=_env("HL_ETL_PASSWORD", "etl-reader-2026"),
+        etl_password=_env("HL_ETL_PASSWORD", ""),
         reviewer_user=_env("HL_REVIEWER_USER", "uat_reviewer"),
-        reviewer_password=_env("HL_REVIEWER_PASSWORD", "uat-review-2026"),
+        reviewer_password=_env("HL_REVIEWER_PASSWORD", ""),
         pg_public_host=_env("HL_PG_PUBLIC_HOST", "localhost"),
         pg_public_port=_env_int("HL_PG_PUBLIC_PORT", _env_int("HL_PG_PORT", 5432)),
         app_public_port=_env_int("HL_APP_PUBLIC_PORT", _env_int("HL_APP_PORT", 8080)),
@@ -110,9 +111,9 @@ def load_settings() -> Settings:
         brand_dir=_env_path("HL_BRAND_DIR", root / "brand"),
         start_here=_env_path("HL_START_HERE", root / "START_HERE.html"),
         web_dist=_env_path("HL_WEB_DIST", root / "web" / "dist"),
-        sf_client_id=_env("SF_CLIENT_ID", "3MVG9harborline.etl.client"),
-        sf_client_secret=_env("SF_CLIENT_SECRET", "hl-sf-secret-7c41"),
-        carrier_api_key=_env("CARRIER_API_KEY", "hl-carrier-live-5e2a9d"),
+        sf_client_id=_env("SF_CLIENT_ID", ""),
+        sf_client_secret=_env("SF_CLIENT_SECRET", ""),
+        carrier_api_key=_env("CARRIER_API_KEY", ""),
         default_preset=_env("HL_DEFAULT_PRESET", "medium").lower(),
         default_seed=_env_int("HL_SEED", 20261031),
         offline=_env_bool("HL_OFFLINE", False),

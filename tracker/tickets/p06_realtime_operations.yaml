@@ -51,27 +51,25 @@ stories:
     priority: Highest
     story_points: 5
     sprint: 1
-    due_day: 4
+    due_day: 3
     components: [CDC, Platform]
-    labels: [adr, cdc, free-tier]
+    labels: [adr, cdc, free-tier, level-4]
     description: |
       > "Before anything touches replication on my server, I want a one-page decision I can review: what connects to
       > what, what it costs, and what happens to my disk if your side stops." (Kevin)
 
-      Decide how WMS changes reach your platform within 5 minutes.
+      Decide how WMS changes reach your platform within 5 minutes, and be ready to defend the decision to the people who
+      carry the risk.
 
-      **Facts**
-      - Postgres 17 runs with `wal_level=logical`. Publications `hl_wms_cdc`, `hl_ax_cdc` and `hl_iot_cdc` exist (all tables
-        in each schema). `etl_reader` has REPLICATION. Every table has a primary key.
-      - The WMS hard-deletes rows. `order_line` has no audit timestamp, and `mod_ts` is set by the application in local warehouse time.
+      **What's fixed**
       - The source is on your laptop behind NAT and must not be exposed. The cloud side is on a free tier.
+      - The WMS physically deletes rows, and not every table records when a row last changed.
+      - Kevin owns the server, its disk and its network. Sam Okafor approves cost. Marcus Bell owns the WMS and its release
+        process. Luis and Shanice Carter decide what "live" has to mean.
 
-      **What good looks like:** an ADR that compares at least three materially different approaches on latency, cost,
-      delete fidelity, ordering, operational burden and failure modes, including "consumer stopped for a weekend".
-      It's backed by a walking skeleton that proves the chosen path end to end.
-
-      **Talk to:** Luis and Shanice Carter (what "live" means), Kevin (server, disk, network), Marcus Bell (tables, WMS
-      release process), Sam Okafor (cost approval).
+      **What they will push on:** latency, cost, delete fidelity, ordering, the day-to-day burden of running it, and how
+      it fails, including a consumer that stops for a weekend. The decision has to compare at least three materially
+      different approaches, and a walking skeleton has to prove the chosen path end to end.
 
       **Definition of Done**
       - ADR merged under `docs/adr/` and approved by Kevin and Sam
@@ -84,6 +82,27 @@ stories:
       - "No orphaned replication slot left on the server after the spike"
     depends_on: [P1.S2, P1.S3]
     tasks:
+      - id: P6.S1.T3
+        type: Task
+        summary: "Infrastructure constraints with Kevin"
+        estimate_hours: 3
+        due_day: 1
+        priority: High
+        components: [Platform]
+        labels: [needs-clarification, infrastructure, free-tier, level-2]
+        description: |
+          Before you design anything, find out what the server allows and what worries Kevin. Ask him about five things: disk
+          headroom, replication limits, how he'd notice trouble, maintenance windows and network rules. Then list the limits
+          of your cloud tier that affect frequent or always-on jobs, each with a link to the vendor's documentation.
+
+          **Where to start:** Read *Disk full* in the troubleshooting part of Getting Started: it says what a stopped replication slot does to the
+          disk. Then message Kevin O'Hara with the five questions. For tier limits, open the vendor's own page for Databricks
+          Free Edition or the Snowflake trial.
+        acceptance_criteria:
+          - "Constraint list covers all five topics and has been reviewed by Kevin"
+          - "Free-tier limits that affect streaming listed, each with its documentation link"
+          - &docs "Note committed via PR (docs/DATA-<n>-… branch, Conventional Commit with the key) and linked from this ticket"
+        depends_on: []
       - id: P6.S1.T1
         type: Task
         summary: "Define 'live' with Luis and Shanice"
@@ -91,7 +110,7 @@ stories:
         due_day: 1
         priority: High
         components: [CDC]
-        labels: [needs-clarification, requirements]
+        labels: [needs-clarification, requirements, level-3]
         description: |
           "Live" means different things to different people. Shanice wants to know which orders will miss today's carrier
           cutoff. Luis wants a cross-site view. Nobody has said what happens on night shifts, or how fresh is fresh enough
@@ -100,7 +119,7 @@ stories:
           - "Question list ranked by Luis"
           - "Freshness need per question (≤ 5 min / ≤ 1 h / daily)"
           - "In-scope tables derived from the questions"
-          - &docs "Note committed via PR (docs/DATA-<n>-… branch, Conventional Commit with the key) and linked from this ticket"
+          - *docs
         depends_on: []
       - id: P6.S1.T2
         type: Task
@@ -109,7 +128,7 @@ stories:
         due_day: 2
         priority: High
         components: [CDC]
-        labels: [profiling, wms]
+        labels: [profiling, wms, level-3]
         description: |
           Measure what the WMS actually changes: inserts, updates and deletes per table per hour at 1× and 60×, the WAL
           generated per hour, and which tables hard-delete and when. Use both the simulator's change counts and the database itself.
@@ -119,30 +138,14 @@ stories:
           - "Delete patterns documented per table, including the nightly housekeeping"
           - *docs
         depends_on: []
-      - id: P6.S1.T3
-        type: Task
-        summary: "Infrastructure constraints with Kevin"
-        estimate_hours: 3
-        due_day: 2
-        priority: High
-        components: [Platform]
-        labels: [needs-clarification, infrastructure, free-tier]
-        description: |
-          Ask Kevin what the server allows and what worries him: disk headroom, replication limits, how he'd notice trouble,
-          maintenance windows, and network rules. Also confirm what your cloud tier allows for frequent or always-on jobs, and cite the source.
-        acceptance_criteria:
-          - "Constraint list reviewed by Kevin"
-          - "Free-tier limits that affect streaming listed with their documentation source"
-          - *docs
-        depends_on: []
       - id: P6.S1.T4
         type: Task
         summary: "Cost model for the candidate designs"
         estimate_hours: 2
-        due_day: 3
+        due_day: 2
         priority: Medium
         components: [Platform]
-        labels: [finops, free-tier]
+        labels: [finops, free-tier, level-3]
         description: |
           Estimate monthly compute for each option at the agreed freshness. Give two views: whether it fits your free tier,
           and what it would cost at paid-tier prices for a real company. Sam will ask.
@@ -158,10 +161,14 @@ stories:
         due_day: 3
         priority: Highest
         components: [CDC, Platform]
-        labels: [adr]
+        labels: [adr, level-4]
         description: |
-          Compare at least three materially different approaches and decide. Write it for Kevin and Sam: what connects to
-          what, what runs where, what it costs, and how each option fails, including a consumer that stops for 72 hours.
+          Kevin and Sam have to live with this decision long after the demo. Kevin will read it asking what connects to what
+          on his server, and what happens to his disk when your side stops for 72 hours. Sam will read it asking what runs
+          where, what it costs, and whether it survives the end of the free tier. Luis's freshness need sits on top of both.
+
+          Weigh at least three materially different approaches and make a call. The consequences you accept belong in the
+          record as much as the choice does.
         acceptance_criteria:
           - "ADR in docs/adr/ with context, options, decision and consequences"
           - "Covers delete fidelity, ordering, latency, cost, security and failure modes"
@@ -172,13 +179,15 @@ stories:
         type: Spike
         summary: "Walking skeleton: one WMS table end to end"
         estimate_hours: 5
-        due_day: 4
+        due_day: 3
         priority: High
         components: [CDC]
-        labels: [spike, cdc]
+        labels: [spike, cdc, level-4]
         description: |
-          Prove the decision before you build it out. Show changes to one WMS table (an insert, an update and a delete)
-          visible in your platform within 5 minutes while the simulator streams at 60×. Then tear it down cleanly.
+          > "Show me it works before you build the rest of it. And leave my server the way you found it." (Kevin)
+
+          A decision on paper isn't proof. Show one WMS table's changes (an insert, an update and a delete) in your platform
+          within 5 minutes while the simulator streams at 60×. Then take it all down again.
         acceptance_criteria:
           - "Insert, update and delete each visible within 5 minutes; lag measured"
           - "Teardown leaves no orphaned replication slot (shown in the PR)"
@@ -193,21 +202,23 @@ stories:
     priority: Highest
     story_points: 13
     sprint: 1
-    due_day: 8
+    due_day: 7
     components: [CDC, Ingestion]
-    labels: [cdc, wms, logical-replication]
+    labels: [cdc, wms, logical-replication, level-4]
     description: |
-      Build the production CDC feed for the WMS tables the board needs. Cover the rest of the `hl_wms_cdc` publication too where it's cheap.
+      > "If the WMS says it's gone, I want it gone on my side too, boss. And when something restarts, I don't want to hear about it." (Luis)
 
-      **Requirements**
-      - Inserts, updates and hard deletes, applied in commit order per key, with transaction metadata kept.
-      - A consistent start: seed from a snapshot and continue from the stream with no gap and no overlap.
-      - With default replica identity, a delete carries only the primary key. Downstream still needs to know what was deleted.
-      - The replication slot is owned, monitored and never left behind. dev and prod never share one.
-      - Survives consumer restarts, Postgres restarts, Docker restarts and WMS releases that change the schema.
+      Build the production change feed for the WMS tables the board needs. Cover the rest of the `hl_wms_cdc` publication too where it's cheap.
 
-      **Talk to:** Marcus Bell (tables, release process; replica identity changes need the table owner, which is the WMS
-      application, so it's his call) and Kevin O'Hara (slots, disk).
+      **What it has to do**
+      - Inserts, updates and hard deletes all arrive, in commit order for each key, and every change can be traced to its transaction.
+      - It starts from a consistent point: no gap and no overlap between the seed and the stream.
+      - Downstream knows what was deleted, not just that something was.
+      - It survives consumer restarts, Postgres restarts, Docker restarts and WMS releases that change the schema.
+      - Kevin's rule: every replication slot is owned, monitored and never left behind. dev and prod never share one.
+
+      **Who decides:** Marcus Bell owns the WMS application, so anything that changes how a WMS table is set up for
+      replication is his call. Kevin O'Hara owns slots and disk.
 
       **Definition of Done**
       - All sub-tasks done; resilience drills logged with zero reconciliation differences
@@ -224,10 +235,10 @@ stories:
         type: Task
         summary: "CDC data contract with Marcus"
         estimate_hours: 2
-        due_day: 5
+        due_day: 4
         priority: Medium
         components: [CDC]
-        labels: [data-contract, needs-clarification]
+        labels: [data-contract, needs-clarification, level-3]
         description: |
           Agree the tables in scope, delete semantics, what a WMS release looks like, and who tells you before a schema change.
           If you want any table's replica identity changed, make the case to Marcus. It's his decision as application owner.
@@ -240,10 +251,10 @@ stories:
         type: Task
         summary: "Replication slot lifecycle and ownership"
         estimate_hours: 4
-        due_day: 5
+        due_day: 4
         priority: High
         components: [CDC, Platform]
-        labels: [cdc, slots]
+        labels: [cdc, slots, level-3]
         description: |
           Your pipeline owns its slot or slots. Define the naming, who creates and drops them, what happens on a redeploy,
           and how dev and prod avoid sharing or orphaning a slot. Kevin's rule: no slot without an owner and a monitor.
@@ -257,13 +268,17 @@ stories:
         type: Task
         summary: "Initial snapshot with a clean handoff to streaming"
         estimate_hours: 6
-        due_day: 6
+        due_day: 5
         priority: High
         components: [CDC]
-        labels: [cdc, snapshot]
+        labels: [cdc, snapshot, level-4]
         description: |
-          Seed the current state from a snapshot, then continue from the change stream. Changes made while the snapshot was
-          running (the simulator keeps streaming) must not be missed or applied twice.
+          The live view has to start from the truth, and the simulator won't pause while you get it. Changes made during the
+          seed must not be missed or applied twice.
+
+          Marcus is protective of the WMS during business hours, and big reads have to stay clear of the nightly housekeeping.
+          How long a seed may take, and what it costs the source while it runs, is yours to decide and defend. One day a
+          single table will need seeding again, on its own.
         acceptance_criteria:
           - "Snapshot plus stream in place for every in-scope table"
           - "After seeding under load, row counts and checksums match the source at a quiesced point"
@@ -274,10 +289,10 @@ stories:
         type: Task
         summary: "Land change events in bronze with ordering metadata"
         estimate_hours: 6
-        due_day: 7
+        due_day: 6
         priority: High
         components: [CDC, Ingestion]
-        labels: [cdc, bronze]
+        labels: [cdc, bronze, level-3]
         description: |
           Persist every change with its operation, commit position and time, transaction id, and the before and after
           images where available. Bronze is append-only and replayable.
@@ -291,33 +306,38 @@ stories:
         type: Task
         summary: "Make deletes meaningful downstream"
         estimate_hours: 3
-        due_day: 7
+        due_day: 6
         priority: Medium
         components: [CDC, Modeling]
-        labels: [cdc, deletes]
+        labels: [cdc, deletes, level-4]
         description: |
-          With default replica identity, a delete only tells you the key. Downstream needs to know which client's order line
-          was deleted, or which warehouse's inventory row. Decide how deletes become meaningful, and document the edge cases:
-          cascades from order_header to order_line and from shipment to shipment_carton, voided cartons, and zero-quantity inventory.
+          A delete that only says "something went" is no use to anyone downstream. Luis needs to know which client's order
+          line was cancelled, or which warehouse's inventory ran out. Some deletes arrive alone, some are the side effect of
+          another delete, and some tables shed rows in nightly housekeeping or when a carton is voided.
+
+          Decide how deletes become meaningful, weigh it against what it costs the WMS and the feed, and write down the edge
+          cases you found. Anything that changes a WMS table is Marcus's call.
         acceptance_criteria:
           - "Deleted rows carry enough context for downstream models (tested on order_line, inventory and shipment_carton)"
           - "Cascaded deletes observed and handled"
-          - "Decision documented"
+          - "Decision and edge cases documented"
           - *git
         depends_on: [P6.S2.T4]
       - id: P6.S2.T6
         type: Task
         summary: "Apply changes to silver current-state tables"
         estimate_hours: 6
-        due_day: 8
+        due_day: 7
         priority: High
         components: [CDC, Modeling]
-        labels: [cdc, silver]
+        labels: [cdc, silver, level-4]
         description: |
-          Maintain current-state mirrors of the in-scope tables from the change stream: the latest version per key, deletes
-          applied, and out-of-order delivery inside a batch resolved by commit order.
+          Everything after this reads current state, so current state has to equal the WMS: the latest version of every row,
+          nothing that was deleted, nothing resurrected. Delivery won't always arrive in the order things happened, and
+          the feed will hand you the same batch more than once. History has to survive even when the current row doesn't.
         acceptance_criteria:
           - "Silver equals the source (counts and checksums for all in-scope tables) at a quiesced point"
+          - "Out-of-order delivery inside a batch ends in the same state as ordered delivery"
           - "Applying the same batch twice changes nothing"
           - "Hard-deleted rows leave current state and stay in history"
           - *git
@@ -326,10 +346,10 @@ stories:
         type: Task
         summary: "Survive a WMS release (schema change)"
         estimate_hours: 3
-        due_day: 8
+        due_day: 7
         priority: Medium
         components: [CDC]
-        labels: [cdc, schema-drift]
+        labels: [cdc, schema-drift, level-3]
         description: |
           Run the simulator's schema-drift release, which adds a column to a WMS table and logs a release. The feed must keep
           flowing, and the new column must either appear downstream or be flagged, according to a documented policy.
@@ -343,13 +363,14 @@ stories:
         type: Task
         summary: "Resilience drills: break it on purpose"
         estimate_hours: 4
-        due_day: 8
+        due_day: 7
         priority: High
         components: [CDC]
-        labels: [cdc, resilience]
+        labels: [cdc, resilience, level-4]
         description: |
-          Kill the consumer in the middle of a transaction, restart Postgres, stop Docker for 30 minutes, and cut the
-          network. After each one, prove that nothing was lost or duplicated.
+          Kevin wants evidence, not promises, before he trusts this on his server. Four failures must each leave nothing lost
+          and nothing duplicated: the consumer killed in the middle of a transaction, Postgres restarted, Docker stopped for 30
+          minutes, and the network cut. If you find a fifth, add it.
         acceptance_criteria:
           - "Each drill run and logged with timings"
           - "Reconciliation after each drill shows zero differences"
@@ -364,10 +385,10 @@ stories:
     reporter: luis.moreno
     priority: High
     story_points: 8
-    sprint: 2
-    due_day: 14
+    sprint: 1
+    due_day: 10
     components: [Modeling, Streaming]
-    labels: [streaming, operations]
+    labels: [streaming, operations, level-3]
     description: |
       > "At 1 pm I need to know which of today's orders won't make the 3 pm pickup, so I can move people." (Shanice Carter, GM ATL1)
 
@@ -380,6 +401,8 @@ stories:
       The batch models from Warehouse Performance are the reference, and live numbers must agree with them once a day has
       closed. Every time is shown in the site's local time. Carrier cutoffs by site and mode come from Luis and Shanice.
 
+      This is the working version on a healthy feed. Next sprint, P6.S4 tests it against redelivery, late changes and replay.
+
       **Definition of Done**
       - All sub-tasks done; daily parity with the batch models within the agreed tolerance
       - Each sub-task merged through its own PR (branch `feat/DATA-<n>-…`, Conventional Commits with the key, self-review, CI green)
@@ -389,33 +412,37 @@ stories:
       - "Cancelled orders, deleted lines and zero-quantity inventory disappear from live counts"
       - "Closed-day parity with the batch models within the tolerance agreed with Luis"
       - "Site-local time correct for all 8 sites, including DST transitions"
-    depends_on: [P6.S2, P6.S4, P2.S2, P2.S3]
+    depends_on: [P6.S2, P2.S2, P2.S3]
     tasks:
-      - id: P6.S3.T1
+      - id: P6.S3.T4
         type: Task
-        summary: "Live order status and cutoff risk"
-        estimate_hours: 6
-        due_day: 12
-        priority: High
+        summary: "Dock and labor in motion"
+        estimate_hours: 3
+        due_day: 8
+        priority: Medium
         components: [Streaming, Modeling]
-        labels: [streaming, orders, needs-clarification]
+        labels: [streaming, labor, dock, level-2]
         description: |
-          For each open order, show its current status, how long it has been in that status, and whether it will make
-          today's carrier cutoff (site local time, parcel vs LTL). The at-risk rule comes from Luis. Ask him for it.
+          Show two lists per site. The first is inbound trailers that have arrived but aren't fully received, with dock door and
+          dwell minutes. The second is open tasks by type and zone. Identify workers by username only. This ends up on a wall display.
+
+          **Where to start:** Open `wms.receipt_header` and `wms.task` on the Source systems page. Open receipts have `receipt_status` ARRIVED or
+          RECEIVING. Open tasks have `task_status` CREATED, ASSIGNED or IN_PROGRESS; zone comes through `wms.location` and
+          `username` through `wms.app_user`. Ask Marcus Bell if a status looks odd.
         acceptance_criteria:
-          - "Status per open order ≤ 5 minutes behind the source"
-          - "At-risk rule implemented as agreed and documented in the metric catalog"
-          - "Cancelled or deleted orders leave the open counts"
+          - "Open receipts per site with dock door and dwell minutes"
+          - "Open tasks by type and zone per site"
+          - "Workers appear by username only: no first or last name in any output"
           - *git
         depends_on: []
       - id: P6.S3.T2
         type: Task
         summary: "Current inventory and holds"
         estimate_hours: 5
-        due_day: 12
+        due_day: 8
         priority: High
         components: [Streaming, Modeling]
-        labels: [streaming, inventory]
+        labels: [streaming, inventory, level-3]
         description: |
           Show live on-hand, allocated, available and on-hold units by site, zone and client. Rows deleted at zero quantity
           must disappear, and totals must agree with the ledger.
@@ -424,47 +451,71 @@ stories:
           - "HOLD / AVAILABLE transitions reflected within 5 minutes"
           - *git
         depends_on: []
+      - id: P6.S3.T7
+        type: Task
+        summary: "Hold and release events feed for Quality"
+        estimate_hours: 2
+        due_day: 9
+        priority: Low
+        components: [Streaming]
+        labels: [streaming, quality, level-2]
+        description: |
+          Dr. Ayesha Khan wants to know within minutes when lots go on HOLD at the cold sites. It will matter in the Cold
+          Chain project. Publish one event per hold and per release from the stream.
+
+          **Where to start:** Open `wms.inventory_txn` on the Source systems page: `txn_type` HOLD and RELEASE rows carry `lot_nbr`, `reason_code`
+          and `warehouse_id`, and zone comes through `wms.location`. Dr. Ayesha Khan can tell you what she'd do with each event.
+        acceptance_criteria:
+          - "One event per hold or release, carrying lot, site, zone, reason and site-local time"
+          - "Latency ≤ 5 minutes, measured on at least one real hold"
+          - *git
+        depends_on: [P6.S3.T2]
+      - id: P6.S3.T1
+        type: Task
+        summary: "Live order status and cutoff risk"
+        estimate_hours: 6
+        due_day: 9
+        priority: High
+        components: [Streaming, Modeling]
+        labels: [streaming, orders, needs-clarification, level-4]
+        description: |
+          > "My leads need to know which orders to chase while there's still time to chase them." (Shanice)
+
+          For each open order, the floor needs its current status, how long it has sat there, and whether it will make today's
+          carrier cutoff (site local time, parcel and LTL differ). Luis owns the at-risk rule and hasn't written it down. Client
+          Success reads "at risk" differently. That dispute gets settled in the board spec (P6.S6.T1), so the answer may still move.
+
+          Nobody has said what happens to orders that drop in after today's cutoff, or to orders on hold.
+        acceptance_criteria:
+          - "Status per open order ≤ 5 minutes behind the source"
+          - "At-risk rule implemented as Luis agreed, edge cases decided, and all of it documented in the metric catalog"
+          - "Cancelled or deleted orders leave the open counts"
+          - *git
+        depends_on: []
       - id: P6.S3.T3
         type: Task
         summary: "Throughput and backlog by hour"
         estimate_hours: 4
-        due_day: 13
+        due_day: 10
         priority: Medium
         components: [Streaming, Modeling]
-        labels: [streaming, throughput]
+        labels: [streaming, throughput, level-3]
         description: |
           Show orders received, released and shipped per hour by site, backlog by status, and pick throughput over the last 60 minutes.
         acceptance_criteria:
           - "Hourly series per site in local time"
-          - "Backlog matches the agreed KPI definition"
+          - "Backlog follows the definition in your metric catalog today; P6.S6.T1 settles the Ops and Client Success conflict later, so it must be easy to change"
           - "Throughput for closed hours matches the batch results"
           - *git
         depends_on: [P6.S3.T1]
-      - id: P6.S3.T4
-        type: Task
-        summary: "Dock and labor in motion"
-        estimate_hours: 3
-        due_day: 13
-        priority: Medium
-        components: [Streaming, Modeling]
-        labels: [streaming, labor, dock]
-        description: |
-          Show inbound trailers that have arrived but aren't fully received, and open tasks by type and zone per site.
-          Identify workers by username only. This ends up on a wall display.
-        acceptance_criteria:
-          - "Open receipts with dwell time"
-          - "Open tasks by type and zone"
-          - "No personal names exposed"
-          - *git
-        depends_on: []
       - id: P6.S3.T5
         type: Task
         summary: "Site-local time and DST across all sites"
         estimate_hours: 2
-        due_day: 13
+        due_day: 10
         priority: Medium
         components: [Streaming]
-        labels: [time-zones, dst]
+        labels: [time-zones, dst, level-3]
         description: |
           WMS timestamps are local without a zone, and commit times are UTC. Every tile must show the site's local time,
           correctly, for all 8 sites and across DST changes.
@@ -477,10 +528,10 @@ stories:
         type: Task
         summary: "Live vs batch parity check"
         estimate_hours: 3
-        due_day: 14
+        due_day: 10
         priority: High
         components: [Data Quality]
-        labels: [parity, reconciliation]
+        labels: [parity, reconciliation, level-3]
         description: |
           Once a day closes, the live models and the nightly batch models must agree. Automate the comparison.
         acceptance_criteria:
@@ -488,41 +539,25 @@ stories:
           - "Tolerance agreed with Luis; mismatches alert"
           - *git
         depends_on: [P6.S3.T2, P6.S3.T3]
-      - id: P6.S3.T7
-        type: Task
-        summary: "Hold and release events feed for Quality"
-        estimate_hours: 2
-        due_day: 14
-        priority: Low
-        components: [Streaming]
-        labels: [streaming, quality]
-        description: |
-          Dr. Ayesha Khan wants to know within minutes when lots go on HOLD at the cold sites. It will matter in the Cold
-          Chain project. Publish hold and release events from the stream.
-        acceptance_criteria:
-          - "Events carry lot, site, zone, reason and time"
-          - "Latency ≤ 5 minutes"
-          - *git
-        depends_on: [P6.S3.T2]
 
-  # ---------------------------------------------------------------- S4 (sprint 1)
+  # ---------------------------------------------------------------- S4
   - id: P6.S4
     summary: "Late and out-of-order data, exactly-once, backfill and replay"
     type: Story
     reporter: luis.moreno
     priority: High
     story_points: 8
-    sprint: 1
-    due_day: 10
+    sprint: 2
+    due_day: 13
     components: [CDC, Data Quality]
-    labels: [exactly-once, replay, late-data]
+    labels: [exactly-once, replay, late-data, level-4]
     description: |
       > "If the board ever shows a number that later changes for no reason, the GMs will stop looking at it." (Luis)
 
-      Streaming systems redeliver, reorder and arrive late:
+      Last sprint it worked on a good day. Now it has to hold up on a bad one:
       - Changes can be redelivered after a crash.
       - WMS timestamps are local and set by the application, so they can disagree with commit order.
-      - The simulator can dump late data.
+      - Changes and records can arrive long after they happened.
       - One day you'll need to rebuild a table, or replay a window, without stopping the feed.
 
       **What good looks like**
@@ -537,53 +572,63 @@ stories:
       - Runbooks in the repo; CHANGELOG entry
     acceptance_criteria:
       - "Forced redelivery of an hour of changes leaves silver and gold identical"
-      - "Late-data policy agreed and demonstrated with the late_data_dump scenario"
+      - "Late-data policy agreed with Luis and demonstrated with late changes, including the late_data_dump scenario for the sources it touches"
       - "Table rebuild and window replay both tested under load"
       - "Daily exactly-once reconciliation published on the Data Platform Health dashboard"
-    depends_on: [P6.S2]
+    depends_on: [P6.S2, P6.S3]
     tasks:
       - id: P6.S4.T1
         type: Task
         summary: "Idempotent processing end to end"
         estimate_hours: 4
-        due_day: 9
+        due_day: 11
         priority: High
         components: [CDC]
-        labels: [idempotency]
+        labels: [idempotency, level-4]
         description: |
-          Make every stage safe to re-run and safe to receive the same change twice. Prove it by forcing redelivery.
+          After a crash, the same changes come round again. Luis doesn't care how the plumbing copes: he cares that a redelivered
+          hour can't move a number on a wall. That has to hold at every stage, and you prove it by forcing it, not by argument.
         acceptance_criteria:
           - "Forced redelivery of a 1-hour window produces identical silver and gold (checksums)"
-          - "Deduplication keys documented"
+          - "How a repeated change is recognised at each stage is documented"
           - *git
-        depends_on: []
+        depends_on: [P6.S2.T6, P6.S3.T6]
       - id: P6.S4.T2
         type: Task
         summary: "Late and out-of-order policy, agreed with Luis"
         estimate_hours: 5
-        due_day: 9
+        due_day: 11
         priority: High
         components: [CDC, Modeling]
-        labels: [late-data, needs-clarification]
+        labels: [late-data, needs-clarification, level-4]
         description: |
-          Decide with Luis which time each live metric uses (commit time or WMS local timestamps) and how late a change can
-          arrive before a closed hour gets restated. Run the late_data_dump scenario and show that the numbers follow the policy.
+          > "A closed hour is closed. Unless it was wrong. Then I want to know why, boss." (Luis)
+
+          Commit time and the WMS's own local timestamps can disagree, and a GM sees the result as a number that moved. Luis
+          owns two decisions, and neither is written down: which time each live metric uses, and how late a change can arrive
+          before a closed hour gets restated. Bring him the trade-offs, in his language.
+
+          One thing you can't easily see from the outside: the simulator's `late_data_dump` scenario flushes sensor and
+          carrier records, not WMS rows. How you show WMS metrics following the policy is yours to work out.
         acceptance_criteria:
           - "Policy per metric agreed with Luis"
-          - "late_data_dump: restatements happen only as the policy allows, and every one is logged"
+          - "Late changes run through the feed, including late_data_dump for the sources it touches: restatements happen only as the policy allows, and every one is logged"
           - *git
-        depends_on: []
+        depends_on: [P6.S3.T3]
       - id: P6.S4.T3
         type: Task
         summary: "Backfill and replay runbook"
         estimate_hours: 5
-        due_day: 10
+        due_day: 12
         priority: High
         components: [CDC]
-        labels: [replay, backfill, runbook]
+        labels: [replay, backfill, runbook, level-4]
         description: |
-          Write two procedures. The first rebuilds one table's current state from a fresh snapshot while the stream keeps
-          running. The second replays a time window from bronze into silver and gold. Test both.
+          One day a silver table will be wrong, or a bad release will poison an hour of results. Kevin has to be able to fix
+          that on a weekend, and the board can't go dark while he does. Two recoveries are needed, both with the stream still
+          running: rebuild one table's current state, and replay a time window through to gold.
+
+          Someone who didn't build this has to be able to follow them, so write them for Kevin.
         acceptance_criteria:
           - "Table rebuild under load ends with zero differences"
           - "Window replay reproduces previous results exactly"
@@ -594,10 +639,10 @@ stories:
         type: Task
         summary: "Daily exactly-once evidence"
         estimate_hours: 3
-        due_day: 10
+        due_day: 12
         priority: Medium
         components: [Data Quality]
-        labels: [reconciliation]
+        labels: [reconciliation, level-3]
         description: |
           Schedule a reconciliation that compares source and silver at a consistent point (counts and checksums per table)
           and publishes the result.
@@ -608,30 +653,34 @@ stories:
         depends_on: [P6.S4.T1]
       - id: P6.S4.T5
         type: Task
-        summary: "Keep deleted history (tombstones)"
+        summary: "Keep deleted history"
         estimate_hours: 3
-        due_day: 10
+        due_day: 13
         priority: Medium
         components: [CDC, Modeling]
-        labels: [deletes, audit]
+        labels: [deletes, audit, level-4]
         description: |
-          Finance and Quality will ask about things that no longer exist in the WMS: billing records deleted before
-          invoicing, voided labels, cancelled order lines. Keep deleted rows queryable, with when they were deleted and by which change.
+          Finance and Quality will ask about things that no longer exist in the WMS: billing records deleted before invoicing,
+          voided labels, cancelled order lines. They'll want to see those rows, when they went, and which change took them.
+
+          Nobody has said how long this must be kept, or what a key that is deleted and later comes back should look like.
         acceptance_criteria:
           - "Deleted rows queryable with their delete commit time"
           - "Alan Brooks can list billing records deleted since the feed went live"
           - *git
-        depends_on: []
+        depends_on: [P6.S2.T6]
       - id: P6.S4.T6
         type: Task
         summary: "Peak drill: peak_surge at 60×"
         estimate_hours: 3
-        due_day: 10
+        due_day: 13
         priority: Medium
         components: [CDC]
-        labels: [drill, performance]
+        labels: [drill, performance, level-4]
         description: |
-          Run the peak_surge scenario at 60× for an hour while the feed runs. Check lag, correctness and cost.
+          Peak is when the board matters most and when this feed is most likely to fall behind. Luis needs to know whether it
+          holds, what gives first if it doesn't, and what it cost Sam to keep it up. The test is the peak_surge scenario at 60×
+          for an hour, with the feed running.
         acceptance_criteria:
           - "Lag stays ≤ 5 minutes, or any breach is documented with its cause"
           - "Zero reconciliation differences afterwards"
@@ -647,9 +696,9 @@ stories:
     priority: High
     story_points: 5
     sprint: 2
-    due_day: 16
+    due_day: 17
     components: [Observability]
-    labels: [sla, alerting, on-call]
+    labels: [sla, alerting, on-call, level-4]
     description: |
       > "If the board is stale, I want to know before a GM tells me." (Luis)
       >
@@ -668,36 +717,55 @@ stories:
       - Alert catalog and runbooks in the repo; CHANGELOG entry
     acceptance_criteria:
       - "SLO document signed by Luis and Kevin"
-      - "Freshness measured per table and tile, with heartbeats for quiet periods"
+      - "Freshness measured per table and tile: a quiet period never reads as stale, and a stalled feed never reads as healthy"
       - "Slot inactivity and retained-WAL alerts fire in a drill before Kevin's thresholds are reached"
       - "Fire drill run; weekly SLA report published"
-    depends_on: [P6.S2, P1.S6]
+    depends_on: [P6.S2, P6.S4, P1.S6]
     tasks:
       - id: P6.S5.T1
         type: Task
         summary: "Agree the SLO and alerting with Luis and Kevin"
         estimate_hours: 2
-        due_day: 11
+        due_day: 14
         priority: High
         components: [Observability]
-        labels: [needs-clarification, sla]
+        labels: [needs-clarification, sla, level-4]
         description: |
-          Write the SLO: what is measured and where (source commit → board), when (operating hours per site; some sites run
-          nights), the target, the error budget, and who gets alerted and how.
+          Luis has said "5 minutes". Kevin has said "tell me before my disk does". Neither is an SLO yet. Some sites run nights,
+          not every table moves all the time, and nobody has said what a breach costs or who gets told when one happens. You
+          have no pager. Put a number and a boundary on it that both of them will sign.
         acceptance_criteria:
-          - "SLO document signed by Luis and Kevin"
+          - "SLO document signed by Luis and Kevin, stating what is measured and where, in which hours per site, the target, the error budget and who is alerted"
           - "Alert channel configured and tested"
           - *docs
         depends_on: []
+      - id: P6.S5.T3
+        type: Task
+        summary: "End-to-end freshness monitoring: quiet or stalled?"
+        estimate_hours: 4
+        due_day: 14
+        priority: High
+        components: [Observability]
+        labels: [freshness, monitoring, level-4]
+        description: |
+          Luis wants to look at any tile and know how far behind it is, from source commit to available on the board. At
+          night a table can go quiet because nobody is working. A feed can stall while its last row still looks recent. Both
+          look the same if all you check is the latest change, and he won't accept either being mistaken for the other.
+        acceptance_criteria:
+          - "Freshness measured at least every 5 minutes per table and tile"
+          - "A test shows a quiet table reads as healthy and a stalled feed reads as stale"
+          - "Alert when P95 > 5 minutes for 10 minutes during operating hours"
+          - *git
+        depends_on: [P6.S5.T1]
       - id: P6.S5.T2
         type: Bug
         reporter: kevin.ohara
         summary: "INCIDENT: replication slot left unconsumed over the weekend, disk alarm on the Postgres host"
         estimate_hours: 6
-        due_day: 12
+        due_day: 16
         priority: Highest
         components: [CDC, Platform]
-        labels: [incident, cdc, postgres, postmortem]
+        labels: [incident, cdc, postgres, postmortem, level-5]
         description: |
           **Reported Monday 07:45 by Kevin O'Hara (IT Infrastructure):**
           > "Docker Desktop threw a low-disk warning on Saturday night, and the Postgres volume is nearly full. pg_wal is
@@ -706,45 +774,33 @@ stories:
           > usable, or if dropping it loses your data. Please fix it today, and tell me how we stop this happening again."
 
           **Impact:** the source database is at risk. If the volume fills up, the WMS stops and every site stops shipping.
-          The Live Operations Board has been stale since Friday.
+          Every live model has been stale since Friday.
 
           **Expected:** the server is safe, the feed is caught up with no lost or duplicated changes, and guardrails exist
           so this can't happen silently again.
+
+          **Lab note:** nothing stages this for you. Leave your consumer stopped with the stream running until the slot is
+          really holding WAL, then work the ticket as if Kevin had just messaged you.
         acceptance_criteria:
           - "Server made safe first: disk headroom restored with Kevin's agreement, with every action and its order logged"
-          - "Feed restored: caught up if the slot survived, re-seeded with the backfill runbook if it was invalidated; reconciliation shows zero differences"
+          - "Feed restored, whatever state the slot was in: no lost or duplicated changes, and reconciliation shows zero differences"
           - "Root cause: why consumption stopped and why nobody was alerted"
           - "Blameless postmortem (timeline, impact, root cause, what went well, action items with owners) in docs/postmortems/"
+          - "Short plain summary for Kevin and Luis, covering what happened, what it risked and what changes, linked from the postmortem"
           - &fix "Fix merged via PR from a fix/DATA-<n>-… branch with a regression test; Conventional Commits carry the key; CI green"
-        depends_on: [P6.S2]
-      - id: P6.S5.T3
-        type: Task
-        summary: "End-to-end freshness monitoring with heartbeats"
-        estimate_hours: 4
-        due_day: 14
-        priority: High
-        components: [Observability]
-        labels: [freshness, monitoring]
-        description: |
-          Measure freshness per table and per board tile, from source commit time to availability. Add heartbeats so quiet
-          tables at night don't look stale and stalled feeds don't look healthy.
-        acceptance_criteria:
-          - "Freshness measured at least every 5 minutes per table and tile"
-          - "Heartbeat proves liveness when there are no business changes"
-          - "Alert when P95 > 5 minutes for 10 minutes during operating hours"
-          - *git
-        depends_on: [P6.S5.T1]
+        depends_on: [P6.S2, P6.S4.T3]
       - id: P6.S5.T4
         type: Task
         summary: "Replication slot lag and disk safety alerts"
         estimate_hours: 3
-        due_day: 15
+        due_day: 17
         priority: Highest
         components: [Observability, CDC]
-        labels: [slots, alerting]
+        labels: [slots, alerting, level-4]
         description: |
-          Watch the slot from the server's point of view: whether it's active, how much WAL it retains, its lag, and how
-          close it is to the server's safety limits. Kevin wants hours of warning, not minutes.
+          After the incident, Kevin's question is how this can't happen silently again. He wants to see trouble from the
+          server's side, because a pipeline that has stopped can't report that it has stopped, and he wants hours of warning,
+          not minutes. At 60× the disk fills far faster than at 1×. The thresholds are his to agree, so bring him numbers.
         acceptance_criteria:
           - "Alerts on an inactive slot and on retained WAL above thresholds Kevin agrees"
           - "Drill: stop the consumer and show the alert fires before the threshold"
@@ -755,10 +811,10 @@ stories:
         type: Task
         summary: "Alert catalog, runbooks and fire drill"
         estimate_hours: 3
-        due_day: 16
+        due_day: 17
         priority: Medium
         components: [Observability]
-        labels: [runbook, on-call]
+        labels: [runbook, on-call, level-3]
         description: |
           Give every alert a severity, an owner and a runbook link. Then run a fire drill with an injected failure.
         acceptance_criteria:
@@ -770,17 +826,17 @@ stories:
         type: Task
         summary: "Weekly SLA report"
         estimate_hours: 2
-        due_day: 16
+        due_day: 17
         priority: Low
         components: [Observability]
-        labels: [sla, reporting]
+        labels: [sla, reporting, level-3]
         description: |
           Publish SLO attainment and incidents weekly to Luis, and show them on the Data Platform Health dashboard.
         acceptance_criteria:
           - "Weekly report generated automatically"
           - "Shows attainment against the 5-minute target per site, plus incidents"
           - *git
-        depends_on: [P6.S5.T3]
+        depends_on: [P6.S5.T3, P6.S5.T2]
 
   # ---------------------------------------------------------------- S6
   - id: P6.S6
@@ -792,7 +848,7 @@ stories:
     sprint: 2
     due_day: 20
     components: [Dashboards]
-    labels: [dashboards, brand-kit, readout, tv-mode]
+    labels: [dashboards, brand-kit, readout, tv-mode, level-5]
     attachments: [wireframes/P6-D1.svg]
     description: |
       The spec is **P6-D1 Live Operations Board**, and the wireframe is attached. It runs on a TV in each site's shipping
@@ -800,11 +856,14 @@ stories:
 
       > "If I can't read it from the doorway, it's not a board." (Shanice)
 
-      **Requirements**
+      Luis wants the GMs to run their afternoons from this. They'll only do that if they believe it, so the outcome is a
+      board people trust at a glance, on a tier that wasn't built for it.
+
+      **What has to be true**
       - KPIs, filters and visuals as specified. "Backlog" and "at risk" mean different things to Ops and to Client Success,
-        so settle them and record them.
-      - Refresh: data ≤ 5 minutes behind the WMS, the page auto-refreshes, and a freshness light turns amber or red on an SLA breach.
-      - Access: GMs see their site and Luis sees all. No consumer names, addresses, phone numbers or emails, because it's on a wall.
+        and the board has to take a position that both can live with.
+      - Data ≤ 5 minutes behind the WMS, the page refreshes itself, and a freshness light turns amber or red on an SLA breach.
+      - GMs see their site and Luis sees all. No consumer names, addresses, phone numbers or emails, because it's on a wall.
       - Every interaction < 3 s. On Databricks Free Edition you have one 2X-Small warehouse: keeping it warm costs credits,
         and letting it auto-stop costs cold-start time. Document how you meet both "≤ 5 min" and "< 3 s".
       - Harborline brand kit from `brand/`: dark dashboard background for TV mode, Operations accent, palette and number formats.
@@ -833,29 +892,32 @@ stories:
         due_day: 15
         priority: High
         components: [Dashboards]
-        labels: [needs-clarification, definitions]
+        labels: [needs-clarification, definitions, level-4]
         description: |
-          Walk through the spec. Settle the "backlog" and "at risk" definitions (Ops and Client Success disagree), and
-          confirm the TV layout and which tiles a GM sees.
+          The spec leaves two fights open. Ops and Client Success count "backlog" differently, and Luis and Omar Haddad read
+          "at risk" differently. Whatever you settle goes on a wall in every building, so one definition has to win the
+          headline and the other has to find a place. Luis owns the board. Omar speaks for the clients. Any threshold the spec
+          calls "agreed" that nobody has pinned down yet gets pinned down here. Also confirm the TV layout and which tiles a GM sees.
         acceptance_criteria:
-          - "Spec updated with decisions and KPI owners"
-          - "Metric catalog updated"
+          - "Spec updated with decisions, thresholds and KPI owners"
+          - "Metric catalog updated, with the losing definition recorded and where it now lives"
           - *docs
         depends_on: []
       - id: P6.S6.T2
         type: Task
         summary: "Serving layer and refresh design (fresh and fast on your tier)"
         estimate_hours: 5
-        due_day: 16
+        due_day: 15
         priority: High
         components: [Serving]
-        labels: [performance, free-tier, finops]
+        labels: [performance, free-tier, finops, level-4]
         description: |
-          Make the board both fresh (≤ 5 minutes) and fast (< 3 s) on your tier. Decide which tables serve the board, the
-          refresh cadence, and the warehouse warm-up and auto-stop settings, and work out what each choice costs.
+          Luis wants it fresh (≤ 5 minutes) and fast (< 3 s). Sam wants the credits to last. On your tier those pull against
+          each other, and the TV in the shipping office never stops asking. Work out what serves the board and what each choice
+          costs, then defend it.
         acceptance_criteria:
           - "Design note with cost per day at 1× and 60×"
-          - "Board queries hit serving tables only"
+          - "Board load doesn't slow the feed, and the note shows how"
           - "P95 query < 3 s measured"
           - *git
         depends_on: [P6.S6.T1]
@@ -866,7 +928,7 @@ stories:
         due_day: 18
         priority: High
         components: [Dashboards]
-        labels: [dashboards, brand-kit, tv-mode]
+        labels: [dashboards, brand-kit, tv-mode, level-3]
         description: |
           Build the board from the spec and wireframe with the brand kit: the dark template for TV mode and the Operations
           accent. Include a freshness light that turns amber or red when the SLO is breached.
@@ -883,13 +945,17 @@ stories:
         due_day: 18
         priority: High
         components: [Security, Dashboards]
-        labels: [access, pii]
+        labels: [access, pii, level-4]
         description: |
-          GMs see their site and Luis sees all of them. Nothing on the board may expose consumer names, addresses, phone
-          numbers or emails.
+          GMs and shift leads see their own site. Luis and operations leadership see all of them. Workers show by username
+          only, and consumer names, addresses, phone numbers and emails must not be reachable at all. The rules have to hold in
+          the data, not just in what the report happens to display. Mei Tanaka owns security policy.
+
+          Nobody has said whose identity a shared TV in a shipping office runs as, or what a passer-by can reach from it.
         acceptance_criteria:
           - "Site-scoped access tested with two GM identities and Luis's"
-          - "No ship_to_* column reachable from any dataset behind the board"
+          - "No consumer name, address, phone or email reachable from any dataset behind the board"
+          - "How the shared TVs sign in is decided and documented"
           - *git
         depends_on: [P6.S6.T3]
       - id: P6.S6.T5
@@ -897,10 +963,10 @@ stories:
         reporter: shanice.carter
         summary: "Board shows cancelled orders as still PICKING"
         estimate_hours: 3
-        due_day: 17
+        due_day: 19
         priority: High
         components: [Streaming, CDC]
-        labels: [bug, cdc, deletes]
+        labels: [bug, cdc, deletes, level-4]
         description: |
           **Reported by Shanice Carter (GM ATL1):**
           > "Three orders the client cancelled at 10:15 were still on the at-risk list at 11:00, showing PICKING. My leads
@@ -911,7 +977,7 @@ stories:
           - "Reproduced with a cancellation during streaming, or non-reproduction proven by a test"
           - "Root cause documented in the PR"
           - *fix
-        depends_on: [P6.S3.T1]
+        depends_on: [P6.S3.T1, P6.S6.T3]
       - id: P6.S6.T6
         type: Task
         summary: "Soak test at 60× with the board open"
@@ -919,9 +985,11 @@ stories:
         due_day: 19
         priority: Medium
         components: [Serving, Observability]
-        labels: [performance, soak-test]
+        labels: [performance, soak-test, level-4]
         description: |
-          Run the stream at 60× for at least 2 hours with the board open. Capture freshness, query times, failures and cost.
+          Luis won't put this on the wall on the strength of a five-minute demo. It has to stay honest under peak load with the
+          board open and the stream at 60×, for at least 2 hours. He wants to know about freshness, query times, failures and
+          cost, and what you'd change before the real thing.
         acceptance_criteria:
           - "SLO met, or breaches explained"
           - "P95 < 3 s throughout"
@@ -935,10 +1003,15 @@ stories:
         due_day: 19
         priority: Low
         components: [Documentation]
-        labels: [documentation]
+        labels: [documentation, level-2]
         description: |
-          Explain how to read each tile, what "at risk" means, what the freshness light means, and who to call when it's red.
+          Write one page a GM can read in five minutes: how to read each tile, what "at risk" means, what the freshness light
+          means, and who to call when it's red.
+
+          **Where to start:** Open P6-D1 on the Dashboard specs page and your metric catalog, and write a line or two per tile. The freshness colours
+          are in the spec, and who to call comes from your alert catalog. Shanice Carter reviews it.
         acceptance_criteria:
+          - "One page covering every tile, \"at risk\", the three freshness colours and who to call"
           - "Guide reviewed by Shanice"
           - "Linked from the board"
           - *docs
@@ -951,20 +1024,21 @@ stories:
         priority: Highest
         reporter: iris.novak
         components: [Dashboards, Data Quality]
-        labels: [uat, sign-off, reconciliation]
+        labels: [uat, sign-off, reconciliation, level-4]
         description: |
-          Nothing goes to Luis and Shanice until Iris Novak (Business Performance Manager) has signed it off. She ties
-          your numbers back to the source systems herself, checks every KPI against your metric catalog and the
-          dashboard spec, and writes up numbered findings with a verdict.
+          > "A board that never stops moving is harder to tie out, not easier. Let's tie it out anyway." (Iris)
 
-          For each dashboard: stop the stream, refresh, download the source extract from the Control Center, and put
-          a submission in `uat/<dashboard id>/round-1/` as the team page describes (Dashboard sign-off). Attach the
-          package zip, the zipped submission and the extract to a chat with Iris (or ask her in your coding agent).
-          Fix or answer every finding, and resubmit as round 2, 3 and so on until she signs off. Blockers and Majors
-          must be fixed before the readout; Minors can become tickets if she agrees.
+          Nothing goes to Luis and Shanice until Iris Novak (Business Performance Manager) has signed it off. She ties your
+          numbers back to the source systems herself, checks every KPI against your metric catalog and the dashboard spec,
+          and writes up numbered findings with a verdict.
 
-          The board never stops moving, so for UAT stop the stream, let the board catch up, and capture it with the sim
-          clock in view. Iris compares the board with the source at that moment.
+          **Her terms:** she reviews a frozen moment. The stream is stopped, the board has caught up, it's captured with the sim
+          clock in view, and the source extract from the Control Center is from that same moment. The submission goes in
+          `uat/<dashboard id>/round-1/` as the team page describes (Dashboard sign-off), with the package zip, the zipped
+          submission and the extract attached to a chat with Iris (or ask her in your coding agent).
+
+          Fix or answer every finding, and resubmit as round 2, 3 and so on until she signs off. Blockers and Majors must be
+          fixed before the readout. Minors can become tickets if she agrees.
         acceptance_criteria:
           - "A submission for each dashboard: every page as PNG, CSV exports of the headline visuals and the end tables behind them, data-as-of and sim clock, a copy of the metric catalog, bridge.csv and the matching source extract"
           - "Iris's review report committed under uat/ for every round"
@@ -978,10 +1052,14 @@ stories:
         due_day: 20
         priority: High
         components: [Documentation]
-        labels: [readout, release]
+        labels: [readout, release, level-5]
         description: |
-          Give a 5-minute readout to Luis and Shanice, live on the board with the stream at 60×. Record a 3-minute demo,
-          tag the release, and hold a short retro.
+          > "Don't show me slides, boss. Show me the board, then tell me what I can trust and what I can't." (Luis)
+
+          Five minutes with Luis and Shanice, live on the board with the stream at 60×. They'll leave deciding whether to run
+          their afternoons from it, so they need to hear where it's solid, where it isn't, what it costs to keep running, what
+          happened in the incident, and who picks it up on a weekend. Then record a 3-minute demo, tag the release, and hold a
+          short retro.
         acceptance_criteria:
           - "Readout delivered with live data; feedback captured as new tickets"
           - "Demo video linked from the README"

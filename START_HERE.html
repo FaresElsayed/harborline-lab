@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Start here · Harborline handbook</title>
-<meta name="description" content="Harborline 3PL Simulator: a data engineering job in a box. What it is, the story, what is in the package, the five-minute quick start and links to every handbook page.">
+<meta name="description" content="Harborline 3PL Simulator: a data engineering job in a box. What it is, the story, what is in the package, your first steps and links to every handbook page.">
 <script>try{var t=localStorage.getItem("harborline.theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="brand/fonts.css">
 <link rel="stylesheet" href="brand/tokens.css">
@@ -34,15 +34,18 @@
 engineer. This package is that job: live source systems that never stop changing, a backlog of tickets with due dates,
 colleagues you can question, and eight departments waiting for their dashboards.</p>
 
-<div class="start-overall" aria-label="Overall progress">
-<p><strong>Your progress across the handbook</strong></p>
-<div data-hb-overall data-progress-label="Progress across the handbook"></div>
+<div class="start-overall" aria-label="What to do now">
+<p><strong>Setup finished? Go to Start here in the app.</strong> It has the same steps as <a href="#first-steps">the list
+below</a>, plus your next ticket and how far along you are. When this page is opened through the app, ticks made in one show in the
+other.</p>
 <div class="start-actions hb-noprint">
-<a class="hb-btn hb-btn--primary" href="http://localhost:8080/team" data-hb-app="/team">Open Team</a>
-<a class="hb-btn" href="handbook/getting-started.html">Getting started</a>
-<a class="hb-btn" href="http://localhost:8080/" data-hb-app="/">Open the Control Center</a>
-<a class="hb-btn" href="http://localhost:8080/tracker" data-hb-app="/tracker">Open the Tracker</a>
+<a class="hb-btn hb-btn--primary" href="http://localhost:8080/start" data-hb-app="/start">Open Start here in the app</a>
+<a class="hb-btn" href="http://localhost:8080/team" data-hb-app="/team">Team</a>
+<a class="hb-btn" href="http://localhost:8080/control" data-hb-app="/control">Control Center</a>
+<a class="hb-btn" href="http://localhost:8080/tracker" data-hb-app="/tracker">Tracker</a>
 </div>
+<p style="margin:14px 0 6px"><strong>Your progress across the handbook</strong></p>
+<div data-hb-overall data-progress-label="Progress across the handbook"></div>
 </div>
 
 <section data-section="story" data-no-progress>
@@ -61,32 +64,50 @@ real business story hidden in the data, and the people who own the systems know 
 </section>
 
 <section data-section="quickstart">
-<h2 id="quickstart">Quick start</h2>
-<p>One setup file does the installing, on Windows or Mac. It skips what you already have and only stops when it needs
-you. <a href="handbook/getting-started.html#setup-file">The details are here</a>.</p>
+<h2 id="first-steps">Your first steps</h2>
+<p>Work down these once, in order. After that, your days run on the board. Each step links to where it happens.</p>
 <div class="start-steps">
 <div class="task">
-<label class="task-head"><input type="checkbox" data-track="start:quickstart.setup"><span class="task-title">Run the setup file</span><span class="task-time">About 40 min</span></label>
-<div class="task-body"><p>Extract the zip. On Windows, double-click <code>SETUP-WINDOWS.cmd</code>
+<label class="task-head"><input type="checkbox" data-track="start:quickstart.setup"><span class="task-title">1. Setup finished</span><span class="task-time">About 40 min</span></label>
+<div class="task-body"><p>One setup file does the installing, on Windows or Mac, and skips what you already have. If you
+haven’t run it yet, extract the zip. On Windows, double-click <code>SETUP-WINDOWS.cmd</code>
 (<em>More info</em>, then <em>Run anyway</em> if Windows warns you). On a Mac, open Terminal, type <code>bash </code>, drag
-<code>SETUP-MAC.command</code> into the window and press Return. It finishes by setting up your team chats. If it stops, paste
-its report to Kevin O’Hara, do what he says and run it again.</p></div>
+<code>SETUP-MAC.command</code> into the window and press Return. If it stops, paste its report to Kevin O’Hara, do what he
+says and run it again; <a href="handbook/known-issues.html">Known issues</a> lists every error we know of.
+<a href="handbook/getting-started.html#setup-file">The details are here</a>.</p></div>
 </div>
 <div class="task">
-<label class="task-head"><input type="checkbox" data-track="start:quickstart.team"><span class="task-title">Finish your team chats</span><span class="task-time">About 1 min each</span></label>
-<div class="task-body"><p>The setup file walks you through one saved AI chat per colleague; run it again for anyone you
-skipped. The <a href="http://localhost:8080/team" data-hb-app="/team">Team page</a> shows who does what and what to ask
-them. Start with Kevin O’Hara (IT help) and Nadia Petrov (your team lead).</p></div>
+<label class="task-head"><input type="checkbox" data-track="start:quickstart.brief"><span class="task-title">2. Read the project brief</span><span class="task-time">30 min</span></label>
+<div class="task-body"><p>The company, who’s who, the rules and the eight projects: the
+<a href="handbook/project-brief.html">project brief</a> you’d get on day one.</p></div>
 </div>
 <div class="task">
-<label class="task-head"><input type="checkbox" data-track="start:quickstart.brief"><span class="task-title">Read the project brief</span><span class="task-time">30 min</span></label>
-<div class="task-body"><p>The company, the people, the rules of engagement, the eight projects and the engineering
-standards: <a href="handbook/project-brief.html">Project brief</a>.</p></div>
+<label class="task-head"><input type="checkbox" data-track="start:quickstart.data"><span class="task-title">3. Connect to the data</span><span class="task-time">20 min</span></label>
+<div class="task-body"><p>Every address and password is on the
+<a href="http://localhost:8080/control/connections" data-hb-app="/control/connections">Connections page</a>.
+<a href="handbook/getting-started.html#connect">Try each source system</a> walks you through a first query.</p></div>
 </div>
 <div class="task">
-<label class="task-head"><input type="checkbox" data-track="start:quickstart.next"><span class="task-title">Try the sources and choose a platform</span><span class="task-time">1 hour</span></label>
-<div class="task-body"><p>Query each system, sign up for Databricks or Snowflake and open your first pull request:
-<a href="handbook/getting-started.html#connect">Getting started</a>.</p></div>
+<label class="task-head"><input type="checkbox" data-track="start:quickstart.platform"><span class="task-title">4. Sign up for a cloud platform</span><span class="task-time">10 min</span></label>
+<div class="task-body"><p>Databricks Free Edition costs nothing and does not expire. Snowflake’s trial ends after 30 days.
+<a href="handbook/getting-started.html#cloud">Compare them, pick one and sign up</a>.</p></div>
+</div>
+<div class="task">
+<label class="task-head"><input type="checkbox" data-track="start:quickstart.date"><span class="task-title">5. Set your start date</span></label>
+<div class="task-body"><p>Every due date counts from it. The setup file usually asks; if it didn’t, the
+<a href="http://localhost:8080/tracker" data-hb-app="/tracker">Tracker</a> does when you open it.</p></div>
+</div>
+<div class="task">
+<label class="task-head"><input type="checkbox" data-track="start:quickstart.nadia"><span class="task-title">6. Meet Nadia Petrov</span><span class="task-time">5 min</span></label>
+<div class="task-body"><p>Your team lead, and the one colleague who knows data engineering. She coaches and reviews but
+won’t write it for you. <a href="http://localhost:8080/team/nadia-petrov" data-hb-app="/team/nadia-petrov">Her page</a> has
+her prompt and good first questions.</p></div>
+</div>
+<div class="task">
+<label class="task-head"><input type="checkbox" data-track="start:quickstart.ticket"><span class="task-title">7. Start your first ticket</span></label>
+<div class="task-body"><p><a href="http://localhost:8080/tracker/my-work" data-hb-app="/tracker/my-work">My work</a> lists
+your tickets by due date. Open the first, read the acceptance criteria and move it to In Progress.
+<a href="handbook/project-brief.html#tracker-day">A normal day</a> is the routine from here on.</p></div>
 </div>
 </div>
 </section>
@@ -127,7 +148,8 @@ checklist</div></li>
 <div class="hb-table-wrap"><table class="hb-table">
 <thead><tr><th>Where</th><th>What</th></tr></thead>
 <tbody>
-<tr><td><a href="http://localhost:8080/" data-hb-app="/">Control Center</a></td><td>Build data, generate batches, stream
+<tr><td><a href="http://localhost:8080/start" data-hb-app="/start">Start here</a></td><td>Your first steps, your next ticket and how far along you are. The app opens on it until you have finished it</td></tr>
+<tr><td><a href="http://localhost:8080/control" data-hb-app="/control">Control Center</a></td><td>Build data, generate batches, stream
 changes, set the defect rate, trigger scenarios (peak surge, carrier outage, schema change, account merge), copy
 connection details</td></tr>
 <tr><td><a href="http://localhost:8080/tracker" data-hb-app="/tracker">Tracker</a></td><td>Every ticket of the eight
@@ -145,11 +167,11 @@ pages, with progress saved in the database</td></tr>
 <thead><tr><th>Item</th><th>What it is</th></tr></thead>
 <tbody>
 <tr><td><code>START_HERE.html</code></td><td>This page</td></tr>
-<tr><td><code>SETUP-WINDOWS.cmd</code>, <code>SETUP-MAC.command</code></td><td>Installs and connects everything; safe to run again. If it stops: <a href="handbook/known-issues.html">Known issues</a></td></tr>
+<tr><td><code>SETUP-WINDOWS.cmd</code>, <code>SETUP-MAC.command</code></td><td>Installs and connects everything; safe to run again, and how you <a href="handbook/getting-started.html#update">update</a>. If it stops: <a href="handbook/known-issues.html">Known issues</a></td></tr>
 <tr><td><code>start.bat</code>, <code>stop.bat</code></td><td>Start everything and open the Control Center; stop it and keep all data</td></tr>
 <tr><td><code>reset.bat</code></td><td>Delete all data, including the Tracker, after you type YES</td></tr>
 <tr><td><code>doctor.ps1</code></td><td>Checks your machine; changes nothing</td></tr>
-<tr><td><code>.env.example</code></td><td>Ports, passwords and API credentials; copied to <code>.env</code> on first start</td></tr>
+<tr><td><code>.env.example</code></td><td>Names of the ports, passwords and API credentials; setup copies it to <code>.env</code> and makes your passwords and keys</td></tr>
 <tr><td><code>docker-compose.yml</code></td><td>Postgres 17 with logical replication, and the app</td></tr>
 <tr><td><code>handbook/</code></td><td>Every page of this handbook</td></tr>
 <tr><td><code>brand/</code></td><td>Logos, colour and type tokens, dashboard templates and themes</td></tr>

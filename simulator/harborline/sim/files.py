@@ -8,6 +8,8 @@
 * ``clients/<CODE>/item_master_<YYYYMMDD>[_delta].csv``: per-client format profile (delimiter, encoding, dates,
   headers), described in ``clients/<CODE>/file_spec.txt``.
 * ``carrier/history_export/tracking_events_<yyyymm>.csv.gz``: carrier events older than the API's retention.
+* ``reference/diesel_weekly.csv``: the weekly diesel price carrier bills are rated from, one more row each Monday.
+* ``reference/signal_sources.csv``: what this build's FX, weather, holidays and diesel came from.
 """
 
 from __future__ import annotations
@@ -32,6 +34,7 @@ from .crm import (
     add_months,
     as_utc,
     dates_of,
+    diesel,
     est_monthly_qty,
     module_state,
     preset_warehouses,
@@ -212,7 +215,8 @@ def write_rate_card(ctx: Any, scac: str, year: int) -> Path:
                 ("Currency", ", ".join(f"{c}: {COUNTRY_CCY[c]}" for c in countries)),
                 ("Weight basis", ", ".join(f"{c}: {UNIT[c]}" for c in countries)),
                 ("Notes", ("Net contracted rates (discounts applied). Fuel surcharge per the Fuel Surcharge tab, "
-                          "based on the weekly US on-highway diesel price published each Monday."))]
+                          "based on the weekly on-highway diesel reference price published each Monday "
+                          "(reference/diesel_weekly.csv)."))]
         for i, (k, v) in enumerate(info, start=2):
             cover.write(i, 0, k, bold)
             cover.write(i, 1, v)
@@ -272,6 +276,43 @@ def write_rate_card(ctx: Any, scac: str, year: int) -> Path:
 
     write_xlsx(path, build)
     ctx.changes.add("files", "carrier_rate_card", ins=1)
+    return path
+
+
+# ======================================================================================================== reference
+
+DIESEL_HEADER = ("week_start", "diesel_usd_per_gal")
+DIESEL_WEEKS_BEFORE_HISTORY = 2         # so the first bills in the history can always look their week up
+SOURCES_HEADER = ("signal", "key", "source", "real_from", "real_to", "note")
+
+
+def diesel_week_published(now: datetime) -> date:
+    """The latest week whose price is out at ``now``: each week's price is published on its Monday at 12:00 UTC."""
+    day = (as_utc(now) - timedelta(hours=12)).date()
+    return day - timedelta(days=day.weekday())
+
+
+def write_diesel_series(ctx: Any, through: date) -> Path:
+    """The whole series, from before the first bill to ``through``. It comes straight from the signal billing reads, so
+    a build made before this file existed gets the same prices as billing used when it first runs a batch."""
+    first = as_utc(ctx.history_start).date()
+    week = first - timedelta(days=first.weekday(), weeks=DIESEL_WEEKS_BEFORE_HISTORY)
+    rows = [",".join(DIESEL_HEADER)]
+    while week <= through:
+        rows.append(f"{week.isoformat()},{diesel(ctx, week):.3f}")
+        week += timedelta(days=7)
+    path = fdir(ctx) / "reference" / "diesel_weekly.csv"
+    atomic_write_bytes(path, ("\n".join(rows) + "\n").encode("ascii"))
+    return path
+
+
+def write_signal_sources(ctx: Any) -> Path:
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, SOURCES_HEADER, lineterminator="\n")
+    writer.writeheader()
+    writer.writerows(ctx.signals.source_rows())
+    path = fdir(ctx) / "reference" / "signal_sources.csv"
+    atomic_write_bytes(path, buf.getvalue().encode("utf-8"))
     return path
 
 
@@ -826,10 +867,25 @@ class Files:
         os.replace(tmp, path)
         self.ctx.changes.add("files", "carrier_history_export", ins=1)
 
+    # -------------------------------------------------------------- reference files
+    def publish_reference(self, now: datetime) -> None:
+        """Keep the reference files current. Keyed on saved state, so an older build gets them at its next window."""
+        week = diesel_week_published(now).isoformat()
+        if self.st.get("diesel_week") != week:
+            write_diesel_series(self.ctx, date.fromisoformat(week))
+            kind = {"upd": 1} if "diesel_week" in self.st else {"ins": 1}
+            self.ctx.changes.add("files", "diesel_weekly", **kind)
+            self.st["diesel_week"] = week
+        if "signal_sources" not in self.st:
+            write_signal_sources(self.ctx)
+            self.ctx.changes.add("files", "signal_sources", ins=1)
+            self.st["signal_sources"] = True
+
     # -------------------------------------------------------------- lifecycle
     def bootstrap(self) -> None:
         start = as_utc(self.ctx.history_start)
         d0 = start.date()
+        self.publish_reference(start)
         self.ensure_rate_cards(d0)
         prepared = date(d0.year - 1, 12, 5)
         self.budget(d0.year, prepared)
@@ -850,6 +906,7 @@ class Files:
             self.write_items(str(code).strip(), g, day, False, ts)
 
     def step(self, win: Window) -> None:
+        self.publish_reference(win.end)
         for ts in win.crosses_local_time("America/New_York", 6, 30):
             day = ts.date()
             if day.month == 12 and day.day == 10:

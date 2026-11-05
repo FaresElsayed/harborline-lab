@@ -50,6 +50,8 @@ Harborline Logistics fixes both. It's a warehouse and shipping company (a 3PL) w
 | **Data that keeps changing** | Generate a day of business in one click, or stream it live. Inserts, updates and hard deletes, with logical replication on so you can build real CDC |
 | **Realistic dirt** | Orphans, duplicates, late facts, schema drift and more, at a rate you control (1 bad record in 10,000 by default). Every one is logged, so you can score your own data-quality checks |
 | **A real backlog** | 8 projects, 32 weeks, 385 pre-written tickets with due dates and acceptance criteria, on a Jira-style board that runs locally |
+| **It starts easy and gets harder** | Tickets run from level 1 to level 5. Your first sprint is a first query, a first table and a first pull request. By the last project you're handed an ambiguous business problem and a deadline, and the method is yours |
+| **You won't get lost** | A Start here page, your next ticket always in view, a "Stuck?" line on every ticket, and a board you can order by due date |
 | **19 AI colleagues** | The CFO, the warehouse GM, the Salesforce admin and more, each with a prompt you paste into any AI website. They know their own area, send you to the right person, and argue about definitions |
 | **A team lead and a reviewer** | Nadia coaches you without writing the solution. Iris signs off your dashboards against the source data |
 | **Hidden business problems** | The data holds real stories to find. Finding them is the job |
@@ -60,12 +62,20 @@ Harborline Logistics fixes both. It's a warehouse and shipping company (a 3PL) w
 
 <table>
   <tr>
+    <td width="50%"><img src="docs/media/start.png" alt="The Start here page, with an ordered path and your next ticket"></td>
     <td width="50%"><img src="docs/media/tracker-board.png" alt="The tracker board, with tickets in To Do, In Progress, In Review and Done"></td>
-    <td width="50%"><img src="docs/media/team.png" alt="The Team page, showing a colleague's profile and what to ask them"></td>
   </tr>
   <tr>
-    <td align="center">Your sprint board, with due dates</td>
+    <td align="center">Always know what to do next</td>
+    <td align="center">Your sprint board, ordered by due date if you like</td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/media/team.png" alt="The Team page, showing a colleague's profile and what to ask them"></td>
+    <td width="50%"><img src="docs/media/ticket.png" alt="A ticket with its level, acceptance criteria and who to ask when stuck"></td>
+  </tr>
+  <tr>
     <td align="center">Who does what, and what to ask them</td>
+    <td align="center">Every ticket says who to ask when you're stuck</td>
   </tr>
   <tr>
     <td width="50%"><img src="docs/media/data-quality.png" alt="The data quality screen, with a bad-record rate and category switches"></td>
@@ -107,12 +117,23 @@ Then open **http://localhost:8080** for the Control Center, tracker and Team pag
 
 ### Already have Docker?
 
-```bash
-cp .env.example .env
-docker compose up -d --build
+Windows:
+
+```bat
+start.bat
 ```
 
-Open http://localhost:8080 and press **Build dataset**.
+Mac or Linux:
+
+```bash
+./start.sh
+```
+
+They create `.env` with passwords and keys made just for your machine, then start everything. A bare `docker compose up` stops and tells you to do this first, so nobody runs on a blank password. Open http://localhost:8080 and press **Build dataset**.
+
+## Updating
+
+Run the setup file again: `C:\dev\harborline-lab\SETUP-WINDOWS.cmd` on Windows, or `~/dev/harborline-lab/SETUP-MAC.command` on a Mac. It checks for a new version and asks first. Your data, settings and progress are kept, your passwords and keys stay the same, and it never starts a data build by itself.
 
 ## What it needs
 

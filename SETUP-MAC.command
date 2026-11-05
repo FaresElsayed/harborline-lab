@@ -27,6 +27,12 @@ OLD_FOLDERS="harborline-simulator harborline-3pl-simulator harborline-data-platf
 STATE_DIR="${HL_STATE_DIR:-$HOME/Library/Logs/HarborlineLab}"
 LOG_FILE="$STATE_DIR/setup.log"
 ERROR_FILE="$STATE_DIR/setup-error.txt"
+UPDATE_DIR="$STATE_DIR/update"
+UPDATED_TO_FILE="$STATE_DIR/updated-to.txt"
+FILE_LIST="$STATE_DIR/installed-files.txt"
+ENV_BACKUP="$STATE_DIR/env.backup"
+KEY_NAMES="POSTGRES_PASSWORD HL_APP_PASSWORD HL_ETL_PASSWORD HL_REVIEWER_PASSWORD SF_CLIENT_ID SF_CLIENT_SECRET CARRIER_API_KEY"
+OWNED_FOLDERS=".github answer_key brand config db docs handbook setup simulator team tracker web"
 STEP_NO=0
 STEP_TOTAL=22
 DONE_COUNT=0
@@ -166,6 +172,78 @@ env_set() {
   mv "$tmp" "$file"
 }
 app_port() { env_get HL_APP_PORT 8080; }
+
+# Every password and key is made here, on this machine, once. What is already in .env always wins: Postgres keeps its
+# first password in the Docker volume, so a new one would lock the person out of their own data.
+new_key() {
+  local k
+  k="$(openssl rand -hex 24 2>/dev/null)"
+  if [ "${#k}" -lt 32 ]; then k="$(od -An -tx1 -N24 /dev/urandom 2>/dev/null | tr -d ' \n')"; fi
+  printf '%s' "$k"
+}
+backup_value() {
+  [ -f "$ENV_BACKUP" ] || return 0
+  grep -E "^[[:space:]]*$1[[:space:]]*=" "$ENV_BACKUP" | tail -n 1 | cut -d= -f2- | tr -d '[:space:]'
+}
+keys_complete() {
+  local key
+  [ -f "$(env_path)" ] || return 1
+  for key in $KEY_NAMES; do
+    [ -n "$(env_get "$key" "")" ] || return 1
+  done
+  return 0
+}
+save_env_backup() {
+  # Only a complete file: a damaged .env must never replace the good copy.
+  keys_complete || return 0
+  cp "$(env_path)" "$ENV_BACKUP" && chmod 600 "$ENV_BACKUP"
+}
+stop_if_data_would_lock_out() {
+  # No password anywhere. A new one is only safe if there is no data for it to lock.
+  local volume="${PROJECT}_pgdata"
+  if ! run docker volume ls -q --filter "name=$volume"; then
+    LAST_ERROR="Docker did not say whether your data exists, so setup did not make new passwords. Run this file again."
+    return 1
+  fi
+  printf '%s\n' "$LAST_OUTPUT" | grep -qxF "$volume" || return 0
+  log "STOPPED: .env and its backup are gone and the data volume exists."
+  your_turn --no-wait "Your settings file (.env) and its backup are both gone, but your simulator data is still here in Docker." \
+    "The data is locked with the password that was in that file. A new password would not open it, so setup stopped here." \
+    "Nothing has been changed or deleted. You have two choices:" \
+    "  1  Keep your data: put your old .env back in $LAB_DIR, from a backup or another copy, then run this file again." \
+    "  2  Start fresh: this deletes all your simulator data and tracker progress. In Docker Desktop, delete the" \
+    "     $PROJECT containers under Containers and $volume under Volumes, then run this file again." \
+    "Not sure? Choose 1 first, or ask Kevin. Setup will not delete anything by itself."
+  exit 1
+}
+repair_env_file() {
+  local key value made=0
+  if [ ! -f "$(env_path)" ]; then
+    if [ -f "$ENV_BACKUP" ]; then
+      cp "$ENV_BACKUP" "$(env_path)" || return 1
+      say "Your settings file was missing, so setup restored it from its backup. Your passwords still match your data."
+    else
+      stop_if_data_would_lock_out || return 1
+      cp "$LAB_DIR/.env.example" "$(env_path)" || return 1
+    fi
+  fi
+  chmod 600 "$(env_path)"
+  for key in $KEY_NAMES; do
+    [ -z "$(env_get "$key" "")" ] || continue
+    value="$(backup_value "$key")"
+    if [ -z "$value" ]; then
+      if [ "$key" = "POSTGRES_PASSWORD" ]; then stop_if_data_would_lock_out || return 1; fi
+      value="$(new_key)"
+      if [ "${#value}" -lt 32 ]; then LAST_ERROR="Could not make a random key on this Mac."; return 1; fi
+      made=$((made + 1))
+    fi
+    env_set "$key" "$value"
+    # The running app has the old value: this sends it through the usual restart, which asks first if a build is running.
+    rm -f "${STATE_DIR:?}/app-version.txt"
+  done
+  if [ "$made" -gt 0 ]; then say "Made $made new passwords and keys, just for this install. Find them on Connections in the Control Center."; fi
+  save_env_backup
+}
 pg_port() { env_get HL_PG_PORT 5432; }
 app_url() { echo "http://localhost:$(app_port)"; }
 
@@ -484,7 +562,7 @@ add_dbeaver_connections() {
   local app bin pw port waited=0 common
   app="$(dbeaver_app)" || { LAST_ERROR="DBeaver was not found."; return 1; }
   bin="$app/Contents/MacOS/dbeaver"
-  pw="$(env_get HL_ETL_PASSWORD etl-reader-2026)"
+  pw="$(env_get HL_ETL_PASSWORD "")"
   port="$(pg_port)"
   common="driver=postgresql|host=localhost|port=$port|user=etl_reader|password=$pw|savePassword=true|create=true|save=true|connect=false|openConsole=false"
   your_turn --no-wait "DBeaver is opening. If it offers to create a sample database, press No."
@@ -1054,24 +1132,34 @@ check_copied() {
   [ "$(cat "$SOURCE_DIR/setup/VERSION")" = "$(cat "$LAB_DIR/setup/VERSION")" ]
 }
 fix_copied() {
+  local elsewhere="" files
   mkdir -p "$LAB_DIR/landing"
   if [ "$SOURCE_DIR" != "$(cd "$LAB_DIR" && pwd)" ]; then
+    elsewhere=1
     say "Copying the package."
-    run rsync -a --exclude='/.env' --exclude='/landing/' "$SOURCE_DIR/" "$LAB_DIR/"
+    # setup/VERSION goes last: until it is there the step reads as not done, so a copy that stopped halfway is simply done again.
+    run rsync -a --exclude='/.env' --exclude='/landing/' --exclude='/answer_key/anomalies.csv' --exclude='/setup/VERSION' "$SOURCE_DIR/" "$LAB_DIR/" || return 1
+    files="$(mktemp)"
+    package_files "$SOURCE_DIR" >"$files"
+    remove_stale_files "$files"
+    mv "$files" "$FILE_LIST"
   fi
   chmod +x "$LAB_DIR/SETUP-MAC.command" "$LAB_DIR/start.sh" 2>/dev/null
   xattr -dr com.apple.quarantine "$LAB_DIR" 2>/dev/null
+  if [ -n "$elsewhere" ]; then cp "$SOURCE_DIR/setup/VERSION" "$LAB_DIR/setup/VERSION" || return 1; fi
   return 0
 }
 
 check_settings() {
-  [ -f "$(env_path)" ] || return 1
+  keys_complete || return 1
+  # Each run, so it follows ports he changed, and an install from before there was a backup gets one.
+  save_env_backup
   if [ -n "$(project_containers "$OLD_PROJECT")" ]; then return 1; fi
   if [ -n "$(project_containers "$PROJECT")" ]; then return 0; fi
   port_free "$(pg_port)" && port_free "$(app_port)"
 }
 fix_settings() {
-  [ -f "$(env_path)" ] || cp "$LAB_DIR/.env.example" "$(env_path)"
+  repair_env_file || return 1
   local old
   old="$(project_containers "$OLD_PROJECT" -a)"
   if [ -n "$old" ]; then
@@ -1260,6 +1348,164 @@ fix_build_done() {
   BUILD_WAS_CANCELLED=""
 }
 
+# ---------------------------------------------------------------------------------------------- updates
+# A new version is the same as running a newer zip: get the files, then run the new setup file from them. Finished steps
+# skip, and the Simulator and Start steps do the rest. Nothing here may stop or slow down someone with no internet.
+version_in() { { tr -d '[:space:]' <"$1/setup/VERSION"; } 2>/dev/null; }
+version_ok() { printf '%s' "$1" | grep -Eq '^[0-9]{1,9}(\.[0-9]{1,9}){0,5}$'; }
+version_newer() {
+  # Is $1 newer than $2? Part by part as numbers: as text, 2026.11.10 would sort before 2026.11.9. Anything unreadable is never newer.
+  version_ok "$1" && version_ok "$2" || return 1
+  local a="$1." b="$2." x y
+  while [ -n "$a" ] || [ -n "$b" ]; do
+    x="${a%%.*}"; a="${a#*.}"
+    y="${b%%.*}"; b="${b#*.}"
+    [ "${x:-0}" -gt "${y:-0}" ] && return 0
+    [ "${x:-0}" -lt "${y:-0}" ] && return 1
+  done
+  return 1
+}
+update_repo() {
+  # The environment wins, for testing and forks. Blank turns update checks off.
+  local text=""
+  if [ -n "${HL_UPDATE_REPO+set}" ]; then text="$HL_UPDATE_REPO"
+  elif [ -f "$SOURCE_DIR/setup/UPDATE_REPO" ]; then text="$(cat "$SOURCE_DIR/setup/UPDATE_REPO")"; fi
+  text="$(printf '%s' "$text" | tr -d '[:space:]')"
+  if [ -n "$text" ] && ! printf '%s' "$text" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*$'; then
+    log "Update check skipped: '$text' is not owner/name."
+    return 0
+  fi
+  printf '%s' "$text"
+}
+# In a subshell, so the proxy setting stays out of everything else. Errors go to the log only.
+update_curl() { ( use_system_proxy; exec curl -fsSLS "$@" ) </dev/null 2>>"$LOG_FILE"; }
+stop_if_older_than_installed() {
+  # An old zip run by mistake. Works with no internet, and never copies old files over new ones.
+  local mine installed
+  mine="$(version_in "$SOURCE_DIR")"
+  installed="$(version_in "$LAB_DIR")"
+  version_newer "$installed" "$mine" || return 0
+  printf '\n'
+  say_warn "This file is version $mine, but version $installed is already installed, so setup will not copy old files over it."
+  if [ -f "$LAB_DIR/SETUP-MAC.command" ]; then
+    say "Carrying on with the installed copy."
+    unset HL_SETUP_UPDATED
+    exec /bin/bash "$LAB_DIR/SETUP-MAC.command"
+  fi
+  say "Nothing was changed. To carry on, run the newest copy of this file you have."
+  exit 1
+}
+update_failed() {
+  rm -rf "${UPDATE_DIR:?}"
+  say_warn "The update did not work, so setup is carrying on with version $1. Nothing was changed."
+}
+start_update() {
+  local repo="$1" version="$2" here zip top got
+  here="$(version_in "$SOURCE_DIR")"
+  top="$UPDATE_DIR/${repo#*/}-main"
+  zip="$UPDATE_DIR/update.zip"
+  rm -rf "${UPDATE_DIR:?}"
+  mkdir -p "$UPDATE_DIR" || { update_failed "$here"; return 0; }
+  say "Downloading it. This usually takes under a minute."
+  if ! update_curl --connect-timeout 20 --max-time 900 -o "$zip" "https://github.com/$repo/archive/refs/heads/main.zip"; then
+    log "Update failed: the download did not finish."
+    update_failed "$here"; return 0
+  fi
+  # </dev/null: unzip asks questions on stdin, and the answers to setup's own questions are there.
+  if ! unzip -q -o "$zip" -d "$UPDATE_DIR" </dev/null >>"$LOG_FILE" 2>&1; then
+    log "Update failed: the download is not a working zip."
+    update_failed "$here"; return 0
+  fi
+  got="$(version_in "$top")"
+  if [ ! -f "$top/SETUP-MAC.command" ] || [ ! -f "$top/docker-compose.yml" ] || [ "$got" != "$version" ] || ! /bin/bash -n "$top/SETUP-MAC.command" 2>>"$LOG_FILE"; then
+    log "Update failed: the download is version '$got', expected $version, or does not hold the package."
+    update_failed "$here"; return 0
+  fi
+  rm -f "${zip:?}"
+  chmod +x "$top/SETUP-MAC.command" "$top/start.sh" 2>/dev/null
+  printf '%s\n' "$version" >"$UPDATED_TO_FILE"
+  say "Carrying on with version $version."
+  # The marker stops the new file from checking again. exec: the old file is gone from memory before anything is copied over it.
+  HL_SETUP_UPDATED="$version"
+  export HL_SETUP_UPDATED
+  exec /bin/bash "$top/SETUP-MAC.command"
+}
+start_update_check() {
+  local repo here latest
+  # The run an update started has already been through this, and it must not ask again.
+  if [ -n "$HL_SETUP_UPDATED" ]; then log "Running the update to $HL_SETUP_UPDATED."; return 0; fi
+  # Left from the last update, unless this file is running from it.
+  case "$SOURCE_DIR/" in "$UPDATE_DIR"/*) ;; *) rm -rf "${UPDATE_DIR:?}" ;; esac
+  repo="$(update_repo)"
+  if [ -z "$repo" ]; then log "Update checks are off."; return 0; fi
+  here="$(version_in "$SOURCE_DIR")"
+  if ! latest="$(update_curl --max-time 10 "https://raw.githubusercontent.com/$repo/main/setup/VERSION")"; then
+    log "Update check skipped: could not read the latest version."
+    return 0
+  fi
+  latest="$(printf '%s' "$latest" | tr -d '[:space:]')"
+  if ! version_ok "$latest" || ! version_ok "$here"; then
+    log "Update check skipped: the version numbers could not be read."
+    return 0
+  fi
+  if ! version_newer "$latest" "$here"; then say "You have the latest version ($here)."; return 0; fi
+  printf '    Version %s is available. Update now? Your data, settings and progress are kept. (Y/n): ' "$latest"
+  # No keyboard is a no, unlike an empty answer.
+  if ! read -r ANSWER; then ANSWER="n"; printf '\n'; fi
+  case "$ANSWER" in
+    ""|[Yy]|[Yy][Ee][Ss]) start_update "$repo" "$latest" ;;
+    *) say "Carrying on with version $here." ;;
+  esac
+}
+show_update_result() {
+  # Kept until the app really runs the new version, which is later if he chose to let a running build finish.
+  [ -f "$UPDATED_TO_FILE" ] || return 0
+  local version message
+  version="$(tr -d '[:space:]' <"$UPDATED_TO_FILE")"
+  app_current || return 0
+  rm -f "${UPDATED_TO_FILE:?}"
+  [ "$version" = "$(package_version)" ] || return 0
+  say_good "Updated to $version."
+  # For example: data from an earlier version needs one rebuild. That stays his decision, so it is shown and nothing more.
+  # The top-level error only: json_field would find the last run's error further along.
+  message="$(api_get /api/sim/status | sed -n 's/^{"state":"[^"]*","error":"\(.*\)","preset".*/\1/p' | sed 's/\\"/"/g')"
+  if [ -n "$message" ]; then say_warn "$message"; fi
+}
+
+# Everything setup copied last time, so a later version can remove only what it put there itself. A file he made was
+# never on this list, so it can't be removed. With no list yet, nothing is removed.
+package_files() {
+  (cd "$1" && find . -type f ! -path './landing/*' ! -path './.git/*') 2>/dev/null | sed 's#^\./##' | grep -vE '^(\.env|answer_key/anomalies\.csv)$'
+}
+remove_stale_files() {
+  local current="$1" gone rel top dir removed=0
+  [ -f "$FILE_LIST" ] || return 0
+  gone="$(mktemp)"
+  # Ignoring case, like the disk: a file renamed from Foo to foo must not count as removed.
+  awk 'NR == FNR { keep[tolower($0)] = 1; next } !(tolower($0) in keep)' "$current" "$FILE_LIST" >"$gone"
+  while IFS= read -r rel; do
+    case "$rel" in
+      ""|/*|../*|*/../*|*/..|.env|landing/*|answer_key/anomalies.csv) continue ;;
+      */*) ;;
+      # Only inside folders the package owns: a file at the top of the folder stays.
+      *) continue ;;
+    esac
+    top="${rel%%/*}"
+    case " $OWNED_FOLDERS " in *" $top "*) ;; *) continue ;; esac
+    [ -f "$LAB_DIR/$rel" ] || continue
+    rm -f "${LAB_DIR:?}/${rel:?}" || continue
+    log "REMOVED $rel"
+    removed=$((removed + 1))
+    dir="${rel%/*}"
+    while [ "$dir" != "$top" ]; do
+      rmdir "$LAB_DIR/$dir" 2>/dev/null || break
+      dir="${dir%/*}"
+    done
+  done <"$gone"
+  rm -f "${gone:?}"
+  if [ "$removed" -gt 0 ]; then say "Removed $removed old files this version no longer ships."; fi
+}
+
 # ---------------------------------------------------------------------------------------------- hook for the tests
 if [ -n "$HL_SETUP_STUBS" ]; then
   # shellcheck disable=SC1090
@@ -1277,6 +1523,9 @@ if [ ! -f "$SOURCE_DIR/docker-compose.yml" ]; then
   printf '%s    Double-click the zip to extract it, open the extracted folder and run this file there.%s\n' "$C_YELLOW" "$C_OFF"
   exit 1
 fi
+
+stop_if_older_than_installed
+start_update_check
 
 step "Check this computer" check_computer fix_nothing
 step "Command Line Tools" check_clt fix_clt
@@ -1310,7 +1559,9 @@ url="$(app_url)"
 rm -f "$ERROR_FILE"
 printf '\n%s  ================================ ALL DONE ================================%s\n' "$C_GREEN" "$C_OFF"
 if [ -n "$RETRY_LIST" ]; then printf '%s    Needs a retry (run this file again):%s%s\n' "$C_YELLOW" "$RETRY_LIST" "$C_OFF"; fi
-printf '    %s steps done now, %s were already in place.\n\n' "$DONE_COUNT" "$SKIP_COUNT"
+printf '    %s steps done now, %s were already in place.\n' "$DONE_COUNT" "$SKIP_COUNT"
+show_update_result
+printf '\n'
 printf '    Simulator      %s\n' "$LAB_DIR"
 printf '    Your repo      %s\n' "$REPO_DIR"
 printf '    Control Center %s\n' "$url"

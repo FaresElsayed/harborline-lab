@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useMeta } from '@/api/queries';
 import { ErrorNote, Skeleton } from '@/components/ui/misc';
 import { isTypingTarget } from '@/lib/hotkeys';
+import { OfflineHelp } from '@/shell/RouteStates';
 import { useIssueParam } from './data';
 import { IssueView } from './IssueView';
 import { Setup } from './Setup';
@@ -60,6 +61,7 @@ export default function TrackerLayout() {
     return (
       <div className="p-6">
         <ErrorNote error={meta.error} onRetry={() => void meta.refetch()} what="the tracker" />
+        <OfflineHelp />
       </div>
     );
   if (!meta.data)

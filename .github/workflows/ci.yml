@@ -10,12 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     env:
       HL_TEST_PG_PORT: 55434
-      HL_TEST_PG_PASSWORD: harborline-admin
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: A password just for this run
+        run: echo "HL_TEST_PG_PASSWORD=$(openssl rand -hex 16)" >> "$GITHUB_ENV"
       # Not a service container: those can't take the settings logical replication needs.
       - name: Start a throwaway Postgres
         run: |
@@ -28,6 +29,13 @@ jobs:
       - name: Test
         working-directory: simulator
         run: python -m pytest -q
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: No key in the repository, ever
+        run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.28.0 detect --source /repo --no-git
 
   web:
     runs-on: ubuntu-latest
@@ -79,3 +87,40 @@ jobs:
           if ($result -notmatch 'on=(\d+) off=(\d+)') { throw "No result: $result" }
           if (-not ([int]$Matches[1] -band 0x40)) { throw 'Clicks should select while setup waits for an answer' }
           if ([int]$Matches[2] -band 0x40) { throw 'A click can still pause the window' }
+      - name: Keys, the update download and the fresh window work on PowerShell 5.1 and a real cmd.exe
+        shell: powershell
+        run: |
+          $text = [IO.File]::ReadAllText('SETUP-WINDOWS.cmd')
+          function Get-Part([string]$From, [string]$To) {
+            $a = $text.IndexOf($From)
+            $b = $text.IndexOf($To, $a)
+            if ($a -lt 0 -or $b -lt 0) { throw "Could not find $From" }
+            $text.Substring($a, $b - $a)
+          }
+          . ([ScriptBlock]::Create((Get-Part 'function New-Key' 'function Get-BackupValue')))
+          . ([ScriptBlock]::Create((Get-Part 'function Get-ErrorText' 'function Clear-UpdateFolder')))
+          $one = New-Key
+          if ($one -notmatch '^[0-9a-f]{48}$') { throw 'A key has the wrong shape' }
+          if ($one -eq (New-Key)) { throw 'Two keys came out the same' }
+          $Script:SystemProxy = $null
+          $version = Invoke-UpdateFetch "https://raw.githubusercontent.com/$env:GITHUB_REPOSITORY/$env:GITHUB_SHA/setup/VERSION"
+          if ("$version".Trim() -notmatch '^[0-9.]+$') { throw "Read '$version' for the version" }
+          $clock = [Diagnostics.Stopwatch]::StartNew()
+          $failed = $false
+          try { Invoke-UpdateFetch 'https://10.255.255.1/' '' 3 } catch { $failed = $true }
+          if (-not $failed -or $clock.Elapsed.TotalSeconds -gt 8) { throw "The time limit did not hold: $($clock.Elapsed.TotalSeconds) s" }
+          # A folder name that needs the quoting to be right.
+          $dir = Join-Path $env:RUNNER_TEMP 'with space & (brackets)'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          $file = Join-Path $dir 'SETUP-WINDOWS.cmd'
+          [IO.File]::WriteAllText($file, "@echo off`r`n> `"%~dp0marker.txt`" echo %HL_SETUP_UPDATED%`r`n")
+          $child = (Get-Part 'function Start-SetupInNewWindow' 'function Stop-IfOlderThanInstalled') + "`nfunction Write-Log { }`nfunction Get-ErrorText { }`nStart-SetupInNewWindow '$($file -replace "'", "''")' '2026.11.10'"
+          $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($child))
+          $p = Start-Process powershell.exe -Wait -PassThru -WindowStyle Hidden -ArgumentList @('-NoProfile', '-EncodedCommand', $encoded)
+          if ($p.ExitCode -ne 75) { throw "The old window left with $($p.ExitCode), not 75" }
+          $marker = Join-Path $dir 'marker.txt'
+          for ($i = 0; $i -lt 30 -and -not (Test-Path -LiteralPath $marker); $i++) { Start-Sleep -Seconds 1 }
+          if (-not (Test-Path -LiteralPath $marker)) { throw 'The new window never ran the file' }
+          $got = (Get-Content -LiteralPath $marker -Raw).Trim()
+          "Marker in the new window: $got"
+          if ($got -ne '2026.11.10') { throw "The new window got '$got'" }

@@ -69,7 +69,7 @@
 
   // Every page in the handbook. total = fallback item count until the page has been opened once.
   var PAGES = [
-    { id: "start", title: "Start here", file: "START_HERE.html", root: true, total: 4 },
+    { id: "start", title: "Start here", file: "START_HERE.html", root: true, total: 7 },
     { id: "getting-started", title: "Getting started", file: "getting-started.html", total: 18 },
     { id: "known-issues", title: "Known issues", file: "known-issues.html", total: 0 },
     { id: "project-brief", title: "Project brief", file: "project-brief.html", total: 62 },
@@ -382,7 +382,7 @@
     var app = h("nav", { class: "hb-nav", "aria-label": "Simulator app" });
     app.appendChild(h("p", { class: "hb-nav-title", text: "Simulator app" }));
     var ul2 = h("ul");
-    [["Control Center", "/"], ["Team", "/team"], ["Tracker", "/tracker"]].forEach(function (x) {
+    [["Start here", "/start"], ["Control Center", "/control"], ["Team", "/team"], ["Tracker", "/tracker"]].forEach(function (x) {
       ul2.appendChild(h("li", null, [h("a", { href: appOrigin + x[1], class: "hb-nav-ext", target: "_blank", rel: "noopener" }, [h("span", { text: x[0] })])]));
     });
     app.appendChild(ul2);

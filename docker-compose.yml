@@ -7,10 +7,10 @@ services:
     image: postgres:17
     restart: unless-stopped
     environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-harborline-admin}
-      HL_APP_PASSWORD: ${HL_APP_PASSWORD:-harborline-app}
-      HL_ETL_PASSWORD: ${HL_ETL_PASSWORD:-etl-reader-2026}
-      HL_REVIEWER_PASSWORD: ${HL_REVIEWER_PASSWORD:-uat-review-2026}
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Run SETUP-WINDOWS.cmd or SETUP-MAC.command first, it creates this in .env}"
+      HL_APP_PASSWORD: "${HL_APP_PASSWORD:?Run SETUP-WINDOWS.cmd or SETUP-MAC.command first, it creates this in .env}"
+      HL_ETL_PASSWORD: "${HL_ETL_PASSWORD:?Run SETUP-WINDOWS.cmd or SETUP-MAC.command first, it creates this in .env}"
+      HL_REVIEWER_PASSWORD: "${HL_REVIEWER_PASSWORD:?Run SETUP-WINDOWS.cmd or SETUP-MAC.command first, it creates this in .env}"
     command:
       - postgres
       - -c
@@ -54,6 +54,9 @@ services:
       - path: .env
         required: false
     environment:
+      SF_CLIENT_ID: "${SF_CLIENT_ID:?Run SETUP-WINDOWS.cmd or SETUP-MAC.command first, it creates this in .env}"
+      SF_CLIENT_SECRET: "${SF_CLIENT_SECRET:?Run SETUP-WINDOWS.cmd or SETUP-MAC.command first, it creates this in .env}"
+      CARRIER_API_KEY: "${CARRIER_API_KEY:?Run SETUP-WINDOWS.cmd or SETUP-MAC.command first, it creates this in .env}"
       HL_UID: ${HL_UID:-10001}
       HL_GID: ${HL_GID:-10001}
       HL_PG_HOST: postgres

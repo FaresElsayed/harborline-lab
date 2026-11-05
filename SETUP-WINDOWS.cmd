@@ -33,6 +33,12 @@ try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::
 # Leftovers from other tools that would silently point this run at the wrong account or Docker engine.
 Remove-Item Env:GH_TOKEN, Env:GITHUB_TOKEN, Env:DOCKER_HOST, Env:DOCKER_TLS_VERIFY, Env:DOCKER_CERT_PATH, Env:DOCKER_CONTEXT -ErrorAction SilentlyContinue
 $env:WSL_UTF8 = '1'
+# The update check goes to the internet, so it needs the real proxy: keep it before the next line turns it off.
+$Script:SystemProxy = $null
+try {
+    $Script:SystemProxy = [System.Net.WebRequest]::GetSystemWebProxy()
+    $Script:SystemProxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials
+} catch { }
 # Never send calls to this machine's own app through a system proxy.
 try { [System.Net.WebRequest]::DefaultWebProxy = New-Object System.Net.WebProxy } catch { }
 
@@ -48,6 +54,12 @@ $Script:OldFolders = @('harborline-simulator', 'harborline-3pl-simulator', 'harb
 $Script:StateDir = Join-Path $env:LOCALAPPDATA 'HarborlineLab'
 $Script:LogFile = Join-Path $Script:StateDir 'setup.log'
 $Script:ErrorFile = Join-Path $Script:StateDir 'setup-error.txt'
+$Script:UpdateDir = Join-Path $Script:StateDir 'update'
+$Script:UpdatedToFile = Join-Path $Script:StateDir 'updated-to.txt'
+$Script:FileList = Join-Path $Script:StateDir 'installed-files.txt'
+$Script:EnvBackup = Join-Path $Script:StateDir 'env.backup'
+$Script:KeyNames = @('POSTGRES_PASSWORD', 'HL_APP_PASSWORD', 'HL_ETL_PASSWORD', 'HL_REVIEWER_PASSWORD', 'SF_CLIENT_ID', 'SF_CLIENT_SECRET', 'CARRIER_API_KEY')
+$Script:OwnedFolders = @('.github', 'answer_key', 'brand', 'config', 'db', 'docs', 'handbook', 'setup', 'simulator', 'team', 'tracker', 'web')
 $Script:StepNo = 0
 $Script:StepTotal = 24
 $Script:Results = New-Object System.Collections.ArrayList
@@ -213,7 +225,8 @@ function Restart-InFreshWindow {
     if ((Test-Path -LiteralPath $marker) -and (Get-Item -LiteralPath $marker).LastWriteTime -gt (Get-Date).AddHours(-1)) { return }
     Set-Content -LiteralPath $marker -Value (Get-Date -Format 's') -Encoding Ascii
     $file = Join-Path $Script:LabDir 'SETUP-WINDOWS.cmd'
-    if (-not (Test-Path -LiteralPath $file)) { $file = $env:HL_SETUP_FILE }
+    # Only the installed copy if it is this version: an older one would undo what this run is here to install.
+    if (-not (Test-Path -LiteralPath $file) -or (Get-VersionIn $Script:LabDir) -ne (Get-VersionIn $Script:SourceDir)) { $file = $env:HL_SETUP_FILE }
     Say 'Something was just installed, and a new window often sees it when this one cannot. Carrying on in a fresh window.'
     try { Start-Process explorer.exe -ArgumentList ('"' + $file + '"') | Out-Null } catch { return }
     exit 75
@@ -332,6 +345,80 @@ function Set-EnvValue([string]$Key, [string]$Value) {
     [IO.File]::WriteAllLines($path, [string[]]$lines, (New-Object Text.UTF8Encoding($false)))
 }
 function Get-AppPort { return (Get-EnvValue 'HL_APP_PORT' '8080') }
+
+# Every password and key is made here, on this machine, once. What is already in .env always wins: Postgres keeps its
+# first password in the Docker volume, so a new one would lock the person out of their own data.
+function New-Key {
+    $bytes = New-Object byte[] 24
+    $rng = [Security.Cryptography.RandomNumberGenerator]::Create()
+    try { $rng.GetBytes($bytes) } finally { $rng.Dispose() }
+    return (-join ($bytes | ForEach-Object { $_.ToString('x2') }))
+}
+function Get-BackupValue([string]$Key) {
+    if (-not (Test-Path -LiteralPath $Script:EnvBackup)) { return '' }
+    foreach ($line in [IO.File]::ReadAllLines($Script:EnvBackup)) {
+        if ($line -match "^\s*$([regex]::Escape($Key))\s*=\s*(.*?)\s*$") { return $Matches[1] }
+    }
+    return ''
+}
+function Get-MissingKeys {
+    if (-not (Test-Path -LiteralPath (Get-EnvPath))) { return $Script:KeyNames }
+    return @($Script:KeyNames | Where-Object { -not (Get-EnvValue $_) })
+}
+function Save-EnvBackup {
+    # Only a complete file: a damaged .env must never replace the good copy.
+    if (@(Get-MissingKeys).Count -gt 0) { return }
+    Copy-Item -LiteralPath (Get-EnvPath) -Destination $Script:EnvBackup -Force
+}
+function Test-DataVolume {
+    # $null means Docker did not say, which is not the same as no.
+    $volume = "$($Script:Project)_pgdata"
+    if (-not (Invoke-Tool 'docker' @('volume', 'ls', '-q', '--filter', "name=$volume"))) { return $null }
+    return (@($Script:LastOutput -split "`n" | Where-Object { $_.Trim() -eq $volume }).Count -gt 0)
+}
+function Stop-IfDataWouldLockOut {
+    # No password anywhere. A new one is only safe if there is no data for it to lock.
+    $volume = Test-DataVolume
+    if ($null -eq $volume) { throw 'Docker did not say whether your data exists, so setup did not make new passwords. Run this file again.' }
+    if (-not $volume) { return }
+    Write-Log 'STOPPED: .env and its backup are gone and the data volume exists.'
+    Your-Turn -NoWait -Lines @(
+        'Your settings file (.env) and its backup are both gone, but your simulator data is still here in Docker.',
+        'The data is locked with the password that was in that file. A new password would not open it, so setup stopped here.',
+        'Nothing has been changed or deleted. You have two choices:',
+        "  1  Keep your data: put your old .env back in $($Script:LabDir), from a backup or another copy, then run this file again.",
+        '  2  Start fresh: this deletes all your simulator data and tracker progress. In Docker Desktop, delete the',
+        "     $($Script:Project) containers under Containers and $($Script:Project)_pgdata under Volumes, then run this file again.",
+        'Not sure? Choose 1 first, or ask Kevin. Setup will not delete anything by itself.')
+    exit 1
+}
+function Repair-EnvFile {
+    $path = Get-EnvPath
+    if (-not (Test-Path -LiteralPath $path)) {
+        if (Test-Path -LiteralPath $Script:EnvBackup) {
+            Copy-Item -LiteralPath $Script:EnvBackup -Destination $path
+            Say 'Your settings file was missing, so setup restored it from its backup. Your passwords still match your data.'
+        } else {
+            Stop-IfDataWouldLockOut
+            Copy-Item -LiteralPath (Join-Path $Script:LabDir '.env.example') -Destination $path
+        }
+    }
+    $made = 0
+    foreach ($key in $Script:KeyNames) {
+        if (Get-EnvValue $key) { continue }
+        $value = Get-BackupValue $key
+        if (-not $value) {
+            if ($key -eq 'POSTGRES_PASSWORD') { Stop-IfDataWouldLockOut }
+            $value = New-Key
+            $made++
+        }
+        Set-EnvValue $key $value
+        # The running app has the old value: this sends it through the usual restart, which asks first if a build is running.
+        Remove-Item -LiteralPath (Join-Path $Script:StateDir 'app-version.txt') -ErrorAction SilentlyContinue
+    }
+    if ($made -gt 0) { Say "Made $made new passwords and keys, just for this install. Find them on Connections in the Control Center." }
+    Save-EnvBackup
+}
 function Get-PgPort { return (Get-EnvValue 'HL_PG_PORT' '5432') }
 function Get-AppUrl { return "http://localhost:$(Get-AppPort)" }
 
@@ -717,7 +804,7 @@ function Add-DBeaverConnections {
     # One launch: a second copy starting before the first has finished would find the workspace locked.
     $exe = Find-DBeaver
     if (-not $exe) { $Script:LastError = 'DBeaver was not found.'; return }
-    $pw = Get-EnvValue 'HL_ETL_PASSWORD' 'etl-reader-2026'
+    $pw = Get-EnvValue 'HL_ETL_PASSWORD'
     $port = Get-PgPort
     $launch = @('-nosplash')
     foreach ($c in @(@('wms', 'WMS'), @('ax2012', 'AX 2012'), @('iot', 'IoT'), @('tracker', 'Tracker'))) {
@@ -1078,6 +1165,247 @@ function Step {
     Stop-WithError $Title
 }
 
+# ---------------------------------------------------------------------------------------------- updates
+# A new version is the same as running a newer zip: get the files, then run the new setup file from them. Finished steps
+# skip, and the Simulator and Start steps do the rest. Nothing here may stop or slow down someone with no internet.
+function Get-VersionIn([string]$Dir) {
+    try {
+        $file = Join-Path $Dir 'setup\VERSION'
+        if (Test-Path -LiteralPath $file) { return ([IO.File]::ReadAllText($file)).Trim() }
+    } catch { }
+    return ''
+}
+function Test-VersionText([string]$Text) { return ($Text -match '^[0-9]{1,9}(\.[0-9]{1,9}){0,5}$') }
+function Test-NewerVersion([string]$A, [string]$B) {
+    # Part by part as numbers: as text, 2026.11.10 would sort before 2026.11.9. Anything unreadable is never newer.
+    if (-not (Test-VersionText $A) -or -not (Test-VersionText $B)) { return $false }
+    $x = @($A -split '\.')
+    $y = @($B -split '\.')
+    for ($i = 0; $i -lt [math]::Max($x.Count, $y.Count); $i++) {
+        $p = 0L
+        $q = 0L
+        if ($i -lt $x.Count) { $p = [long]$x[$i] }
+        if ($i -lt $y.Count) { $q = [long]$y[$i] }
+        if ($p -gt $q) { return $true }
+        if ($p -lt $q) { return $false }
+    }
+    return $false
+}
+function Get-UpdateRepo {
+    # The environment wins, for testing and forks. Windows can't hold an empty variable, so a single space also means off.
+    $text = ''
+    if (Test-Path Env:\HL_UPDATE_REPO) { $text = $env:HL_UPDATE_REPO }
+    else {
+        $file = Join-Path $Script:SourceDir 'setup\UPDATE_REPO'
+        if (Test-Path -LiteralPath $file) { $text = [IO.File]::ReadAllText($file) }
+    }
+    $text = "$text".Trim()
+    if ($text -and $text -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*$') {
+        Write-Log "Update check skipped: '$text' is not owner/name."
+        return ''
+    }
+    return $text
+}
+function Get-ErrorText($Problem) {
+    $e = $Problem.Exception
+    while ($e.InnerException) { $e = $e.InnerException }
+    return $e.Message
+}
+function Invoke-UpdateFetch {
+    # Returns the address's text, or saves it to OutFile. Throws on anything but success.
+    # HttpClient and Wait, not Invoke-WebRequest: its timeout leaves out the name lookup, and a bad network must not hold
+    # this up for longer than the timeout. Waiting on the task is a hard limit, whatever the network does.
+    param([string]$Url, [string]$OutFile = '', [int]$TimeoutSec = 10)
+    Add-Type -AssemblyName System.Net.Http -ErrorAction Stop
+    $handler = New-Object System.Net.Http.HttpClientHandler
+    if ($Script:SystemProxy) { $handler.Proxy = $Script:SystemProxy }
+    $client = New-Object System.Net.Http.HttpClient -ArgumentList @(, $handler)
+    $limit = $TimeoutSec * 1000
+    try {
+        $client.Timeout = [TimeSpan]::FromSeconds($TimeoutSec)
+        if (-not $OutFile) {
+            $read = $client.GetStringAsync($Url)
+            if (-not $read.Wait($limit)) { throw "No answer within $TimeoutSec seconds." }
+            return $read.Result
+        }
+        $get = $client.GetAsync($Url, [System.Net.Http.HttpCompletionOption]::ResponseHeadersRead)
+        if (-not $get.Wait($limit)) { throw "No answer within $TimeoutSec seconds." }
+        $response = $get.Result
+        [void]$response.EnsureSuccessStatusCode()
+        $stream = [IO.File]::Create($OutFile)
+        try {
+            $copy = $response.Content.CopyToAsync($stream)
+            if (-not $copy.Wait($limit)) { throw "The download did not finish within $TimeoutSec seconds." }
+        } finally { $stream.Dispose() }
+    } finally {
+        try { $client.CancelPendingRequests() } catch { }
+        try { $client.Dispose() } catch { }
+    }
+}
+function Clear-UpdateFolder {
+    Remove-Item -LiteralPath $Script:UpdateDir -Recurse -Force -ErrorAction SilentlyContinue
+}
+function Start-SetupInNewWindow([string]$File, [string]$UpdatedTo = '') {
+    # cmd.exe reads a running batch file line by line, so this window has to be gone before anything copies over its file:
+    # never run the new one nested inside it. Explorer would start it with Explorer's own environment and lose the
+    # marker, so cmd.exe starts it, with the marker on its command line. Returns only if the window could not be started.
+    $line = '"' + $File + '"'
+    if ($UpdatedTo) { $line = 'set "HL_SETUP_UPDATED=' + $UpdatedTo + '" && ' + $line }
+    else { Remove-Item Env:\HL_SETUP_UPDATED -ErrorAction SilentlyContinue }
+    try {
+        Start-Process -FilePath 'cmd.exe' -ArgumentList ('/d /c "' + $line + '"') -WorkingDirectory (Split-Path -Parent $File) -ErrorAction Stop | Out-Null
+    } catch {
+        Write-Log "Could not open a new window: $(Get-ErrorText $_)"
+        return
+    }
+    exit 75
+}
+function Stop-IfOlderThanInstalled {
+    # An old zip run by mistake. Works with no internet, and never copies old files over new ones.
+    $mine = Get-VersionIn $Script:SourceDir
+    $installed = Get-VersionIn $Script:LabDir
+    if (-not (Test-NewerVersion $installed $mine)) { return }
+    $file = Join-Path $Script:LabDir 'SETUP-WINDOWS.cmd'
+    Write-Host ''
+    Say-Warn "This file is version $mine, but version $installed is already installed, so setup will not copy old files over it."
+    if (Test-Path -LiteralPath $file) {
+        Say 'Carrying on with the installed copy in a new window.'
+        Start-SetupInNewWindow $file
+    }
+    Say "Nothing was changed. To carry on, run the newest copy of this file you have."
+    exit 1
+}
+function Start-Update([string]$Repo, [string]$Version) {
+    $here = Get-VersionIn $Script:SourceDir
+    $top = Join-Path $Script:UpdateDir ('{0}-main' -f ($Repo -split '/')[1])
+    $file = Join-Path $top 'SETUP-WINDOWS.cmd'
+    Clear-UpdateFolder
+    Say 'Downloading it. This usually takes under a minute.'
+    try {
+        New-Item -ItemType Directory -Force -Path $Script:UpdateDir -ErrorAction Stop | Out-Null
+        $zip = Join-Path $Script:UpdateDir 'update.zip'
+        Invoke-UpdateFetch "https://github.com/$Repo/archive/refs/heads/main.zip" $zip 900 | Out-Null
+        Expand-Archive -LiteralPath $zip -DestinationPath $Script:UpdateDir -Force -ErrorAction Stop
+        Remove-Item -LiteralPath $zip -Force -ErrorAction SilentlyContinue
+        if (-not (Test-Path -LiteralPath $file) -or -not (Test-Path -LiteralPath (Join-Path $top 'docker-compose.yml'))) { throw 'The download does not hold the package.' }
+        $got = Get-VersionIn $top
+        if ($got -ne $Version) { throw "The download is version '$got', not $Version." }
+        $body = [IO.File]::ReadAllText($file)
+        if (-not $body.StartsWith('<# :')) { throw 'The setup file in the download is damaged.' }
+        $null = [ScriptBlock]::Create($body)
+        Get-ChildItem -LiteralPath $top -Recurse -File -Force -ErrorAction SilentlyContinue | Unblock-File -ErrorAction SilentlyContinue
+        Set-Content -LiteralPath $Script:UpdatedToFile -Value $Version -Encoding Ascii -ErrorAction Stop
+    } catch {
+        Write-Log "Update failed: $(Get-ErrorText $_)"
+        Clear-UpdateFolder
+        Say-Warn "The update did not work, so setup is carrying on with version $here. Nothing was changed."
+        return
+    }
+    Say "Carrying on with version $Version in a new window. This one closes by itself."
+    Start-SetupInNewWindow $file $Version
+    Remove-Item -LiteralPath $Script:UpdatedToFile -ErrorAction SilentlyContinue
+    Clear-UpdateFolder
+    Say-Warn "The update did not work, so setup is carrying on with version $here. Nothing was changed."
+}
+function Start-UpdateCheck {
+    # The run an update started has already been through this, and it must not ask again.
+    if ($env:HL_SETUP_UPDATED) { Write-Log "Running the update to $($env:HL_SETUP_UPDATED)."; return }
+    # Left from the last update, unless this file is running from it.
+    if (-not "$($Script:SourceDir)/".Replace('\', '/').StartsWith("$($Script:UpdateDir)/".Replace('\', '/'), [StringComparison]::OrdinalIgnoreCase)) { Clear-UpdateFolder }
+    try {
+        $repo = Get-UpdateRepo
+        if (-not $repo) { Write-Log 'Update checks are off.'; return }
+        $here = Get-VersionIn $Script:SourceDir
+        $latest = "$(Invoke-UpdateFetch "https://raw.githubusercontent.com/$repo/main/setup/VERSION")".Trim()
+        if (-not (Test-VersionText $latest) -or -not (Test-VersionText $here)) {
+            Write-Log 'Update check skipped: the version numbers could not be read.'
+            return
+        }
+        if (-not (Test-NewerVersion $latest $here)) { Say "You have the latest version ($here)."; return }
+    } catch {
+        Write-Log "Update check skipped: $(Get-ErrorText $_)"
+        return
+    }
+    $yes = $false
+    try { $yes = Ask-YesNo "Version $latest is available. Update now? Your data, settings and progress are kept." } catch { Write-Log "No answer about the update: $(Get-ErrorText $_)" }
+    if (-not $yes) { Say "Carrying on with version $here."; return }
+    Start-Update $repo $latest
+}
+function Show-UpdateResult {
+    # Kept until the app really runs the new version, which is later if he chose to let a running build finish.
+    if (-not (Test-Path -LiteralPath $Script:UpdatedToFile)) { return }
+    $version = (Get-Content -LiteralPath $Script:UpdatedToFile -Raw).Trim()
+    if (-not (Test-AppCurrent)) { return }
+    Remove-Item -LiteralPath $Script:UpdatedToFile -ErrorAction SilentlyContinue
+    if ($version -ne (Get-PackageVersion)) { return }
+    Say-Good "Updated to $version."
+    # For example: data from an earlier version needs one rebuild. That stays his decision, so it is shown and nothing more.
+    $s = Invoke-Api 'GET' '/api/sim/status'
+    if ($s -and $s.error) { Say-Warn "$($s.error)" }
+}
+
+# Everything setup copied last time, so a later version can remove only what it put there itself. A file he made was
+# never on this list, so it can't be removed. With no list yet, nothing is removed.
+function Test-PersonsOwnFile([string]$Relative) {
+    return ($Relative -eq '.env' -or $Relative -eq 'landing' -or $Relative -like 'landing/*' -or $Relative -eq 'answer_key/anomalies.csv')
+}
+function Get-PackageFiles([string]$Dir) {
+    $base = (Resolve-Path -LiteralPath $Dir).Path.TrimEnd('\', '/')
+    Get-ChildItem -LiteralPath $base -Force | Where-Object { $_.Name -ne 'landing' -and $_.Name -ne '.git' } | ForEach-Object {
+        if ($_.PSIsContainer) { Get-ChildItem -LiteralPath $_.FullName -Recurse -File -Force } else { $_ }
+    } | ForEach-Object {
+        $relative = $_.FullName.Substring($base.Length + 1) -replace '\\', '/'
+        if (-not (Test-PersonsOwnFile $relative)) { $relative }
+    }
+}
+function Remove-StaleFiles([string[]]$Current) {
+    if (-not (Test-Path -LiteralPath $Script:FileList)) { return }
+    # Ignoring case, like the disk: a file renamed from Foo to foo must not count as removed.
+    $keep = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
+    foreach ($f in $Current) { [void]$keep.Add($f) }
+    $removed = 0
+    foreach ($line in [IO.File]::ReadAllLines($Script:FileList)) {
+        $relative = $line.Trim()
+        if (-not $relative -or $keep.Contains($relative) -or (Test-PersonsOwnFile $relative)) { continue }
+        if ($relative -match '(^|/)\.\.(/|$)|^[/\\]|:') { continue }
+        $parts = @($relative -split '/')
+        # Only inside folders the package owns: a file at the top of the folder stays.
+        if ($parts.Count -lt 2 -or $Script:OwnedFolders -notcontains $parts[0]) { continue }
+        $path = Join-Path $Script:LabDir $relative
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { continue }
+        try { Remove-Item -LiteralPath $path -Force -ErrorAction Stop } catch { Write-Log "Could not remove ${relative}: $(Get-ErrorText $_)"; continue }
+        Write-Log "REMOVED $relative"
+        $removed++
+        for ($i = $parts.Count - 2; $i -ge 1; $i--) {
+            $folder = Join-Path $Script:LabDir (($parts[0..$i]) -join '/')
+            if (Get-ChildItem -LiteralPath $folder -Force -ErrorAction SilentlyContinue | Select-Object -First 1) { break }
+            Remove-Item -LiteralPath $folder -Force -ErrorAction SilentlyContinue
+        }
+    }
+    if ($removed -gt 0) { Say "Removed $removed old files this version no longer ships." }
+}
+function Copy-Package {
+    # File by file, so a file that can't be copied says which. setup\VERSION goes last, in the step below: until it is
+    # there the step reads as not done, so a copy that stopped halfway is simply done again next time.
+    Say 'Copying the package.'
+    $files = @(Get-PackageFiles $Script:SourceDir)
+    foreach ($relative in $files) {
+        if ($relative -eq 'setup/VERSION') { continue }
+        $target = Join-Path $Script:LabDir $relative
+        try {
+            New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target) -ErrorAction Stop | Out-Null
+            Copy-Item -LiteralPath (Join-Path $Script:SourceDir $relative) -Destination $target -Force -ErrorAction Stop
+        } catch {
+            $Script:LastError = "Could not copy ${relative}: $(Get-ErrorText $_)"
+            $Script:LastOutput = $Script:LastError
+            return $false
+        }
+    }
+    Remove-StaleFiles $files
+    [IO.File]::WriteAllLines($Script:FileList, [string[]]$files)
+    return $true
+}
+
 # ---------------------------------------------------------------------------------------------- hook for the tests
 if ($env:HL_SETUP_STUBS) { . $env:HL_SETUP_STUBS }
 
@@ -1094,6 +1422,9 @@ if (-not (Test-Path -LiteralPath (Join-Path $Script:SourceDir 'docker-compose.ym
     Write-Host '    Right-click the zip, choose Extract All, open the extracted folder and run this file there.' -ForegroundColor Yellow
     exit 1
 }
+
+Stop-IfOlderThanInstalled
+Start-UpdateCheck
 
 $Script:Machine = Get-MachineInfo
 $Script:VirtConfirmed = $false
@@ -1279,12 +1610,8 @@ Step "Simulator in $($Script:LabDir)" -Check {
     return ((Test-Path -LiteralPath $there) -and ((Get-Content -LiteralPath $here -Raw) -eq (Get-Content -LiteralPath $there -Raw)))
 } -Fix {
     New-Item -ItemType Directory -Force -Path $Script:LabDir | Out-Null
-    if ((Resolve-Path -LiteralPath $Script:SourceDir).Path -ne (Resolve-Path -LiteralPath $Script:LabDir).Path) {
-        Say 'Copying the package.'
-        Get-ChildItem -LiteralPath $Script:SourceDir -Force | Where-Object { @('.env', 'landing') -notcontains $_.Name } | ForEach-Object {
-            Copy-Item -LiteralPath $_.FullName -Destination $Script:LabDir -Recurse -Force
-        }
-    }
+    $elsewhere = (Resolve-Path -LiteralPath $Script:SourceDir).Path -ne (Resolve-Path -LiteralPath $Script:LabDir).Path
+    if ($elsewhere -and -not (Copy-Package)) { return }
     New-Item -ItemType Directory -Force -Path (Join-Path $Script:LabDir 'landing') | Out-Null
     Get-ChildItem -LiteralPath $Script:LabDir -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne 'landing' } | ForEach-Object {
         if ($_.PSIsContainer) { Get-ChildItem -LiteralPath $_.FullName -Recurse -File -ErrorAction SilentlyContinue | Unblock-File -ErrorAction SilentlyContinue }
@@ -1295,17 +1622,18 @@ Step "Simulator in $($Script:LabDir)" -Check {
         $text = [IO.File]::ReadAllText($_.FullName)
         if ($text.Contains("`r`n")) { [IO.File]::WriteAllText($_.FullName, $text.Replace("`r`n", "`n"), (New-Object Text.UTF8Encoding($false))) }
     }
+    if ($elsewhere) { Copy-Item -LiteralPath (Join-Path $Script:SourceDir 'setup\VERSION') -Destination (Join-Path $Script:LabDir 'setup\VERSION') -Force }
 }
 
 Step 'Settings and free ports' -Check {
-    if (-not (Test-Path -LiteralPath (Get-EnvPath))) { return $false }
+    if (@(Get-MissingKeys).Count -gt 0) { return $false }
+    # Each run, so it follows ports he changed, and an install from before there was a backup gets one.
+    Save-EnvBackup
     if ((Get-ProjectContainers $Script:OldProject).Count -gt 0) { return $false }
     if ((Get-ProjectContainers $Script:Project).Count -gt 0) { return $true }
     return ((Test-PortFree ([int](Get-PgPort))) -and (Test-PortFree ([int](Get-AppPort))))
 } -Fix {
-    if (-not (Test-Path -LiteralPath (Get-EnvPath))) {
-        Copy-Item -LiteralPath (Join-Path $Script:LabDir '.env.example') -Destination (Get-EnvPath)
-    }
+    Repair-EnvFile
     $old = Get-ProjectContainers $Script:OldProject -All
     if ($old.Count -gt 0) {
         Say 'Stopping the containers from the earlier attempt. Its data stays on disk, untouched.'
@@ -1486,6 +1814,7 @@ foreach ($r in $Script:Results) {
 $fresh = @($Script:Results | Where-Object { $_.Status -eq 'done' }).Count
 $kept = @($Script:Results | Where-Object { $_.Status -eq 'skipped' }).Count
 Write-Host "    $fresh steps done now, $kept were already in place."
+Show-UpdateResult
 Write-Host ''
 Write-Host "    Simulator      $($Script:LabDir)"
 Write-Host "    Your repo      $($Script:RepoDir)"

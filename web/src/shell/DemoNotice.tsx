@@ -2,8 +2,8 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import { IconButton } from '@/components/ui/button';
+import { REPO_URL } from '@/lib/base';
 
-const REPO_URL = import.meta.env.VITE_REPO_URL || 'https://github.com/FaresElsayed/harborline-lab';
 const DISMISSED_KEY = 'harborline.demo.notice.dismissed';
 
 function wasDismissed() {

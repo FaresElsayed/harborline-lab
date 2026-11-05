@@ -63,6 +63,19 @@ def health() -> JSONResponse:
     return JSONResponse({"ok": ok, "db": ok}, status_code=200 if ok else 503)
 
 
+def _setup_file(name: str) -> str:
+    """One line from the package's setup folder. Empty when it can't be read: a note in the sidebar must never fail the app."""
+    try:
+        return (get_settings().handbook_dir.parent / "setup" / name).read_text(encoding="utf-8").strip()
+    except (OSError, UnicodeError):
+        return ""
+
+
+@router.get("/version")
+def version() -> dict[str, str]:
+    return {"version": _setup_file("VERSION"), "update_repo": _setup_file("UPDATE_REPO")}
+
+
 @router.get("/sim/status")
 def status() -> dict[str, Any]:
     return get_engine().status()

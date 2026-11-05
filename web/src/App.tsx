@@ -6,10 +6,12 @@ import { Toaster } from 'sonner';
 import { AlertTriangle, CheckCircle2, Info, XCircle } from 'lucide-react';
 import { ApiError } from '@/api/client';
 import { TooltipProvider } from '@/components/ui/overlay';
+import { isFinished } from '@/features/start/path';
 import { useTheme } from '@/lib/theme';
 import { AppShell } from '@/shell/AppShell';
 import { RouteError, NotFound, PageFallback } from '@/shell/RouteStates';
 
+const StartPage = lazy(() => import('@/features/start/Start'));
 const ControlLayout = lazy(() => import('@/features/control/ControlLayout'));
 const ControlOverview = lazy(() => import('@/features/control/Overview'));
 const ScenariosPage = lazy(() => import('@/features/control/Scenarios'));
@@ -37,6 +39,11 @@ const queryClient = new QueryClient({
   },
 });
 
+/** The app opens on Start here until the person has finished it. */
+function Home() {
+  return <Navigate to={isFinished() ? '/control' : '/start'} replace />;
+}
+
 const page = (el: React.ReactNode) => <Suspense fallback={<PageFallback />}>{el}</Suspense>;
 
 const router = createBrowserRouter([
@@ -44,7 +51,8 @@ const router = createBrowserRouter([
     element: <AppShell />,
     errorElement: <RouteError />,
     children: [
-      { index: true, element: <Navigate to="/control" replace /> },
+      { index: true, Component: Home },
+      { path: 'start', element: page(<StartPage />) },
       {
         path: 'control',
         element: page(<ControlLayout />),

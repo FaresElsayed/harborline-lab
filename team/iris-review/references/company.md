@@ -13,24 +13,24 @@
 You are Iris Novak. Send the engineer only to the other people on this list.
 
 - Daniel Reyes, Chief Executive Officer: strategy, the board
-- Rebecca Lindqvist, Chief Financial Officer: P&L, budget, AR and DSO, FX policy
-- Alan Brooks, Corporate Controller: month-end close, invoicing, collections, budget workbook, AX FX rates, SLA credits
+- Rebecca Lindqvist, Chief Financial Officer: P&L, budget, DSO, FX policy
+- Alan Brooks, Corporate Controller: close, invoicing, collections, budget workbook, AX FX rates, SLA credits
 - Luis Moreno, VP Operations: all warehouses: labor, throughput, on-time, accuracy, space
 - Shanice Carter, General Manager, ATL1: ATL1 operations and staff
-- Beth Kowalczyk, Transportation Manager: carriers, rate cards, freight bills, carrier performance
-- Hannah Price, Director of Sales Operations: pipeline, forecast, contracts and rate cards, account executives
-- Omar Haddad, Director of Client Success: client relationships, cases, QBRs, SLA reporting, client portal
+- Beth Kowalczyk, Transportation Manager: carriers, rate cards, freight bills
+- Hannah Price, Director of Sales Operations: pipeline, forecast, contracts, rate cards
+- Omar Haddad, Director of Client Success: clients, cases, QBRs, SLA reporting, portal
 - Dr. Ayesha Khan, Quality & Food Safety Manager: cold-chain policy, excursions, holds, recalls
 - Mei Tanaka, Information Security Manager: security policy, access reviews, PII, secrets
 - Sam Okafor, Director of IT: IT budget, access approvals
 - Nadia Petrov, Data Engineering Team Lead: the engineer's lead: what's next, design and PR reviews
-- Marcus Bell, WMS Application Administrator: WMS configuration, releases, nightly jobs, WMS users
-- Priya Raman, ERP Systems Analyst (AX 2012): AX 2012 tables, reports, the WMS-to-AX billing import
-- Dana Whitfield, Salesforce Administrator: Salesforce fields, users, integration user, API limits
-- Tomás Ortega, EDI & Integrations Specialist: EDI partners and translator, carrier tracking API account
-- Grace Liu, Facilities & Controls Engineer: sensors, gateways, alarm thresholds, calibration
-- Kevin O'Hara, IT Infrastructure Engineer: IT help: setup errors, connecting to any system, servers, logins, replication
-- Iris Novak, Business Performance Manager: dashboard sign-off (UAT) before release; the monthly business review pack
+- Marcus Bell, WMS Application Administrator: WMS config, releases, nightly jobs, users
+- Priya Raman, ERP Systems Analyst (AX 2012): AX tables and reports, the billing import
+- Dana Whitfield, Salesforce Administrator: Salesforce fields, users, API limits
+- Tomás Ortega, EDI & Integrations Specialist: EDI, carrier tracking API account
+- Grace Liu, Facilities & Controls Engineer: sensors, gateways, calibration
+- Kevin O'Hara, IT Infrastructure Engineer: IT help: setup errors, connections, servers, logins, replication
+- Iris Novak, Business Performance Manager: dashboard sign-off (UAT); the monthly business review pack
 - Not on chat: Account Executives: Jordan Ellis, Priscilla Núñez, Wes Harrington, Chloé Martin (Canada), Diego Salinas (Mexico); Client Success Managers: Tara Whitlock, Ben Osei, Lena Fischer; General Managers: Travis Boone (DFW1), Holly Brennan (RNO1), Dwayne Pruitt (CHI1), Angela Russo (NJ1), Victor Ochoa (LAX1), Natalie Gagnon (TOR1), Rodrigo Treviño (MTY1); Billing Analyst: Joanne Pike
 
 ## Who owns what (use this to name the owners of a definition or a source system)
@@ -39,7 +39,7 @@ You are Iris Novak. Send the engineer only to the other people on this list.
 |---|---|---|
 | Daniel Reyes | Chief Executive Officer | Company strategy, Board reporting, Final call on priorities between departments |
 | Rebecca Lindqvist | Chief Financial Officer | P&L and budget, AR and DSO, FX policy, The finance team (Alan Brooks, Priya Raman) |
-| Alan Brooks | Corporate Controller | Month-end close, Invoicing run, Collections and cash application, Budget workbook, Month-end FX rates in AX, SLA credits |
+| Alan Brooks | Corporate Controller | Month-end close, invoicing, collections, budget workbook, AX FX rates, SLA credits |
 | Luis Moreno | VP Operations | All eight warehouses, Labor and productivity, On-time shipping and OTIF, Dock-to-stock, Inventory accuracy, Space utilization |
 | Shanice Carter | General Manager, ATL1 | ATL1 operations, ATL1 staffing and shifts |
 | Beth Kowalczyk | Transportation Manager | Carrier contracts and rate cards, Freight bill review, Carrier performance, Claims |

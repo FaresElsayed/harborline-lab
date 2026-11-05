@@ -13,7 +13,7 @@ import { JQL_FIELDS, JQL_FUNCTIONS } from '@/lib/jql';
 import { plural } from '@/lib/format';
 import { usePersisted } from '@/lib/store';
 import { Avatar, DueBadge, Estimate, IssueKey, PriorityIcon, StatusLozenge, TypeIcon } from './atoms';
-import { useIssueParam, useTracker } from './data';
+import { plainLabels, useIssueParam, useTracker } from './data';
 import { useIssueNav } from './nav';
 
 interface SavedFilter {
@@ -63,7 +63,7 @@ function useSuggestions(jql: string, caret: number) {
       reporter: ['currentUser()', ...[...t.people.keys()]],
       sprint: ['openSprints()', 'closedSprints()', ...t.sprints.map((s) => `"${s.name}"`)],
       epic: t.epics.map((e) => e.key),
-      labels: t.meta.data?.labels ?? [],
+      labels: plainLabels(t.meta.data?.labels ?? []),
       component: (t.meta.data?.components ?? []).map((c) => (c.includes(' ') ? `"${c}"` : c)),
       duedate: ['now()', 'startOfWeek()', 'endOfWeek()', '-7d', '7d'],
       created: ['now()', 'startOfWeek()', '-7d'],
@@ -175,6 +175,11 @@ export default function IssuesPage() {
   };
 
   const rows = q.data ?? [];
+  const sortByDue = () => {
+    const next = `${text.replace(/\s*ORDER BY[\s\S]*$/i, '').trim()} ORDER BY duedate ASC`.trim();
+    setText(next);
+    run(next);
+  };
   useIssueNav(rows.map((r) => r.key), t.me);
   const errorMsg = q.isError ? (q.error instanceof Error ? q.error.message : String(q.error)) : null;
   const all = [...filters.map((f) => ({ ...f, own: false })), ...saved.map((f) => ({ ...f, own: true }))];
@@ -308,7 +313,7 @@ export default function IssuesPage() {
             </div>
           ) : errorMsg ? null : rows.length === 0 ? (
             <div className="mt-2">
-              <Empty>No issues match this query.</Empty>
+              <Empty>No issues match this query. Try a filter on the left, or remove a condition.</Empty>
             </div>
           ) : (
             <div className="scroll-thin mt-1 overflow-x-auto">
@@ -327,7 +332,11 @@ export default function IssuesPage() {
                     <th scope="col" className="h-9 w-10 font-normal">
                       <span className="sr-only">Assignee</span>
                     </th>
-                    <th scope="col" className="h-9 w-[124px] font-normal">Due</th>
+                    <th scope="col" className="h-9 w-[124px] font-normal" aria-sort={/ORDER BY\s+duedate(\s+ASC)?\s*$/i.test(jql) ? 'ascending' : undefined}>
+                      <button type="button" onClick={sortByDue} title="Sort by due date, soonest first" className="rounded-s hover:text-ink hover:underline">
+                        Due{/ORDER BY\s+duedate(\s+ASC)?\s*$/i.test(jql) ? ' ↑' : ''}
+                      </button>
+                    </th>
                     <th scope="col" className="h-9 w-14 text-right font-normal">Est.</th>
                     <th scope="col" className="h-9 w-24 pr-3 text-right font-normal">Sprint</th>
                   </tr>

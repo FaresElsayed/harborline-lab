@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { ArrowRight } from 'lucide-react';
 import type { Issue } from '@/api/types';
@@ -7,12 +7,13 @@ import { dueState, fmtDay, inThisWeek, workWeek } from '@/lib/dates';
 import { fmtHours, plural } from '@/lib/format';
 import { Avatar, DueBadge, Estimate, IssueKey, PriorityIcon, StatusLozenge, TypeIcon } from './atoms';
 import { useIssueParam, useTracker } from './data';
+import { YouAreHere } from './here';
 import { useIssueNav } from './nav';
 
 const CAP = 8;
 const byDue = (a: Issue, b: Issue) => ((a.due_date ?? '9999') < (b.due_date ?? '9999') ? -1 : 1);
 
-function List({ title, items, jql, empty, onOpen, tone }: { title: string; items: Issue[]; jql: string; empty: string; onOpen: (k: string) => void; tone?: 'bad' }) {
+function List({ title, items, jql, empty, onOpen, tone }: { title: string; items: Issue[]; jql: string; empty: ReactNode; onOpen: (k: string) => void; tone?: 'bad' }) {
   const t = useTracker();
   const hours = items.reduce((s, i) => s + (i.estimate_hours ?? 0), 0);
   return (
@@ -108,6 +109,7 @@ export default function MyWorkPage() {
           <h1 className="figure text-[1.75rem] font-semibold leading-8 text-ink">My work</h1>
         </div>
         <p className="num mt-1 text-md text-muted">{finding}</p>
+        <YouAreHere className="mt-4" />
         {!t.issuesQ.data ? (
           <div className="mt-6 grid grid-cols-2 gap-4">
             {Array.from({ length: 4 }, (_, i) => (
@@ -129,16 +131,32 @@ export default function MyWorkPage() {
               items={week}
               onOpen={open}
               jql="assignee = currentUser() AND duedate >= now() AND duedate <= 7d AND status != Done ORDER BY duedate ASC"
-              empty="Nothing else is due this week."
+              empty={`Nothing else is due ${upcoming ? 'next' : 'this'} week.`}
             />
             <List
               title="In progress, on time"
               items={doing}
               onOpen={open}
               jql='assignee = currentUser() AND status IN ("In Progress", "In Review") ORDER BY duedate ASC'
-              empty="Nothing in progress. Pick the next issue from the board."
+              empty={
+                <>
+                  Nothing in progress.{' '}
+                  <Link to="/tracker/board" className="font-medium text-accent-strong hover:underline">
+                    Pick the next issue from the board
+                  </Link>
+                </>
+              }
             />
-            <List title="Up next" items={next} onOpen={open} jql='assignee = currentUser() AND status = "To Do" ORDER BY duedate ASC' empty="Your queue is empty." />
+            <List title="Up next" items={next} onOpen={open} jql='assignee = currentUser() AND status = "To Do" ORDER BY duedate ASC'
+              empty={
+                <>
+                  Your queue is empty.{' '}
+                  <Link to="/tracker/backlog" className="font-medium text-accent-strong hover:underline">
+                    See what is planned in the backlog
+                  </Link>
+                </>
+              }
+            />
           </div>
         )}
       </div>

@@ -235,6 +235,16 @@ export const team = {
   links: () => get<{ links: Record<string, string> }>('/api/handbook/team-links'),
 };
 
+/** The handbook's saved ticks, one row per page. The app's Start here shares the `start` page with START_HERE.html. */
+export const handbookProgress = {
+  get: (page: string) => get<{ state: Record<string, unknown> | null; updated_at: string | null }>(`/api/handbook/progress/${encodeURIComponent(page)}`),
+  put: (page: string, state: unknown) => put<unknown>(`/api/handbook/progress/${encodeURIComponent(page)}`, { state }),
+};
+
+export const appVersion = {
+  local: () => get<{ version: string; update_repo: string }>('/api/version'),
+};
+
 export const sim = {
   health: () => get<Health>('/api/health'),
   status: () => get<SimStatus>('/api/sim/status'),

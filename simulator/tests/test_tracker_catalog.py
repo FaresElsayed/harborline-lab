@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 import copy
+import re
+from collections import defaultdict
 from datetime import date
+from fractions import Fraction
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -12,7 +16,7 @@ import yaml
 
 from harborline.settings import get_settings
 from harborline.tracker import loader, workdays
-from harborline.tracker.catalog import read_catalog
+from harborline.tracker.catalog import CatalogIssue, read_catalog
 
 PEOPLE = {"sam.okafor", "luis.moreno", "beth.kowalczyk", "me"}
 
@@ -174,3 +178,121 @@ def test_shipped_catalog_validates() -> None:
     assert sum(1 for i in report.issues if i.type == "Epic") == 8
     sprints = {i.sprint for i in report.issues if i.sprint}
     assert sprints <= set(range(1, workdays.SPRINTS + 1))
+
+
+# ---------------------------------------------------------------- the difficulty ramp (see the top of p01)
+
+LEVEL_LABEL = re.compile(r"level-(\d+)")
+START_HERE = "Where to start"
+
+
+def _shipped() -> list[CatalogIssue]:
+    tickets = get_settings().tracker_dir / "tickets"
+    if not any(tickets.glob("*.yaml")):
+        pytest.skip("ticket catalog not written yet")
+    people = {p["key"] for p in loader.people(get_settings().config_dir)}
+    report = read_catalog(tickets, people)
+    assert report.errors == []
+    return report.issues
+
+
+def _level(issue: CatalogIssue) -> int:
+    found = [m for m in map(LEVEL_LABEL.fullmatch, issue.labels) if m]
+    assert len(found) == 1, f"{issue.source_id}: expected exactly one level-N label, got {issue.labels}"
+    return int(found[0].group(1))
+
+
+def _averages(issues: list[CatalogIssue], key: Any) -> list[tuple[int, Fraction]]:
+    """Mean level per group, in group order. Exact fractions, so a tie is never read as a fall."""
+    groups: dict[int, list[int]] = defaultdict(list)
+    for issue in issues:
+        if issue.type != "Epic":
+            groups[key(issue)].append(_level(issue))
+    return [(k, Fraction(sum(v), len(v))) for k, v in sorted(groups.items())]
+
+
+def _falls(averages: list[tuple[int, Fraction]]) -> list[int]:
+    return [b[0] for a, b in pairwise(averages) if b[1] < a[1]]
+
+
+def _sprint_falls(issues: list[CatalogIssue]) -> list[tuple[int, list[int]]]:
+    out = []
+    for project in sorted({i.project for i in issues}):
+        falls = _falls(_averages([i for i in issues if i.project == project and i.sprint], lambda i: i.sprint))
+        if falls:
+            out.append((project, falls))
+    return out
+
+
+def test_every_non_epic_ticket_has_exactly_one_level_label() -> None:
+    issues = _shipped()
+    for issue in issues:
+        found = [label for label in issue.labels if LEVEL_LABEL.fullmatch(label)]
+        if issue.type == "Epic":
+            assert found == [], issue.source_id
+        else:
+            assert len(found) == 1 and found[0] in {f"level-{n}" for n in range(1, 6)}, (issue.source_id, issue.labels)
+
+
+def test_average_level_never_falls_from_one_project_to_the_next() -> None:
+    averages = _averages(_shipped(), lambda i: i.project)
+    assert [k for k, _ in averages] == list(range(1, workdays.PROJECTS + 1))
+    assert _falls(averages) == [], averages
+
+
+def test_average_level_never_falls_between_sprints_of_a_project() -> None:
+    assert _sprint_falls(_shipped()) == []
+
+
+def test_the_ramp_checks_catch_a_fall(tmp_path: Path) -> None:
+    docs = sample_catalog()
+    for doc in docs:
+        for story in doc["stories"]:
+            story["labels"] = ["level-3"] if story["sprint"] == 1 else ["level-2"]
+            for task in story["tasks"]:
+                task["labels"] = list(story["labels"])
+    report = read_catalog(write_catalog(tmp_path, docs), PEOPLE)
+    assert _sprint_falls(report.issues) == [(1, [2]), (2, [4])]
+    assert _falls([(1, Fraction(3)), (2, Fraction(2))]) == [2]
+    assert _falls([(1, Fraction(2)), (2, Fraction(2))]) == []
+
+
+def test_project_one_is_gentle_and_project_five_onward_has_no_level_one() -> None:
+    issues = [i for i in _shipped() if i.type != "Epic"]
+    first_two_sprints = [i.source_id for i in issues if i.project == 1 and i.sprint in (1, 2) and _level(i) >= 4]
+    assert first_two_sprints == []
+    assert [i.source_id for i in issues if i.project >= 5 and _level(i) == 1] == []
+
+
+def test_support_fades_with_the_level() -> None:
+    for issue in _shipped():
+        if issue.type == "Epic":
+            continue
+        assert (START_HERE in issue.description) == (_level(issue) <= 2), issue.source_id
+        assert issue.acceptance_criteria, f"{issue.source_id}: every level needs checkable acceptance criteria"
+
+
+def test_shipped_catalog_keeps_the_published_numbers() -> None:
+    """The landing page and the brief quote these. Changing them is a decision, not a side effect."""
+    issues = _shipped()
+    counts: dict[str, int] = defaultdict(int)
+    hours: dict[int, float] = defaultdict(float)
+    for issue in issues:
+        counts[issue.type] += 1
+        hours[issue.project] += issue.estimate_hours or 0
+    assert dict(counts) == {"Epic": 8, "Story": 48, "Task": 313, "Spike": 9, "Bug": 15}
+    assert all(155 <= h <= 159 for h in hours.values()), dict(hours)
+    epics = [n for n, issue in enumerate(issues, start=1) if issue.type == "Epic"]
+    assert epics == [1, 52, 100, 150, 200, 248, 297, 346]  # the Project brief links each project to its epic key
+
+
+def test_each_project_runs_in_sprint_order_and_ends_in_dashboards_and_sign_off() -> None:
+    issues = _shipped()
+    for project in range(1, workdays.PROJECTS + 1):
+        stories = [i for i in issues if i.project == project and i.type == "Story"]
+        assert [s.sprint for s in stories] == sorted(s.sprint for s in stories), project
+        last = stories[-1]
+        tasks = [i for i in issues if i.parent_source == last.source_id]
+        assert "dashboard" in last.summary.lower() or "Dashboard" in last.components, last.source_id
+        sign_off = [t for t in tasks if t.summary.startswith("UAT sign-off from Iris Novak")]
+        assert len(sign_off) == 1 and sign_off[0].due_day == workdays.DAYS_PER_PROJECT, last.source_id

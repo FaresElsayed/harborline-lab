@@ -11,9 +11,11 @@ import { Button, buttonClasses } from '@/components/ui/button';
 import { Input, Label, Segmented, Select } from '@/components/ui/field';
 import { Dot, Empty, ErrorNote, PageHeader, Panel, Pill, Skeleton, Tabs } from '@/components/ui/misc';
 import { Dialog, Tooltip } from '@/components/ui/overlay';
+import { NextTicketLine } from '@/features/tracker/here';
 import { fmtRelative, fmtUtc } from '@/lib/dates';
 import { bytesText, fmtDuration, fmtInt, fmtSimHours, plural } from '@/lib/format';
 import { ui } from '@/lib/store';
+import { OfflineHelp } from '@/shell/RouteStates';
 import { stateView } from '@/shell/TopBar';
 import { summarise, useSimActions } from './actions';
 import { BuildDialog, PRESET_INFO } from './BuildDialog';
@@ -196,8 +198,9 @@ function BatchPanel({ s }: { s: SimStatus | undefined }) {
   const target = s?.sim_clock && valid ? fmtUtc(new Date(Date.parse(s.sim_clock) + hours * HOUR).toISOString(), 'MMM d, HH:mm') : null;
 
   return (
-    <Panel title="Generate batch" meta="Inserts, updates and deletes in one go" className="col-span-5 flex flex-col max-[1100px]:col-span-12" bodyClassName="flex flex-1 flex-col">
+    <Panel title="Generate batch" className="col-span-5 flex flex-col max-[1100px]:col-span-12" bodyClassName="flex flex-1 flex-col pt-1">
       <div className="flex flex-1 flex-col gap-4">
+        <p className="text-sm text-muted">Moves the sim clock forward and applies that stretch of inserts, updates and deletes in one go. Use it to give a scheduled load new data to pick up.</p>
         <div className="flex flex-wrap items-center gap-2">
           <Segmented
             ariaLabel="Batch length"
@@ -263,12 +266,12 @@ function StreamPanel({ s }: { s: SimStatus | undefined }) {
   return (
     <Panel
       title="Stream"
-      meta={running ? undefined : 'Small changes on a timer, for CDC'}
       actions={running ? <Pill tone="accent" icon={<Dot tone="accent" pulse className="size-1.5" />}>Running</Pill> : null}
       className="col-span-4 flex flex-col max-[1100px]:col-span-7 max-sm:col-span-12"
-      bodyClassName="flex flex-1 flex-col"
+      bodyClassName="flex flex-1 flex-col pt-1"
     >
       <div className="flex flex-1 flex-col gap-4">
+        <p className="text-sm text-muted">Applies small changes every few seconds until you stop it. Use it to test CDC or anything near real time. Batches wait while it runs.</p>
         <div className="flex flex-wrap items-end gap-3">
           <div>
             <Label>Every</Label>
@@ -663,17 +666,25 @@ export default function ControlOverview() {
                 API docs
               </a>
             )}
-            <Button icon={<Hammer aria-hidden />} onClick={() => ui.set({ buildDialog: true })} disabled={s?.state === 'building'}>
-              Build dataset
-            </Button>
+            <Tooltip content="Starts over: wipes the source data and makes the whole history again. Setup already did this once.">
+              <span>
+                <Button icon={<Hammer aria-hidden />} onClick={() => ui.set({ buildDialog: true })} disabled={s?.state === 'building'}>
+                  Build dataset
+                </Button>
+              </span>
+            </Tooltip>
           </>
         }
       />
 
       {offline ? (
-        <ErrorNote error={status.error} onRetry={() => void status.refetch()} what="the simulator status" />
+        <>
+          <ErrorNote error={status.error} onRetry={() => void status.refetch()} what="the simulator status" />
+          <OfflineHelp />
+        </>
       ) : (
         <>
+          <NextTicketLine className="mb-4" />
           <StatusStrip s={s} />
           {s?.state === 'building' ? <BuildProgress s={s} /> : s ? <SimTimeline s={s} runs={runs.data ?? []} /> : null}
           {s && !s.built_at && s.state !== 'building' ? (
@@ -689,6 +700,7 @@ export default function ControlOverview() {
             <StreamPanel s={s} />
             <QualitySummary s={s} />
           </div>
+          {s?.built_at ? <p className="mt-2 text-sm text-muted">Build dataset, at the top of this page, is only for starting over: setup already built this data, and a rebuild wipes it and makes it again.</p> : null}
 
           <div className="mt-4 grid grid-cols-12 items-start gap-4">
             {s ? (

@@ -4,6 +4,7 @@ import { CalendarDays } from 'lucide-react';
 import type { Issue, IssueType, Person, Priority, StatusName } from '@/api/types';
 import { Tooltip } from '@/components/ui/overlay';
 import { dueLabel, dueState } from '@/lib/dates';
+import { levelOf } from './data';
 
 // ---------------------------------------------------------------- issue type
 
@@ -133,6 +134,17 @@ export function DueBadge({ issue, compact }: { issue: Pick<Issue, 'due_date' | '
         {!compact || st === 'later' || st === 'done' ? <CalendarDays className="size-3" aria-hidden /> : null}
         {text}
       </span>
+    </Tooltip>
+  );
+}
+
+/** "Level 2": how hard a ticket is. Renders nothing until the ticket carries a level label. */
+export function LevelChip({ issue }: { issue: Pick<Issue, 'labels'> }) {
+  const level = levelOf(issue);
+  if (!level) return null;
+  return (
+    <Tooltip content={`Level ${level} of 5. Level 1 is the easiest, level 5 the hardest.`}>
+      <span className="num inline-flex h-5 flex-none items-center whitespace-nowrap rounded-s border border-line px-1.5 text-xs text-muted">Level {level}</span>
     </Tooltip>
   );
 }
