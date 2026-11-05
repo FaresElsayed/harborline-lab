@@ -529,7 +529,7 @@ def test_versions_compare_as_numbers(a: str, b: str, newer: bool) -> None:
 
 
 def test_update_repo_ships_and_the_docs_say_how_updating_works() -> None:
-    assert (ROOT / "setup" / "UPDATE_REPO").read_text(encoding="utf-8").strip() == "KarimAbdelaziz2503/harborline-lab"
+    assert (ROOT / "setup" / "UPDATE_REPO").read_text(encoding="utf-8").strip() == "FaresElsayed/harborline-lab"
     for name in (".dockerignore", ".gitignore"):
         assert "UPDATE_REPO" not in (ROOT / name).read_text(encoding="utf-8")
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
