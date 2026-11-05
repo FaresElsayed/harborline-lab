@@ -2,17 +2,20 @@
 
 Keys are ``DATA-<n>`` in file order (epic, then each story followed by its tasks). Re-loading is
 idempotent and never touches his work: status, assignee, sprint moves, ranks, comments, work log,
-history and checked acceptance criteria are preserved. While he has not started working (no history,
-comments, work log or own tickets) a changed catalog is simply re-numbered in file order; afterwards
-existing keys stay stable and new catalog tickets get the next free numbers.
+history and checked acceptance criteria are preserved, and a ticket that got a new id in a release keeps
+its work (moves.py). While he has not started working (no history, comments, work log or own tickets) a
+changed catalog is simply re-numbered in file order; afterwards existing keys stay stable and new catalog
+tickets get the next free numbers.
 """
 
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from decimal import Decimal
+from difflib import SequenceMatcher
 from functools import cache
 from pathlib import Path
 from typing import Any
@@ -22,6 +25,7 @@ import yaml
 
 from harborline.tracker import runtime, workdays
 from harborline.tracker.catalog import CatalogIssue, CatalogReport, read_catalog, signature
+from harborline.tracker.moves import follow_moves, has_work
 
 DDL_PATH = Path(__file__).with_name("tracker.sql")
 ME = {"key": "me", "name": "You", "title": "Data Engineer", "dept": "IT"}
@@ -91,17 +95,6 @@ def has_user_state(conn: psycopg.Connection) -> bool:
     return bool(row[0])
 
 
-def _issue_has_work(conn: psycopg.Connection, key: str) -> bool:
-    row = conn.execute(
-        "SELECT EXISTS (SELECT 1 FROM tracker.history WHERE issue_key = %(k)s) "
-        "OR EXISTS (SELECT 1 FROM tracker.comment WHERE issue_key = %(k)s) "
-        "OR EXISTS (SELECT 1 FROM tracker.worklog WHERE issue_key = %(k)s) "
-        "OR EXISTS (SELECT 1 FROM tracker.issue WHERE key = %(k)s AND (status <> 'To Do' OR pr_url IS NOT NULL))",
-        {"k": key},
-    ).fetchone()
-    return bool(row[0])
-
-
 def _assign_numbers(conn: psycopg.Connection, issues: list[CatalogIssue], result: SyncResult) -> dict[str, int]:
     existing = dict(conn.execute("SELECT source_id, num FROM tracker.issue WHERE origin = 'catalog'").fetchall())
     desired = {issue.source_id: i + 1 for i, issue in enumerate(issues)}
@@ -166,8 +159,57 @@ def _num(value: float | None) -> Decimal | None:
     return None if value is None else Decimal(str(value))
 
 
+Tick = tuple[bool, datetime | None]
+_WORD = re.compile(r"\w+")
+_SAME_BOX = 0.6
+
+
+def _likeness(a: str, b: str) -> float:
+    """How alike two boxes read: 1.0 when the shorter one's words are all in the longer one."""
+    a, b = a.lower(), b.lower()
+    words_a, words_b = set(_WORD.findall(a)), set(_WORD.findall(b))
+    shared = len(words_a & words_b) / (min(len(words_a), len(words_b)) or 1)
+    return max(shared, SequenceMatcher(None, a, b, autojunk=False).ratio())
+
+
+def carry_ticks(old: list[tuple[str, bool, datetime | None]], new: list[str], done: bool = False) -> list[Tick]:
+    """What each new box inherits when a release rewords them.
+
+    The same words keep their tick. Then each leftover box takes the tick of the closest rewording, and a last pair
+    left over is the same box said differently. A genuinely new requirement starts unticked, except on a ticket he
+    finished with every box ticked: finished stays finished.
+    """
+    ticks: list[Tick | None] = [None] * len(new)
+    left = list(old)
+    for i, text in enumerate(new):
+        hit = next((o for o in left if o[0] == text), None)
+        if hit is not None:
+            left.remove(hit)
+            ticks[i] = hit[1], hit[2]
+    open_new = [i for i, tick in enumerate(ticks) if tick is None]
+    pairs = sorted(((_likeness(o[0], new[i]), n, i) for n, o in enumerate(left) for i in open_new),
+                   key=lambda p: (-p[0], p[1], p[2]))
+    used_old: set[int] = set()
+    for score, n, i in pairs:
+        if score < _SAME_BOX:
+            break
+        if n not in used_old and ticks[i] is None:
+            used_old.add(n)
+            ticks[i] = left[n][1], left[n][2]
+    rest_old = [o for n, o in enumerate(left) if n not in used_old]
+    rest_new = [i for i in open_new if ticks[i] is None]
+    if len(rest_old) == 1 and len(rest_new) == 1:
+        ticks[rest_new[0]] = rest_old[0][1], rest_old[0][2]
+    if done and old and all(o[1] for o in old):
+        stamps = [o[2] for o in old if o[2] is not None]
+        latest = max(stamps) if stamps else None
+        return [tick if tick is not None and tick[0] else (True, latest) for tick in ticks]
+    return [tick if tick is not None else (False, None) for tick in ticks]
+
+
 def _sync_acceptance_criteria(conn: psycopg.Connection, issues: list[CatalogIssue], keys: dict[str, str]) -> None:
     current: dict[str, list[tuple[str, bool, datetime | None]]] = {}
+    done = {key for (key,) in conn.execute("SELECT key FROM tracker.issue WHERE status = 'Done'")}
     for key, text, checked, checked_at in conn.execute(
         "SELECT issue_key, text, checked, checked_at FROM tracker.ac_check a JOIN tracker.issue i ON i.key = "
         "a.issue_key WHERE i.origin = 'catalog' ORDER BY issue_key, idx"
@@ -178,12 +220,9 @@ def _sync_acceptance_criteria(conn: psycopg.Connection, issues: list[CatalogIssu
         old = current.get(key, [])
         if [t for t, _, _ in old] == issue.acceptance_criteria:
             continue
-        carried: dict[str, list[tuple[bool, datetime | None]]] = {}
-        for text, checked, checked_at in old:
-            carried.setdefault(text, []).append((checked, checked_at))
+        ticks = carry_ticks(old, issue.acceptance_criteria, key in done)
         conn.execute("DELETE FROM tracker.ac_check WHERE issue_key = %s", [key])
-        for idx, text in enumerate(issue.acceptance_criteria):
-            checked, checked_at = carried[text].pop(0) if carried.get(text) else (False, None)
+        for idx, (text, (checked, checked_at)) in enumerate(zip(issue.acceptance_criteria, ticks, strict=True)):
             conn.execute("INSERT INTO tracker.ac_check (issue_key, idx, text, checked, checked_at) "
                          "VALUES (%s, %s, %s, %s, %s)", [key, idx, text, checked, checked_at])
 
@@ -223,7 +262,7 @@ def _sync_removed(conn: psycopg.Connection, issues: list[CatalogIssue], result: 
     for key, source_id in rows:
         if source_id in wanted:
             continue
-        if _issue_has_work(conn, key):
+        if has_work(conn, key):
             conn.execute("UPDATE tracker.issue SET removed = true, updated_at = now() WHERE key = %s", [key])
             result.kept_removed += 1
         else:
@@ -263,6 +302,7 @@ def sync_catalog(conn: psycopg.Connection, report: CatalogReport) -> SyncResult:
         conn.execute("LOCK TABLE tracker.issue IN SHARE ROW EXCLUSIVE MODE")
         start = start_date(conn)
         sync_sprints(conn, report.issues, start)
+        follow_moves(conn, report.issues)
         nums = _assign_numbers(conn, report.issues, result)
         keys = {sid: f"DATA-{n}" for sid, n in nums.items()}
         _sync_removed(conn, report.issues, result)

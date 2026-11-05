@@ -16,7 +16,7 @@ import { useSimActions } from './actions';
 import { systemLabel } from './systems';
 
 const PROJECT_KEY = 'hl.extract.project';
-const DEMO_ZIP_NOTE = 'In this demo the zip holds the file list only. The rows are available when you install it.';
+const DEMO_ZIP_NOTE = 'In this preview the zip holds the file list only. The rows are available when you install it.';
 const SYSTEM_ORDER = ['wms', 'ax2012', 'iot', 'salesforce', 'carrier', 'edi', 'files', 'platform'];
 
 function monthLabel(m: string, long = false) {

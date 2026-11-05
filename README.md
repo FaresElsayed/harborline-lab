@@ -13,13 +13,11 @@
 </p>
 
 <p align="center">
-  <a href="https://fareselsayed.github.io/harborline-lab/"><b>Try the live demo</b></a>
-  &nbsp;·&nbsp;
   <a href="#quick-start"><b>Install it</b></a>
   &nbsp;·&nbsp;
   <a href="#the-8-projects">See the projects</a>
   &nbsp;·&nbsp;
-  <a href="https://fareselsayed.github.io/harborline-lab/handbook/">Read the handbook</a>
+  <a href="https://karimabdelaziz2503.github.io/harborline-lab/handbook/">Read the handbook</a>
 </p>
 
 <p align="center">
@@ -30,7 +28,7 @@
 </p>
 
 <p align="center">
-  <a href="https://fareselsayed.github.io/harborline-lab/"><img src="docs/media/harborline-tour.gif" alt="A short tour: your badge on day one, a generated day of data, a wall of AI colleagues, the skills you learn, and the link to try it" width="420"></a>
+  <a href="#quick-start"><img src="docs/media/harborline-tour.gif" alt="A short tour: your badge on day one, a generated day of data, a wall of AI colleagues, the skills you learn, and where to get it" width="420"></a>
 </p>
 
 ## Why this exists
@@ -91,7 +89,7 @@ Harborline Logistics fixes both. It's a warehouse and shipping company (a 3PL) w
   </tr>
 </table>
 
-No install needed to look around: **[open the live demo](https://fareselsayed.github.io/harborline-lab/)**. It runs in your browser with sample data.
+Curious about the screens before you install? There's a [preview in your browser](https://karimabdelaziz2503.github.io/harborline-lab/). It only shows the interface with sample numbers. The data, the databases and the work all come with the install.
 
 ## Quick start
 
@@ -213,7 +211,7 @@ Nothing is pushed to the cloud for you. Getting the data there is your job.
 
 **Can I show my work to employers?** Yes, that's the point. Put your own repo and dashboards on your profile.
 
-**Something broke during setup.** Run the file again first. Then check the [known issues page](https://fareselsayed.github.io/harborline-lab/handbook/known-issues.html), and if it's still stuck, [open a setup issue](../../issues/new?template=setup-failed.yml).
+**Something broke during setup.** Run the file again first. Then check the [known issues page](https://karimabdelaziz2503.github.io/harborline-lab/handbook/known-issues.html), and if it's still stuck, [open a setup issue](../../issues/new?template=setup-failed.yml).
 
 ## Known limits
 

@@ -23,7 +23,7 @@ from test_tracker_catalog import _task, sample_catalog, write_catalog
 from harborline.api import tracker as tracker_api
 from harborline.db import get_db
 from harborline.settings import Settings
-from harborline.tracker import backup, loader, runtime
+from harborline.tracker import backup, loader, moves, runtime
 
 T0 = datetime(2026, 11, 2, 9, 0, tzinfo=UTC)  # Monday, program day 1
 API = "/api/tracker"
@@ -218,6 +218,93 @@ def test_reload_is_idempotent_and_preserves_his_work(env: Env) -> None:
     assert env.client.get(f"{API}/issues/DATA-8").status_code == 404
     assert "DATA-7" not in env.keys("sprint = 2")
     assert env.ok("GET", "/issues/DATA-15")["summary"] == "My extra check"
+
+
+def _boxes(env: Env, key: str) -> list[tuple[str, bool]]:
+    return [(a["text"], a["checked"]) for a in env.ok("GET", f"/issues/{key}")["acceptance_criteria"]]
+
+
+def test_reworded_boxes_keep_their_ticks_and_new_ones_start_empty(env: Env) -> None:
+    _configure(env)
+    env.at(T0)
+    env.ok("PATCH", "/issues/DATA-3", json={"acceptance_criteria": [{"idx": 0, "checked": True}]})
+    docs = sample_catalog()
+    docs[0]["stories"][0]["acceptance_criteria"] = ["Orders land hourly, with no gaps", "Row counts reconcile",
+                                                    "Someone from finance has read the runbook"]
+    write_catalog(env.tickets, docs)
+    loader.load_catalog(env.conn, env.tickets)
+    assert _boxes(env, "DATA-2") == [("Orders land hourly, with no gaps", False), ("Row counts reconcile", False),
+                                     ("Someone from finance has read the runbook", False)]
+
+    env.ok("PATCH", "/issues/DATA-2", json={"acceptance_criteria": [{"idx": 0, "checked": True}]})
+    docs[0]["stories"][0]["acceptance_criteria"] = ["Orders land every hour, with no gaps", "Row counts reconcile",
+                                                    "Someone from finance has read the runbook", "A brand new demand"]
+    write_catalog(env.tickets, docs)
+    loader.load_catalog(env.conn, env.tickets)
+    assert [checked for _, checked in _boxes(env, "DATA-2")] == [True, False, False, False]
+
+
+def test_a_finished_ticket_stays_fully_ticked_when_its_boxes_change(env: Env) -> None:
+    _configure(env)
+    env.at(T0)
+    env.ok("PATCH", "/issues/DATA-3", json={"status": "Done", "acceptance_criteria": [{"idx": 0, "checked": True}]})
+    docs = sample_catalog()
+    docs[0]["stories"][0]["tasks"][0]["acceptance_criteria"] = ["An entirely different sentence", "And another one"]
+    write_catalog(env.tickets, docs)
+    loader.load_catalog(env.conn, env.tickets)
+    assert [checked for _, checked in _boxes(env, "DATA-3")] == [True, True]
+
+
+def test_work_follows_a_ticket_that_got_a_new_id(env: Env, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A release puts a new easy task first, so T1 becomes T2 and T2 becomes T3 (T3 was the Bug's id here: B1 stays)."""
+    moved = (moves.Move("P1.S1.T1", "Task P1.S1.T1", "P1.S1.T2"), moves.Move("P1.S1.T2", "Task P1.S1.T2", "P1.S1.T3"))
+    monkeypatch.setattr(loader, "follow_moves", lambda conn, issues: moves.follow_moves(conn, issues, moved))
+    _configure(env)
+    env.at(T0)
+    first = env.ok("GET", "/issues/P1.S1.T1")["key"]
+    second = env.ok("GET", "/issues/P1.S1.T2")["key"]
+    env.ok("PATCH", f"/issues/{first}", json={"status": "In Progress",
+                                              "acceptance_criteria": [{"idx": 0, "checked": True}]})
+    env.ok("POST", f"/issues/{first}/comments", json={"body": "my notes on the old first task"})
+    assert env.ok("GET", f"/issues/{second}")["status"] == "To Do"
+
+    docs = sample_catalog()
+    tasks = docs[0]["stories"][0]["tasks"]
+    old_first, old_second = tasks[0], tasks[1]
+    tasks[0] = _task("P1.S1.T1", 2, 1, summary="A brand new easy task", acceptance_criteria=["It is easy"])
+    tasks[1] = {**old_first, "id": "P1.S1.T2"}
+    tasks.insert(2, {**old_second, "id": "P1.S1.T3", "depends_on": ["P1.S1.T2"]})
+    write_catalog(env.tickets, docs)
+    loader.load_catalog(env.conn, env.tickets)
+
+    kept = env.ok("GET", "/issues/P1.S1.T2")
+    assert kept["key"] == first and kept["summary"] == "Task P1.S1.T1" and kept["status"] == "In Progress"
+    assert [c["body"] for c in kept["comments"]] == ["my notes on the old first task"]
+    assert [(a["text"], a["checked"]) for a in kept["acceptance_criteria"]] == [("P1.S1.T1 works", True)]
+    fresh = env.ok("GET", "/issues/P1.S1.T1")
+    assert fresh["summary"] == "A brand new easy task" and fresh["status"] == "To Do" and not fresh["comments"]
+    assert env.ok("GET", "/issues/P1.S1.T3")["summary"] == "Task P1.S1.T2"
+
+    _, again = loader.load_catalog(env.conn, env.tickets)  # already moved: nothing more happens
+    assert (again.inserted, again.updated, again.removed, again.kept_removed) == (0, 0, 0, 0)
+    assert env.ok("GET", "/issues/P1.S1.T2")["key"] == first
+
+
+def test_work_on_a_ticket_folded_into_another_stays_visible(env: Env, monkeypatch: pytest.MonkeyPatch) -> None:
+    moved = (moves.Move("P1.S1.T2", "Task P1.S1.T2", None),)
+    monkeypatch.setattr(loader, "follow_moves", lambda conn, issues: moves.follow_moves(conn, issues, moved))
+    _configure(env)
+    env.at(T0)
+    key = env.ok("GET", "/issues/P1.S1.T2")["key"]
+    env.ok("POST", f"/issues/{key}/worklog", json={"hours": 2})
+    docs = sample_catalog()
+    docs[0]["stories"][0]["tasks"][1] = _task("P1.S1.T2", 3, 5, summary="Someone else now", acceptance_criteria=["x y z"])
+    write_catalog(env.tickets, docs)
+    _, result = loader.load_catalog(env.conn, env.tickets)
+    assert result.kept_removed == 1
+    old = env.ok("GET", f"/issues/{key}")
+    assert old["removed"] is True and old["summary"] == "Task P1.S1.T2"
+    assert env.ok("GET", "/issues/P1.S1.T2")["summary"] == "Someone else now"
 
 
 def test_catalog_renumbers_in_file_order_before_any_work(env: Env) -> None:

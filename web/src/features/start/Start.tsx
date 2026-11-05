@@ -53,7 +53,7 @@ function useSteps(): Record<StepId, Step> {
       ? {
           title: 'Install Harborline on your computer',
           time: 'About 40 min',
-          body: 'This page is the demo: sample data, nothing saved, nothing to connect to. The real thing runs on your own computer in Docker, and one setup file does the installing, on Windows or Mac.',
+          body: 'This page is only a preview of the screens: the numbers are samples, and there’s no data to work on. Harborline itself runs on your own computer in Docker, and one setup file does the installing, on Windows or Mac.',
           links: [{ label: 'Get it on GitHub', href: REPO_URL }],
         }
       : {
@@ -77,7 +77,7 @@ function useSteps(): Record<StepId, Step> {
       title: 'Connect to the data',
       time: '20 min',
       body: isDemo
-        ? 'Every address and password is on the Connections page. In the demo nothing answers at them; once installed, you run a first query against each source.'
+        ? 'Every address and password is on the Connections page. In this preview nothing answers at them; once installed, you run a first query against each source.'
         : 'Every address and password is on the Connections page. Run a first query against each source so you know they all answer.',
       links: [
         { label: 'Open Connections', to: '/control/connections' },
@@ -255,7 +255,7 @@ export default function StartPage() {
         <h1 className="figure text-[1.75rem] font-semibold leading-8 tracking-[-0.01em] text-ink">Start here</h1>
         <p className="mt-1 max-w-[70ch] text-md text-muted">
           {isDemo
-            ? 'This is what a new data engineer at Harborline Logistics works through in week one. You’re looking at the demo, so step 1 is the one that makes it real.'
+            ? 'This is what a new data engineer at Harborline Logistics works through in week one. You’re looking at a preview, so step 1 is the one that gets you the data and the work.'
             : 'You’ve joined Harborline Logistics, a simulated 3PL, as its first data engineer. Work down this list once, in order. After that, your days run on the board.'}
         </p>
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 import re
 from collections import defaultdict
-from datetime import date
+from datetime import UTC, date, datetime
 from fractions import Fraction
 from itertools import pairwise
 from pathlib import Path
@@ -15,7 +15,7 @@ import pytest
 import yaml
 
 from harborline.settings import get_settings
-from harborline.tracker import loader, workdays
+from harborline.tracker import loader, moves, workdays
 from harborline.tracker.catalog import CatalogIssue, read_catalog
 
 PEOPLE = {"sam.okafor", "luis.moreno", "beth.kowalczyk", "me"}
@@ -184,6 +184,46 @@ def test_shipped_catalog_validates() -> None:
 
 LEVEL_LABEL = re.compile(r"level-(\d+)")
 START_HERE = "Where to start"
+
+
+def test_ticks_follow_reworded_boxes() -> None:
+    when = datetime(2026, 11, 3, tzinfo=UTC)
+    on, off = (True, when), (False, None)
+    carry = loader.carry_ticks
+    old = [("Each late package attributed", True, when), ("Row counts reconcile", False, None)]
+    assert carry(old, ["Row counts reconcile", "Each late package attributed, with both causes"]) == [off, on]
+    # Rewritten beyond recognition, but the only box left on each side: the same box.
+    assert carry([("Heartbeat proves liveness", True, when)], ["A test shows a stalled feed reads as stale"]) == [on]
+    # Two rewrites that share no words could be anything, so nothing is claimed.
+    two = [("Alpha beta gamma", True, when), ("Delta epsilon zeta", True, when)]
+    assert carry(two, ["Totally different one", "Nothing alike here"]) == [off, off]
+    # Added boxes start empty. A wholly new one is not ticked by a neighbour.
+    assert carry([("Decision documented", True, when)], ["Decision and edge cases documented", "Review it with Sam"]) == [on, off]
+    # Duplicate wording keeps its own ticks, in order.
+    twins = [("Same words", True, when), ("Same words", False, None)]
+    assert carry(twins, ["Same words", "Same words"]) == [on, off]
+
+
+def test_ticks_on_a_finished_ticket() -> None:
+    when = datetime(2026, 11, 3, tzinfo=UTC)
+    all_on = [("One box", True, when), ("Two box", True, when)]
+    assert loader.carry_ticks(all_on, ["Nothing like it", "Also unrelated", "Third"], done=True) == [(True, when)] * 3
+    some = [("One box", True, when), ("Two box", False, None)]
+    assert loader.carry_ticks(some, ["One box", "Two box", "A new requirement"], done=True) == [
+        (True, when), (False, None), (False, None)]
+    assert loader.carry_ticks(all_on, ["One box", "Two box", "A new requirement"], done=False)[2] == (False, None)
+
+
+def test_moved_tickets_point_at_real_tickets_and_each_old_id_moves_once() -> None:
+    shipped = {i.source_id: i.summary for i in _shipped()}
+    was = [m.was for m in moves.MOVED]
+    assert len(was) == len(set(was))
+    for move in moves.MOVED:
+        assert move.now is None or move.now in shipped, move
+        assert move.summary, move
+    # An entry only applies to the ticket as it was, so it can't fire on anything in the current catalog by mistake:
+    # the one ticket that kept both its id and its summary would have nowhere to go.
+    assert not [m for m in moves.MOVED if shipped.get(m.was) == m.summary]
 
 
 def _shipped() -> list[CatalogIssue]:

@@ -41,7 +41,7 @@ const groups = team as { title: string; people: Person[] }[];
 const everyone = groups.flatMap((g) => g.people);
 const byId = new Map(everyone.map((p) => [p.id, p]));
 
-// The demo has no backend, so its build puts the zip next to the page.
+// The preview has no backend, so its build puts the zip next to the page.
 const CHAT_ZIP = import.meta.env.VITE_MOCK === '1' ? `${import.meta.env.BASE_URL}harborline-chat.zip` : '/api/handbook/chat-zip';
 
 const sentence = (s: string) => (s ? `${s[0].toUpperCase()}${s.slice(1)}.` : '');

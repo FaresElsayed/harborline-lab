@@ -8,7 +8,7 @@ import { CopyButton, ErrorNote, PageHeader, Skeleton } from '@/components/ui/mis
 import { Segmented } from '@/components/ui/field';
 import { handbookUrl } from '@/lib/base';
 
-const DEMO_NOTE = import.meta.env.VITE_DEMO === '1' ? ' In this demo nothing answers at these addresses: they work when you install it.' : '';
+const DEMO_NOTE = import.meta.env.VITE_DEMO === '1' ? ' In this preview nothing answers at these addresses: they work when you install it.' : '';
 
 function Row({ label, value, secret, mono = true }: { label: string; value: string; secret?: boolean; mono?: boolean }) {
   const [shown, setShown] = useState(false);

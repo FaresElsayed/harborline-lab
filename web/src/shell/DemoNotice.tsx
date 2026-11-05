@@ -1,4 +1,4 @@
-/* Demo build only (VITE_DEMO=1): says what this page is and where to get the real thing. Lazy-loaded behind VITE_DEMO, so it never ships otherwise. */
+/* Preview build only (VITE_DEMO=1): says this page is only the screens, and where to get the real thing. Lazy-loaded behind VITE_DEMO, so it never ships otherwise. */
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import { IconButton } from '@/components/ui/button';
@@ -39,9 +39,9 @@ export function DemoNotice() {
         className="pointer-events-auto flex min-w-0 animate-[fade-in_200ms_ease-out] items-center gap-2 rounded-full border border-line bg-sheet py-1 pl-3.5 pr-1 text-sm text-muted shadow-float max-[640px]:rounded-l"
       >
         <p className="flex min-w-0 flex-wrap gap-x-3">
-          <span>Live demo with sample data. Nothing is saved.</span>
+          <span>A preview of the screens, with sample numbers. The data and the work come with the install.</span>
           <a href={REPO_URL} target="_blank" rel="noreferrer" className="font-medium text-accent-strong hover:underline">
-            Get it on GitHub
+            Install it
           </a>
         </p>
         <IconButton label="Dismiss this notice" tip={false} size="sm" variant="quiet" onClick={dismiss} className="rounded-full">

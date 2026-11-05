@@ -1,6 +1,6 @@
-# The no-install browser demo: web/ built with the mock API, plus the handbook and brand kit it links to.
+# The preview of the screens, with the handbook and brand kit it links to: web/ built with the mock API.
 # Needs Settings > Pages > Source: GitHub Actions.
-name: Deploy demo to GitHub Pages
+name: Deploy preview and handbook to GitHub Pages
 
 on:
   push:

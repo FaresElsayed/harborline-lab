@@ -45,6 +45,9 @@ interface Lane {
   items: Issue[];
 }
 
+/** Wide enough, the four columns share the page. Narrower, each keeps a readable width and only the columns scroll sideways. */
+const columnsGrid = 'grid grid-cols-4 gap-3 @max-[959px]:grid-cols-[repeat(4,260px)]';
+
 const cid = (lane: string, status: StatusName) => `${lane}|${status}`;
 const parseCid = (id: string) => {
   const [lane, status] = id.split('|');
@@ -327,8 +330,8 @@ export default function BoardPage() {
     clsx('press inline-flex h-8 items-center gap-1.5 rounded-m border px-2.5 text-base transition-colors duration-150', on ? 'border-accent bg-accent-tint font-medium text-accent-strong' : 'border-control bg-sheet text-ink hover:bg-hover');
 
   return (
-    <div className="h-full overflow-auto">
-      <div className="min-w-[960px] px-6 pb-10 pt-5">
+    <div className="@container h-full overflow-auto">
+      <div className="px-4 pb-10 pt-5 @min-[641px]:px-6">
         <div className="mb-1 text-sm text-muted">
           <Link to="/tracker/backlog" className="hover:text-ink hover:underline">
             Harborline Tracker
@@ -355,7 +358,7 @@ export default function BoardPage() {
             {sprint?.goal ? <p className="mt-0.5 text-base text-muted">Goal: {sprint.goal}</p> : null}
           </div>
           {sprint ? (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm text-muted">Order</span>
               <Segmented
                 ariaLabel="Order cards by"
@@ -402,7 +405,7 @@ export default function BoardPage() {
         ) : (
           <>
             <div className="mt-5 flex flex-wrap items-center gap-2" role="toolbar" aria-label="Quick filters">
-              <div className="w-44">
+              <div className="w-full @min-[641px]:w-44">
                 <Input leading={<Search aria-hidden />} value={text} onChange={(e) => setText(e.target.value)} placeholder="Search this board" aria-label="Search this board" />
               </div>
               <button type="button" aria-pressed={mine} className={chip(mine)} onClick={() => setMine((v) => !v)}>
@@ -455,68 +458,72 @@ export default function BoardPage() {
               }}
               accessibility={{ announcements, screenReaderInstructions: { draggable: 'Press Space to pick up the card, arrow keys to move it, Space to drop. Enter opens the issue.' } }}
             >
-              {groupBy !== 'none' ? (
-                <div className="sticky top-0 z-20 mt-4 grid grid-cols-4 gap-3 bg-sheet pb-2 pt-1">
-                  {COLUMNS.map((s) => (
-                    <div key={s} className="flex h-8 items-center gap-2 rounded-m bg-raised px-3">
-                      <span className="text-sm font-semibold text-muted">{s}</span>
-                      <span className="num text-sm text-muted">{lanes.reduce((n, l) => n + (cols[cid(l.id, s)]?.length ?? 0), 0)}</span>
+              <div className="-mx-4 px-4 @min-[641px]:-mx-6 @min-[641px]:px-6 @max-[959px]:overflow-x-auto">
+                <div className="@max-[959px]:w-max">
+                  {groupBy !== 'none' ? (
+                    <div className={clsx('sticky top-0 z-20 mt-4 bg-sheet pb-2 pt-1', columnsGrid)}>
+                      {COLUMNS.map((s) => (
+                        <div key={s} className="flex h-8 items-center gap-2 rounded-m bg-raised px-3">
+                          <span className="text-sm font-semibold text-muted">{s}</span>
+                          <span className="num text-sm text-muted">{lanes.reduce((n, l) => n + (cols[cid(l.id, s)]?.length ?? 0), 0)}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              ) : null}
-              {visible.length === 0 ? (
-                <div className="mt-4">
-                  <Empty action={filtersOn ? <Button size="sm" onClick={clearFilters}>Clear filters</Button> : <Button size="sm" variant="primary" icon={<Plus aria-hidden />} onClick={() => ui.set({ createIssue: { sprint_id: sprint.id } })}>Create issue</Button>}>
-                    {filtersOn ? 'No issues in this sprint match the filters.' : 'This sprint has no issues yet. Drag some in from the backlog, or create one.'}
-                  </Empty>
-                </div>
-              ) : (
-                <div className={clsx('flex flex-col', groupBy === 'none' ? 'mt-4' : 'gap-4')}>
-                  {lanes.map((lane) => {
-                    const isCollapsed = collapsed.has(lane.id);
-                    return (
-                      <div key={lane.id}>
-                        {lane.title ? (
-                          <button
-                            type="button"
-                            aria-expanded={!isCollapsed}
-                            onClick={() =>
-                              setCollapsed((prev) => {
-                                const n = new Set(prev);
-                                if (n.has(lane.id)) n.delete(lane.id);
-                                else n.add(lane.id);
-                                return n;
-                              })
-                            }
-                            className="mb-2 flex w-full items-center gap-2 rounded-m px-1 py-1 text-left hover:bg-hover"
-                          >
-                            <ChevronDown className={clsx('size-4 text-muted transition-transform duration-200 ease-out', isCollapsed && '-rotate-90')} aria-hidden />
-                            {lane.issue ? <TypeIcon type={lane.issue.type} /> : null}
-                            {lane.issue ? <IssueKey k={lane.issue.key} /> : null}
-                            <span className="min-w-0 truncate text-base font-semibold text-ink">{lane.title}</span>
-                            <span className="num shrink-0 text-sm text-muted">{plural(lane.items.length, 'issue')}</span>
-                            {lane.issue && lane.issue.type !== 'Epic' ? (
-                              <Tooltip content={`Story status: ${lane.issue.status}`}>
-                                <span className="ml-1 text-xs text-muted">· {lane.issue.status}</span>
-                              </Tooltip>
+                  ) : null}
+                  {visible.length === 0 ? (
+                    <div className="mt-4">
+                      <Empty action={filtersOn ? <Button size="sm" onClick={clearFilters}>Clear filters</Button> : <Button size="sm" variant="primary" icon={<Plus aria-hidden />} onClick={() => ui.set({ createIssue: { sprint_id: sprint.id } })}>Create issue</Button>}>
+                        {filtersOn ? 'No issues in this sprint match the filters.' : 'This sprint has no issues yet. Drag some in from the backlog, or create one.'}
+                      </Empty>
+                    </div>
+                  ) : (
+                    <div className={clsx('flex flex-col', groupBy === 'none' ? 'mt-4' : 'gap-4')}>
+                      {lanes.map((lane) => {
+                        const isCollapsed = collapsed.has(lane.id);
+                        return (
+                          <div key={lane.id}>
+                            {lane.title ? (
+                              <button
+                                type="button"
+                                aria-expanded={!isCollapsed}
+                                onClick={() =>
+                                  setCollapsed((prev) => {
+                                    const n = new Set(prev);
+                                    if (n.has(lane.id)) n.delete(lane.id);
+                                    else n.add(lane.id);
+                                    return n;
+                                  })
+                                }
+                                className="sticky left-0 mb-2 flex w-full items-center gap-2 rounded-m px-1 py-1 text-left hover:bg-hover @max-[959px]:w-[calc(100cqw-2rem)] @min-[641px]:@max-[959px]:w-[calc(100cqw-3rem)]"
+                              >
+                                <ChevronDown className={clsx('size-4 text-muted transition-transform duration-200 ease-out', isCollapsed && '-rotate-90')} aria-hidden />
+                                {lane.issue ? <TypeIcon type={lane.issue.type} /> : null}
+                                {lane.issue ? <IssueKey k={lane.issue.key} /> : null}
+                                <span className="min-w-0 truncate text-base font-semibold text-ink">{lane.title}</span>
+                                <span className="num shrink-0 text-sm text-muted">{plural(lane.items.length, 'issue')}</span>
+                                {lane.issue && lane.issue.type !== 'Epic' ? (
+                                  <Tooltip content={`Story status: ${lane.issue.status}`}>
+                                    <span className="ml-1 text-xs text-muted">· {lane.issue.status}</span>
+                                  </Tooltip>
+                                ) : null}
+                              </button>
                             ) : null}
-                          </button>
-                        ) : null}
-                        {!isCollapsed ? (
-                          <div className="grid grid-cols-4 gap-3">
-                            {COLUMNS.map((s) => {
-                              const id = cid(lane.id, s);
-                              const items = (cols[id] ?? []).map((k) => t.byKey.get(k)).filter((x): x is Issue => !!x);
-                              return <Column key={s} id={id} status={s} items={items} epicNames={epicNames} onOpen={open} showHeader={groupBy === 'none'} wip={items.length} byDue={byDue} />;
-                            })}
+                            {!isCollapsed ? (
+                              <div className={columnsGrid}>
+                                {COLUMNS.map((s) => {
+                                  const id = cid(lane.id, s);
+                                  const items = (cols[id] ?? []).map((k) => t.byKey.get(k)).filter((x): x is Issue => !!x);
+                                  return <Column key={s} id={id} status={s} items={items} epicNames={epicNames} onOpen={open} showHeader={groupBy === 'none'} wip={items.length} byDue={byDue} />;
+                                })}
+                              </div>
+                            ) : null}
                           </div>
-                        ) : null}
-                      </div>
-                    );
-                  })}
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
               <DragOverlay dropAnimation={{ duration: 180, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' }}>
                 {activeIssue ? (
                   // dnd-kit measures the overlay's first child: keep the tilt on an inner element so it never skews collisions.
@@ -533,9 +540,10 @@ export default function BoardPage() {
                 <Empty action={<Button size="sm" onClick={() => setCompleteOpen(true)}>Complete sprint</Button>}>Every issue in this sprint is done. Complete it, then start the next one from the backlog.</Empty>
               </div>
             ) : null}
-            <p className="mt-4 text-sm text-muted">
+            <p className="mt-4 text-sm text-muted pointer-coarse:hidden">
               {byDue ? 'Ordered by due date: overdue and soonest first, no due date last. Drag cards between columns to change status; switch to Manual to rank by hand.' : 'Drag cards between columns to change status, or within a column to rank.'} With the keyboard: J and K move, Space picks up and drops, Enter opens.
             </p>
+            <p className="mt-4 hidden text-sm text-muted pointer-coarse:block">Swipe sideways to see the other columns. Tap a card to open it and change its status.</p>
             {levels.length ? <p className="mt-1 text-sm text-muted">Tickets start easy and get harder: Level 1 is the easiest, Level 5 the hardest.</p> : null}
           </>
         )}
