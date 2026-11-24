@@ -149,11 +149,11 @@ You pick the size during setup:
 
 | Size | History | Disk | Time on a 6-core laptop (estimate) | Time on a fast Mac (measured) |
 |---|---|---|---|---|
-| Small | 6 months | about 3 GB | about 10 minutes | about 1 minute |
+| Small (first release only) | 6 months | about 3 GB | about 10 minutes | about 1 minute |
 | **Medium** (default, has all 8 warehouses) | 24 months | about 12 GB | about 1 hour | 10 minutes |
 | Large | 36 months | about 30 GB | about 3 hours | 21 minutes |
 
-Every ticket works on any size. Medium is 980,000 orders, 3.9 million order lines and 9.6 million ledger rows. Large is 2.37 million orders, 9.6 million order lines and 23 million ledger rows.
+Small is enough for the first release: the 8 tickets the Start here page lists. After that, rebuild at Medium from the Control Center: later tickets use all 8 warehouses and more than 6 months of history, and a rebuild leaves your tickets alone. Medium is 980,000 orders, 3.9 million order lines and 9.6 million ledger rows. Large is 2.37 million orders, 9.6 million order lines and 23 million ledger rows.
 
 ## The 8 projects
 
