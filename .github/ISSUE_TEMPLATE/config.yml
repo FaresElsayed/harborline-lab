@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
   - name: Known setup issues
-    url: https://karimabdelaziz2503.github.io/harborline-lab/handbook/known-issues.html
+    url: https://fareselsayed.github.io/harborline-lab/handbook/known-issues.html
     about: Every setup error we know about, and what to do. Most fix themselves if you run the setup file again.
